@@ -1,5 +1,15 @@
-import { Link } from "react-router";
-const DeleteModal = () => {
+import React from "react";
+
+// Define the props interface
+interface DeleteModalProps {
+  onConfirm: () => void;
+  title?: string;
+}
+
+const DeleteModal: React.FC<DeleteModalProps> = ({
+  onConfirm,
+  title = "Are you sure you want to delete this?",
+}) => {
   return (
     <>
       <div className="modal fade" id="delete-modal">
@@ -10,9 +20,7 @@ const DeleteModal = () => {
                 <span className="rounded-circle d-inline-flex p-2 bg-danger-transparent mb-2">
                   <i className="ti ti-trash fs-24 text-danger" />
                 </span>
-                <h4 className="mb-0 delete-account-font">
-                  Are you sure you want to delete this?
-                </h4>
+                <h4 className="mb-0 delete-account-font">{title}</h4>
                 <div className="modal-footer-btn mt-3 d-flex justify-content-center">
                   <button
                     type="button"
@@ -21,13 +29,14 @@ const DeleteModal = () => {
                   >
                     Cancel
                   </button>
-                  <Link
-                    to="#"
+                  <button
+                    type="button"
                     className="btn btn-primary fs-13 fw-medium p-2 px-3"
                     data-bs-dismiss="modal"
+                    onClick={onConfirm}
                   >
                     Yes Delete
-                  </Link>
+                  </button>
                 </div>
               </div>
             </div>
