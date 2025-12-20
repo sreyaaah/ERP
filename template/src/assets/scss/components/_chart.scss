@@ -1,0 +1,56 @@
+.apexcharts-legend.apexcharts-align-center.position-right {
+    display: none;
+}
+.apexcharts-toolbar {
+    display: none !important;
+}
+#sales_charts,
+.chart-set{
+    overflow: hidden;
+}
+.apexcharts-canvas {
+    width: 100% !important;
+}
+.peity-chart {
+    &:hover {
+        polygon {
+            opacity: 0.5;
+        }
+    }
+}
+.company-bar1 {
+    ~ .peity {
+        rect {
+            &:hover {
+                opacity: 0.5;
+            }
+        }
+    }
+}
+.company-bar2 {
+    ~ .peity {
+        rect {
+            &:hover {
+                opacity: 0.5;
+            }
+        }
+    }
+}
+.company-bar3 {
+    ~ .peity {
+        rect {
+            &:hover {
+                opacity: 0.5;
+            }
+        }
+    }
+}
+.company-bar4 {
+    ~ .peity {
+        rect {
+            &:hover {
+                opacity: 0.5;
+            }
+        }
+    }
+}

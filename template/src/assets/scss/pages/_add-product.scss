@@ -1,0 +1,308 @@
+@use "../utils/mixins";
+@use "../utils/variables";
+
+.add-newplus {
+    display: flex;
+    justify-content: space-between;
+    .plus-down-add {
+        color: variables.$primary;
+    }
+    span{
+        font-size: variables.$font-size-14;
+        font-style: normal;
+        font-weight: variables.$font-weight-medium;
+        color: variables.$primary;
+    }
+}
+.plus-down-add{
+    margin-right: 5px;
+    width: 14px;
+    height: 14px;
+    position: relative;
+    top: -2px;
+    color: variables.$gray-300;
+}
+.add-choosen{
+    display: flex;
+    @include mixins.respond-below(custom767) {
+        flex-wrap: wrap;
+    }
+    .phone-img{
+        position: relative;
+        width: 120px;
+        height: 120px;
+        border-radius: 10px;
+        border: 1px solid var(--Stroke, rgba(145, 158, 171, 0.30));
+        text-align: center;
+        margin-left: 20px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        @include mixins.respond-below(custom767) {
+            margin-bottom: 10px;
+            margin-left: 10px;
+        }
+        a {
+            position: absolute;
+            right: 3px;
+            top: 3px;
+            background: variables.$danger;
+            border-radius: 3px;
+            width: 16px;
+            height: 16px;
+            color: variables.$white;
+            display: -webkit-box;
+            display: -ms-flexbox;
+            display: flex;
+            align-items: center;
+            -webkit-box-align: center;
+            -ms-flex-align: center;
+            justify-content: center;
+            -webkit-justify-content: center;
+            -ms-flex-pack: center;
+            &:hover {
+                color: variables.$white;
+                background: #e61414;
+            }
+        }
+    }
+}
+.add-icon.tab a{
+    background-color: variables.$secondary;
+    color: variables.$white;
+}
+
+.add-icon.tab-icon .feather-trashs{
+    background-color: variables.$white;
+    color: variables.$danger;
+}
+.add-icon.tab-icon a{
+    background-color: variables.$white;
+    font-size: 11px;
+    width: 34px;
+    padding: 0;
+}
+.input-blocks{
+    &.filter-add{
+    margin-right: 0px;
+    margin-bottom: 0px;
+    .input-blocks{
+         &.add-product{
+          margin-bottom: 20px;
+          margin-right: 7px;
+        }
+    }
+}
+}
+.feather-pluses{
+    color: variables.$secondary;
+    width: 14px;
+    height: 14px;
+}
+.checkboxs.add-listcheck{
+    padding-left:24px ;
+}
+.searchinputs.list input {
+    width: 357px;
+    position: relative;
+    padding: 10px 31px 10px 10px;
+    border: 1px solid var(--Stroke, rgba(145, 158, 171, 0.30));
+    background: variables.$white;
+}
+.feather-16.icon{
+    position: absolute;
+    top: 10px;
+    right: 10px;
+}
+
+.search-dropdown.idea{
+    height: auto;
+}
+.add-product {
+    .add-icon a {
+       background-color: variables.$secondary;
+       color: variables.$white;
+       font-size: variables.$font-size-15;
+       @include mixins.respond-below(custom767) {
+            z-index: 1;
+        }
+       &:hover {
+        background-color: variables.$primary;
+       }
+    }
+}
+.new-employee-field.product .card-title-head h6 {
+    font-weight: variables.$font-weight-semibold;
+    font-size: variables.$font-size-16;
+    align-items: center;
+    margin: 0 ;
+    padding: 0;
+    border-bottom:none;
+}
+.new-employee-field.product .card-title-head{
+    margin: 0 0 20px;
+    padding: 0 0 20px;
+    border-bottom: 1px solid rgba(145, 158, 171, 0.3);
+    display: flex;
+    justify-content: space-between;
+}
+.new-employee-field.product .card-title-head a {
+    color: #878A99;
+    border: 1px solid;
+    padding: 3px;
+    border-radius: 25px;
+}
+.selected-hide-color {
+    display: none;
+}
+.selected-color-add {
+    .selected-hide-color {
+        display: flex;
+        align-items: center;
+    }
+}
+.variant-table {
+    display: none;
+}
+.variant-select {
+    height: 40px;
+}
+
+.add-product{
+    .text-editor{
+        &.add-list{
+            width: 100%;
+            h5{
+            padding-left: 0;
+            }
+            &.add{
+                .addproduct-icon{
+                    padding-left: 0;
+                }
+                .custom-filed{
+                    display: flex;
+                    padding: 15px;
+                    background-color: variables.$light-900;
+                    margin-bottom: 20px;
+                    .input-block{
+                        &.add-lists{
+                            display: flex;
+                            gap: 20px;
+                            align-items: center;
+                            font-size: variables.$font-size-16;
+                            color: variables.$gray-600;
+                            @include mixins.respond-below(custom767) {
+                                flex-wrap: wrap;
+                            }
+                            .checkboxs{
+                                margin-bottom: 0;
+                                padding-left: 23px;
+                                
+                                    .checkmarks{
+                                        top: 3px;
+                                        width: 16px;
+                                        height: 16px;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    .note-statusbar {
+        display: none !important;
+    }
+}
+
+
+
+.add-product-form{
+    .input-blocks input[type=text].datetimepicker {
+      padding-left: 10px;
+  }
+    .table tbody tr td{
+      padding: 15px;
+    }
+    .tag{
+    background-color: variables.$secondary-transparent !important;
+    }
+    .selected-hide-color{
+      .bootstrap-tagsinput{
+          border-color: variables.$secondary-transparent;
+      }
+      .remove-color{
+         border: 1px solid variables.$secondary-transparent;
+         width: 40px;
+         height: 40px;
+         display: flex;
+         border-radius: 5px;
+         color: variables.$gray-600;
+         font-size: variables.$font-size-16;
+         align-items: center;
+         justify-content: center;
+         &:hover{
+          background-color: variables.$secondary-transparent;
+         }
+      }
+ 
+    }
+    .product-quantity{
+      border: 1px solid variables.$secondary-transparent;
+  }
+ }
+ .edit-product{
+  .form-label{
+      color: variables.$gray-900;
+      margin-bottom: 6px;
+  }
+  .bootstrap-tagsinput {
+      .tag {
+         background-color: variables.$secondary-transparent;
+      }
+  }
+  .remove-color {
+      border: 1px solid variables.$secondary-transparent;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      border-radius: 5px;
+      color: variables.$gray-600;
+      font-size: variables.$font-size-16;
+      align-items: center;
+      justify-content: center;
+  }
+  .table   {
+   tr{
+      th{
+          padding: 15px;
+          background-color: variables.$secondary-transparent;
+          color: variables.$gray-900;
+      }
+  } 
+ tbody{
+  tr{
+      border: 1px solid variables.$secondary-transparent;
+      &:last-child{
+          border-radius: 0 0 10px 10px;
+          opacity: 0.4;
+      }
+  td {
+      padding: 15px;
+      border: none;
+      min-width: 120px;
+      @include mixins.respond-below(custom575){
+          padding: 10px;
+          padding: 10px;
+      }
+  }
+  }
+  }
+ }
+ .product-quantity {
+  border: 1px solid variables.$secondary-transparent;
+ }
+ input[type=text].datetimepicker {
+  padding-left: 10px;
+ }
+ }

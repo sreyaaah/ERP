@@ -1,0 +1,72 @@
+@use "../utils/mixins";
+@use "../utils/variables";
+
+.attendance-header{
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    @include mixins.respond-below(custom575){
+        display: block;
+    }
+    .attendance-content{
+        display:flex;
+        align-items: center;
+        h3{
+            font-size: variables.$font-size-20;
+            flex-shrink: 0;
+            margin-left: 10px;
+            span{
+                color: variables.$text-color;
+            }
+        }
+    }
+}
+.progress-bar-success{
+    background-color:variables.$success ;
+}
+.progress-bar-warning{
+    background-color: variables.$warning;
+}
+.progress-bar-danger{
+    background-color: variables.$danger;
+}
+.progress.attendance{
+    width: 127px;
+    height: 7px;
+}
+.badges-inactive.Holiday{
+    color: variables.$purple;
+    border: 1px solid variables.$purple;
+}
+.modal-deletecontent{
+    padding: 24px;
+    .feather-xcircircle{
+        display: flex;
+        width: 40px;
+        height: 40px;
+        justify-content: center;
+        align-items: center;
+         color: variables.$danger;
+         margin: auto;
+    }
+    h4{
+        padding: 20px 0 5px 0;
+        text-align: center;
+        color: variables.$secondary;
+        font-size: variables.$font-size-20;
+         font-weight: variables.$font-weight-bold;
+    }
+    p{
+        text-align: center;
+        color: variables.$text-color;
+        font-size: variables.$font-size-15;
+        font-weight: variables.$font-weight-normal;
+    }
+    .modal-footer-btn{
+        &.delete{
+            text-align: center;
+        }
+    }
+}
+
+

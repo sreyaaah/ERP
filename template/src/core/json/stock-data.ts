@@ -1,0 +1,182 @@
+import {
+  stockImg01,
+  user30,
+  stockImg06,
+  user13,
+  stockImg02,
+  user08,
+  stockImg03,
+  user04,
+  stockImg04,
+  user09,
+  stockImg05,
+  user10,
+  expireProduct01,
+  expireProduct02,
+  expireProduct03,
+  expireProduct04,
+  user16,
+} from "../../utils/imagepath";
+
+export const stockData = [
+  {
+    id: 1,
+    checked: false,
+    warehouse: "Lavish Warehouse",
+    store: "Electro Mart",
+    product: {
+      name: "Lenovo IdeaPad 3",
+      image: stockImg01,
+    },
+    date: "24 Dec 2024",
+    person: {
+      name: "James Kirwin",
+      image: user30,
+    },
+    qty: 100,
+  },
+  {
+    id: 2,
+    checked: false,
+    warehouse: "Quaint Warehouse",
+    store: "Quantum Gadgets",
+    product: {
+      name: "Beats Pro",
+      image: stockImg06,
+    },
+    date: "10 Dec 2024",
+    person: {
+      name: "Francis Chang",
+      image: user13,
+    },
+    qty: 140,
+  },
+  {
+    id: 3,
+    checked: false,
+    warehouse: "Lobar Handy",
+    store: "Prime Bazaar",
+    product: {
+      name: "Nike Jordan",
+      image: stockImg02,
+    },
+    date: "25 Jul 2023",
+    person: {
+      name: "Steven",
+      image: user08,
+    },
+    qty: 120,
+  },
+  {
+    id: 4,
+    checked: false,
+    warehouse: "Quaint Warehouse",
+    store: "Gadget World",
+    product: {
+      name: "Apple Series 5 Watch",
+      image: stockImg03,
+    },
+    date: "28 Jul 2023",
+    person: {
+      name: "Gravely",
+      image: user04,
+    },
+    qty: 130,
+  },
+  {
+    id: 5,
+    checked: false,
+    warehouse: "Traditional Warehouse",
+    store: "Volt Vault",
+    product: {
+      name: "Amazon Echo Dot",
+      image: stockImg04,
+    },
+    date: "24 Jul 2023",
+    person: {
+      name: "Kevin",
+      image: user09,
+    },
+    qty: 140,
+  },
+  {
+    id: 6,
+    checked: false,
+    warehouse: "Cool Warehouse",
+    store: "Elite Retail",
+    product: {
+      name: "Lobar Handy",
+      image: stockImg05,
+    },
+    date: "15 Jul 2023",
+    person: {
+      name: "Grillo",
+      image: user10,
+    },
+    qty: 150,
+  },
+  {
+    id: 7,
+    checked: false,
+    warehouse: "Retail Supply Hub",
+    store: "Prime Mart",
+    product: {
+      name: "Red Premium Satchel",
+      image: expireProduct01,
+    },
+    date: "14 Oct 2024",
+    person: {
+      name: "Gary Hennessy",
+      image: user08,
+    },
+    qty: 700,
+  },
+  {
+    id: 8,
+    checked: false,
+    warehouse: "EdgeWare Solutions",
+    store: "NeoTech Store",
+    product: {
+      name: "Iphone 14 Pro",
+      image: expireProduct02,
+    },
+    date: "03 Oct 2024",
+    person: {
+      name: "Eleanor Panek",
+      image: user04,
+    },
+    qty: 630,
+  },
+  {
+    id: 9,
+    checked: false,
+    warehouse: "North Zone Warehouse",
+    store: "Urban Mart",
+    product: {
+      name: "Gaming Chair",
+      image: expireProduct03,
+    },
+    date: "20 Sep 2024",
+    person: {
+      name: "William Levy",
+      image: user13,
+    },
+    qty: 410,
+  },
+  {
+    id: 10,
+    checked: false,
+    warehouse: "Fulfillment Hub",
+    store: "Travel Mart",
+    product: {
+      name: "Borealis Backpack",
+      image: expireProduct04,
+    },
+    date: "10 Sep 2024",
+    person: {
+      name: "Charlotte Klotz",
+      image: user16,
+    },
+    qty: 550,
+  },
+];

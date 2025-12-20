@@ -1,0 +1,522 @@
+@use "../utils/mixins";
+@use "../utils/variables";
+
+.inbox-menu {
+    display: inline-block;
+    
+    width: 100%;
+    @include mixins.margin-padding(0 0 20px,0 );
+    li {
+        display: inline-block;
+        width: 100%;
+        a {
+            color: #333;
+            display: inline-block;
+            padding: 10px 15px;
+            width: 100%;
+            font-weight: variables.$font-weight-semibold;
+            text-transform: capitalize;
+            -webkit-transition: 0.3s ease;
+            -moz-transition: 0.3s ease;
+            transition: 0.3s ease;
+            &:hover{
+                background: rgba(33, 33, 33, 0.05);
+            }
+            i {
+                font-size: variables.$font-size-16;
+                padding-right: 10px;
+                color: #878787;
+            }
+        }
+    }
+}
+.compose-btn {
+    margin-bottom: 25px;
+}
+.top-action-left{
+    .btn-group {
+        margin-bottom: 5px;
+    }
+    .dropdown-toggle{
+        height: 40px;
+        &::after{
+            display: none;
+        }
+    }
+}
+.table-inbox {
+    .starred.fas.fa-star {
+        color: variables.$warning;
+    }
+    .checked {
+        background-color: variables.$gray-300;
+    }
+    tbody{
+        tr{
+            td{
+                font-size: variables.$font-size-14;
+                color: variables.$secondary;
+            }
+        }
+    }
+}
+.unread{
+    .name,
+    .subject,
+    .mail-date{
+        color: variables.$black;
+        font-weight: variables.$font-weight-bold;
+    }
+}
+.email-header{
+    .btn-white{
+        min-width: auto;
+        height: 38px;
+        i{
+            margin-left:5px;
+        }
+    }
+}
+
+.box-bg {
+    .bg-right {
+      position: absolute;
+      right: 0;
+      top: 0;
+      z-index: 0;
+    }
+    .bg-left {
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      z-index: 0;
+    }
+  }
+
+  .list-group-flush>.list-group-item {
+    border-width: 0 0 var(--bs-list-group-border-width);
+    border: 1px solid variables.$white;
+    }
+  .list-item-hover:hover {
+
+    border-color: #F26522 !important;
+    transition: 0.5s all;
+    }
+
+
+.todo-grid-view, .todo-list-view {
+    &.active {
+        background: variables.$primary;
+        svg {
+            color: variables.$white;
+        }
+    }
+} 
+
+.rating-select i.filled {
+    color: #FFC107;
+}
+.todo-strike-content .strike-info h4 {
+    text-decoration: line-through;
+}
+
+.input-icon-start {
+    .icon-addon {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+    }
+}
+
+.email-sidebar {
+    max-width: 288px !important;
+}
+
+#compose-view {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    position: fixed;
+    z-index: 9999;
+    display: none;
+    transform: scale(0.9);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    align-items: end;
+    justify-content: end;
+}
+#compose-view.show {
+    display: flex
+;
+    transform: scale(1);
+}
+.compose-view {
+    position: relative;
+    top: auto;
+    bottom: 0;
+    right: 20px;
+    max-width: 500px;
+    width: 100%;
+    left: auto;
+    margin: 20px 0 20px auto;
+    transform: scale(0.9);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.tag-with-img .bootstrap-tagsinput .label-info {
+    padding: 5px 10px 5px 30px;
+    position: relative;
+    background: #E8E9EA;
+    border-radius: 20px;
+}
+
+.bootstrap-tagsinput .tag {
+    background: #E8E9EA;
+    border-radius: 5px;
+    padding: 0 5px;
+    font-size: 10px;
+    color: #212529;
+    display: inline-flex
+;
+    align-items: center;
+}
+
+.bootstrap-tagsinput {
+    border-color: #E5E7EB;
+    color: #6B7280;
+    background-color: #ffffff;
+    font-size: 15px;
+    font-weight: 400;
+    border-radius: 5px;
+    padding: 0.45rem 0.625rem;
+    box-shadow: none;
+    overflow-y: auto;
+    width: 100%;
+}
+
+.email-sidebar {
+    max-width: 288px;
+    .slimScrollDiv {
+      height: calc(100vh - 105px) !important;
+    }
+    @include mixins.respond-below(md) {
+      max-width: 100%;
+      margin-bottom: 24px;
+    }
+  }
+  .mail-notifications {
+    .slimScrollDiv {
+      height: calc(100vh - 105px) !important;
+    }
+  }
+  .mail-detail {
+    .slimScrollDiv {
+      height: calc(100vh - 137px) !important;
+    }
+  }
+  .email-tags {
+    a {
+      &.active {
+        background: variables.$dark-transparent;
+        color: variables.$gray-900;
+      }
+      &:hover {
+        background: variables.$dark-transparent;
+        color: variables.$gray-900;
+      }
+      &.viewall-button {
+        &:hover {
+          background: transparent;
+          color: variables.$primary;
+        }
+      }
+    }
+  }
+  .more-menu {
+    display: none;
+  }
+  .custom-nav {
+    display: flex;
+    align-items: center;
+    button {
+      width: 16px;
+      height: 16px;
+      background: variables.$white;
+      border: 0;
+      border-radius: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      &:hover {
+        background: variables.$dark;
+        color: variables.$white;
+      }
+    }
+  }
+  .mails-list {
+    .list-group-item {
+      cursor: pointer;
+      &.activate {
+        background: variables.$dark-transparent;
+      }
+    }
+  }
+  .mail-notifications {
+    width: 50%;
+    transition: 0.5s all;
+    &.compress-width {
+      max-width: 400px;
+      transition: 0.5s all;
+      @include mixins.respond-below(md) {
+        display: none;
+      }
+    }
+    @include mixins.respond-below(md) {
+      width: 100%;
+      max-width: 100%;
+    }
+  }
+  .input-icon {
+    .form-control {
+      padding-left: 30px;
+    }
+  }
+  .tag-with-img {
+    .bootstrap-tagsinput {
+      border: 0;
+      padding: 0;
+        .label-info {
+            padding: 5px 10px 5px 30px;
+            position: relative;
+            background: variables.$dark-transparent;
+            border-radius: 20px;
+            &::before {
+                content: "";
+                background-image: url(/src/assets/img/profiles/mail-user.jpg);
+                background-repeat: no-repeat;
+                width: 15px;
+                height: 15px;
+                border-radius: 50%;
+                position: absolute;
+                left: 10px;
+                top: 50%;
+                transform: translateY(-50%);
+            }
+        }
+    }
+  }
+  .email-cc {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  .todo-tabs {
+    .nav-link {
+      &.active {
+        background: variables.$white;
+        box-shadow: 0px 2px 5px 0px #0000001A;
+        color: variables.$dark;
+      }
+    }
+  }
+  .list-item-hover {
+    border: 1px solid variables.$white !important;
+    transition: 0.5s all;
+    &:hover {
+      border-color: variables.$primary !important;
+      transition: 0.5s all;
+    }
+  }
+  .w-120 {
+    width: 125px;
+  }
+  .project-status {
+    min-width: 265px;
+  }
+  .kanban-drag-wrap {
+    min-width: 230px;
+    min-height: 50px;
+  }
+  .files-list {
+    a.active {
+      background: variables.$dark-transparent;
+    }
+  }
+  .social-gallery-slider,.email-attach {
+    a {
+      position: relative;
+      transition: 0.5s all;
+      span {
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translatex(-50%);
+        transition: 0.5s all;
+        background: variables.$white;
+        opacity: 0;
+        i {
+          color: variables.$dark;
+          opacity: 1;
+        }
+      }
+      &:hover {
+        transition: 0.5s all;
+        span {
+          top: 50%;
+          transform: translate(-50%,-50%);
+          transition: 0.5s all;
+          opacity: 0.5;
+          
+        }
+        &::before {
+          content: "";
+          width: 100%;
+          height: 100%;
+          border-radius: 5px;
+          background: variables.$gray-900;
+          opacity: 0.8;
+          position: absolute;
+          transition: 0.5s all;
+          left: 0;
+          top: 0;
+          right: 0;
+          bottom: 0;
+        }
+      }
+      img {
+        transition: 0.5s all;
+        
+      }
+    }
+  }
+  .card-img-hover {
+    position: relative;
+    overflow: hidden;
+    transition: 0.5s all;
+    img {
+      transition: 0.5s all;
+    }
+    &:hover {
+      transition: 0.5s all;
+      img {
+        transform: scale(1.14);
+        transition: 0.5s all;
+      }
+    }
+  }
+  .template-more-links {
+    a {
+      position: relative;
+      & + a {
+        margin-left: 10px;
+        padding-left: 10px;
+        &::before {
+          content: "/";
+          position: absolute;
+          left: -2px;
+          top: 50%;
+          transform: translateY(-50%);
+        }
+      }
+    }
+  }
+  .post-textarea {
+    padding-top: 60px;
+    padding-left: 68px;
+  }
+  .text-area-avatar {
+    position: absolute;
+    top: 50%;
+    left: 15px;
+    transform: translateY(-50%);
+  }
+  a {
+    &.link-hover {
+      &:hover {
+        color: variables.$primary !important;
+      }
+    }
+  }
+  .note-editable {
+    height: 100px;
+  }
+  .list-group a:hover {
+    background: transparent;
+  }
+  
+  .drag-upload-btn {
+    font-size: variables.$font-size-12;
+    font-weight: variables.$font-weight-semibold;
+    background: variables.$white;
+    border: 1px dashed variables.$light-900;
+    @include mixins.rounded(5px);
+    padding:6px 16px ;
+    position: relative;
+    transition: all 0.5s;
+    input {
+        opacity: 0;
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        top: 0;
+        left: 0;
+        cursor: pointer;
+    }
+    &:hover {
+        background: variables.$primary;
+        border-color: variables.$primary;
+        color: variables.$white;
+        transition: all 0.5s;
+    }
+  }
+  #compose-view {
+    position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      overflow-y: auto;
+    position: fixed;
+    z-index: 9999;
+    display: none;
+    transform: scale(0.9);
+   transition: opacity 0.3s ease, transform 0.3s ease;
+   align-items: end;
+   justify-content: end;
+    &.show {
+      display: flex;
+      transform: scale(1);
+    }
+  }
+  .compose-view {             
+    position: relative;
+    top: auto;              
+    bottom: 0;
+      right: 20px;
+      max-width: 500px;
+      width: 100%;
+      left: auto;
+      margin: 20px 0 20px auto;
+      transform: scale(0.9);
+     transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+  .compose-header {
+    @include mixins.rounded(4px 4px 0 0);
+  }
+  .compose-footer {
+    @include mixins.rounded(0 0 4px 4px);
+  }
+  .otp-input {
+      input{
+          border: 2px solid variables.$gray-200;
+          &.active{
+              border: 2px solid variables.$primary ;
+          }
+      }
+  }
+  .todo-tabs .nav-link:active {
+    color: variables.$white;
+  }

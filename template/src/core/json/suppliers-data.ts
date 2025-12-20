@@ -1,0 +1,55 @@
+import {
+  supplier01,
+  supplier02,
+  supplier03,
+  supplier04,
+  supplier05,
+} from "../../utils/imagepath";
+
+export const suppliersData = [
+  {
+    code: "SU001",
+    supplier: "Apex Computers",
+    avatar: supplier01,
+    email: "apexcomputers@example.com",
+    phone: "+15964712634",
+    country: "Germany",
+    status: "Active",
+  },
+  {
+    code: "SU002",
+    supplier: "Beats Headphones",
+    avatar: supplier02,
+    email: "beatsheadphone@example.com",
+    phone: "+16372895190",
+    country: "Japan",
+    status: "Active",
+  },
+  {
+    code: "SU003",
+    supplier: "Dazzle Shoes",
+    avatar: supplier03,
+    email: "dazzleshoes@example.com",
+    phone: "+17589201739",
+    country: "USA",
+    status: "Active",
+  },
+  {
+    code: "SU004",
+    supplier: "Best Accessories",
+    avatar: supplier04,
+    email: "bestaccessories@example.com",
+    phone: "+18934092467",
+    country: "Austria",
+    status: "Active",
+  },
+  {
+    code: "SU005",
+    supplier: "A-Z Store",
+    avatar: supplier05,
+    email: "a2zstore@example.com",
+    phone: "+12568749035",
+    country: "Turkey",
+    status: "Active",
+  },
+];

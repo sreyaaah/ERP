@@ -1,0 +1,86 @@
+import {
+  brandIcon1,
+  brandIcon10,
+  brandIcon2,
+  brandIcon3,
+  brandIcon4,
+  brandIcon5,
+  brandIcon6,
+  brandIcon7,
+  brandIcon8,
+  brandIcon9,
+} from "../../utils/imagepath";
+
+export const brandlistdata = [
+  {
+    id: 1,
+    brand: "Lenevo",
+    logo: brandIcon1,
+    createdon: "25 May 2023",
+    status: "Active",
+  },
+  {
+    id: 2,
+    brand: "Boat",
+    logo: brandIcon2,
+    createdon: "24 Jun 2023",
+    status: "Active",
+  },
+  {
+    id: 3,
+    brand: "Nike",
+    logo: brandIcon3,
+    createdon: "23 Jul 2023",
+    status: "Active",
+  },
+  {
+    id: 4,
+    brand: "Apple",
+    logo: brandIcon4,
+    createdon: "22 Aug 2023",
+    status: "Active",
+  },
+  {
+    id: 5,
+    brand: "Amazon",
+    logo: brandIcon5,
+    createdon: "21 Sep 2023",
+    status: "Active",
+  },
+  {
+    id: 6,
+    brand: "Woodmart",
+    logo: brandIcon6,
+    createdon: "20 Sep 2023",
+    status: "Active",
+  },
+  {
+    id: 7,
+    brand: "Versace",
+    logo: brandIcon7,
+    createdon: "20 Sep 2023",
+    status: "Active",
+  },
+  {
+    id: 8,
+    brand: "Lava",
+    logo: brandIcon8,
+    createdon: "20 Sep 2023",
+    status: "Active",
+  },
+  {
+    id: 9,
+    brand: "Bently",
+    logo: brandIcon9,
+    createdon: "20 Sep 2023",
+    status: "Active",
+  },
+  {
+    id: 10,
+    brand: "Nilkamal",
+    logo: brandIcon10,
+    createdon: "20 Sep 2023",
+    status: "Active",
+  },
+];
+

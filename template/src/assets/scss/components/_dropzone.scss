@@ -1,0 +1,43 @@
+
+@use "../utils/mixins";
+@use "../utils/variables";
+
+//
+// _dropzone.scss
+//
+
+.dropzone {
+    border: 2px dashed variables.$gray-100;
+    background: variables.$white;
+    border-radius: 8px;
+    cursor: pointer;
+    min-height: 150px;
+    padding: 20px;
+
+    .dz-message {
+        text-align: center;
+        margin: 2rem 0;
+    }
+
+    &.dz-started {
+        .dz-message {
+            display: none;
+        }
+    }
+}
+
+
+[data-theme=dark] {
+    .modal-content {
+        color: variables.$darkmode-dark;
+    }
+}
+
+.modal-dialog-bottom {
+  position: fixed;
+  top: unset;
+  bottom: 0;
+  margin: 20px auto;
+  left: 0;
+  right: 0;
+}

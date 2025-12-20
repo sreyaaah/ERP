@@ -1,0 +1,120 @@
+@use "../utils/mixins";
+@use "../utils/variables";
+
+// wishlist style
+
+.wishlist-products {    
+    .qty-item {
+        position: relative;
+        display: inline-block;
+        margin-right: 7px;
+        input {
+            padding: 1px 9px;   
+            @include mixins.rounded(8px);
+            height: 28px;
+            width: 71px;
+            text-align: center;
+            font-size: variables.$font-size-base;
+        }
+        .dec, .inc {
+            position: absolute;
+            top: 50%;
+            @include mixins.transform(translateY(-50%));
+            color: variables.$secondary;
+            @include mixins.transition(all 0.5s ease);
+            &:hover {
+                color: variables.$primary;
+            }
+        }
+        .dec {
+            left: 9px;
+        }
+        .inc {
+            right: 9px;
+        }
+    }
+    .product-info {
+        padding: 15px;
+        color:  variables.$sub-title;
+        border: 1px solid #E6EAED;
+        @include mixins.transition(all 0.5s ease);
+        .img-bg {
+            background-color: variables.$light;
+            @include mixins.rounded(10px);
+            display: -webkit-box;
+            display: -ms-flexbox;
+            display: flex;
+            align-items: center;
+            -webkit-box-align: center;
+            -ms-flex-align: center;
+            justify-content: center;
+            -webkit-justify-content: center;
+            -ms-flex-pack: center;
+            margin-bottom: 10px;
+            position: relative;
+            padding: 10px;
+            img {
+                @include mixins.transition(all 0.5s ease);
+            }
+            span {
+                @include mixins.transition(all 0.5s ease);
+                background: variables.$pink;
+                position: absolute;
+                top: -5px;
+                right: -5px;
+                @include mixins.rounded(100%);
+                color: variables.$success;
+                display: -webkit-box;
+                display: -ms-flexbox;
+                display: flex;
+                align-items: center;
+                -webkit-box-align: center;
+                -ms-flex-align: center;
+                justify-content: center;
+                -webkit-justify-content: center;
+                -ms-flex-pack: center;
+                display: none;
+                font-size: variables.$font-size-18;
+                &:hover {
+                    background: variables.$secondary;
+                }
+            }
+        }
+        h6 {
+            font-weight: variables.$font-weight-bold;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            &.cat-name {
+                margin-bottom: 4px;
+                font-weight: variables.$font-weight-normal;
+                a {
+                    color: variables.$gray-600;
+                    &:hover {
+                        color: variables.$primary;
+                    }
+                }
+            }
+        }
+        .price {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px dashed variables.$border-color;
+            span {
+                color:  variables.$pink;
+            }
+            p {
+                color: variables.$teal;
+                font-weight: variables.$font-weight-bold;
+            }
+
+        }
+        &:hover{
+            .img-bg {
+                img {
+                    transform: scale(1.2);
+                }
+            }
+        }
+    }
+}

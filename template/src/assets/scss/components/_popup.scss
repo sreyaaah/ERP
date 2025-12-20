@@ -1,0 +1,376 @@
+@use "sass:color";
+@use "../utils/mixins";
+@use "../utils/variables";
+
+.modal-barcode {
+    ul {
+        display: -webkit-box;
+        display: -ms-flexbox;
+        display: flex;
+        align-items: center;
+        -webkit-box-align: center;
+        -ms-flex-align: center;
+        -ms-flex-wrap: wrap;
+        flex-wrap: wrap;
+        li {
+            @include mixins.rounded(7px);
+            width: 25%;
+            margin-bottom: 10px;
+            padding: 0 5px;
+            @include mixins.respond-below(custom991) {
+                width: 50%;
+            }
+            a {
+                border: 1px solid variables.$gray-400;
+                @include mixins.rounded(10px);
+                display: block;
+                padding: 10px;
+                text-align: center;
+            }
+        }
+    }
+}
+
+.modal{
+    .modal-header {
+        padding: 15px 20px;
+        border-bottom: 1px solid variables.$border-color;
+    }
+    .modal-title {
+        font-size: variables.$font-size-18;
+        font-weight: variables.$font-weight-bold;
+        @include mixins.respond-below(custom991) {
+            font-size: variables.$font-size-16;
+        }
+    }
+    .modal-body {
+        padding: 20px;
+        .close {
+            position: absolute;
+            right: 15px;
+            top: 15px;
+        }
+    }
+	.logo-lg {
+		img {
+			width: 150px;
+		}
+	}
+    .close,
+    .btn-close {
+        display: -webkit-box;
+        display: -ms-flexbox;
+        display: flex;
+        align-items: center;
+        -webkit-box-align: center;
+        -ms-flex-align: center;
+        justify-content: center;
+        -webkit-justify-content: center;
+        -ms-flex-pack: center;
+        color: variables.$white;
+        opacity: 1;
+        width: 20px;
+        height: 20px;
+        border: 0;
+        font-weight: variables.$font-weight-bold;
+        background-color: variables.$danger;
+        @include mixins.rounded(50px);
+        &:hover{
+            background-color: color.adjust(variables.$danger, $lightness: -3%);
+            color:variables.$white;
+        }
+    }
+    .modal-footer{
+        padding: 15px 20px;
+        border-top: 1px solid variables.$border-color;
+        .btn {
+            margin: 0;
+        }
+        .btn-print {
+            display: -webkit-box;
+            display: -ms-flexbox;
+            display: flex;
+            align-items: center;
+            -webkit-box-align: center;
+            -ms-flex-align: center;
+            justify-content: center;
+            -webkit-justify-content: center;
+            -ms-flex-pack: center;
+            border: 1px solid variables.$primary;
+            color: variables.$primary;
+            img{
+                margin-left: 10px;
+            }
+            &:hover{
+                background: variables.$primary;
+                color: variables.$white;
+                img{
+                    filter: brightness(0) invert(1);
+                }
+            }
+        }
+    }
+    
+    .modal-dialog.right-slider-modal {
+        margin: 0;
+        margin-left: auto;
+        max-width: 1102px;
+    }
+    
+    .modal-dialog.add-centered {
+        display: -webkit-box;
+        display: -ms-flexbox;
+        display: flex;
+        align-items: center;
+        -webkit-box-align: center;
+        -ms-flex-align: center;
+        justify-content: center;
+        -webkit-justify-content: center;
+        -ms-flex-pack: center;
+        max-width: 1192px;
+    }
+    .modal-dialog.sales-details-modal {
+        max-width: 1192px;
+    }
+    .modal-dialog.edit-sales-modal {
+        max-width: 1192px;
+    }
+    .edit-add.card.edit-expense {
+        border: 1px solid rgba(0,0,0,.2);
+    }
+    .note-editor.note-frame.card {
+        border: 1px solid rgba(0,0,0,.2) !important; 
+    }
+}
+.offcanvas.offcanvas-end {
+    width: auto !important;
+}
+.offcanvas.offcanvas-end.em-payrol-add {
+    max-width: 1192px !important;
+}
+
+.modal {
+    &.animated .modal-dialog {
+        transform: translate(0, 0);
+    }
+    &.effect-scale {
+        .modal-dialog {
+            transform: scale(0.7);
+            opacity: 0;
+            transition: all 0.3s;
+        }
+        &.show .modal-dialog {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+    &.effect-slide-in-right {
+        .modal-dialog {
+            transform: translateX(20%);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.25, 0.5, 0.5, 0.9);
+        }
+        &.show .modal-dialog {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    &.effect-slide-in-bottom {
+        .modal-dialog {
+            transform: translateY(20%);
+            opacity: 0;
+            transition: all 0.3s;
+        }
+        &.show .modal-dialog {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+    &.effect-newspaper {
+        .modal-dialog {
+            transform: scale(0) rotate(720deg);
+            opacity: 0;
+        }
+        &.show~.modal-backdrop, .modal-dialog {
+            transition: all 0.5s;
+        }
+        &.show .modal-dialog {
+            transform: scale(1) rotate(0deg);
+            opacity: 1;
+        }
+    }
+    &.effect-fall {
+        -webkit-perspective: 1300px;
+        -moz-perspective: 1300px;
+        perspective: 1300px;
+        .modal-dialog {
+            -moz-transform-style: preserve-3d;
+            transform-style: preserve-3d;
+            transform: translateZ(600px) rotateX(20deg);
+            opacity: 0;
+        }
+        &.show .modal-dialog {
+            transition: all 0.3s ease-in;
+            transform: translateZ(0px) rotateX(0deg);
+            opacity: 1;
+        }
+    }
+    &.effect-flip-horizontal {
+        perspective: 1300px;
+        .modal-dialog {
+            -moz-transform-style: preserve-3d;
+            transform-style: preserve-3d;
+            transform: rotateY(-70deg);
+            transition: all 0.3s;
+            opacity: 0;
+        }
+        &.show .modal-dialog {
+            transform: rotateY(0deg);
+            opacity: 1;
+        }
+    }
+    &.effect-flip-vertical {
+        perspective: 1300px;
+        .modal-dialog {
+            -moz-transform-style: preserve-3d;
+            transform-style: preserve-3d;
+            transform: rotateX(-70deg);
+            transition: all 0.3s;
+            opacity: 0;
+        }
+        &.show .modal-dialog {
+            transform: rotateX(0deg);
+            opacity: 1;
+        }
+    }
+    &.effect-super-scaled {
+        .modal-dialog {
+            transform: scale(2);
+            opacity: 0;
+            transition: all 0.3s;
+        }
+        &.show .modal-dialog {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+    &.effect-sign {
+        perspective: 1300px;
+        .modal-dialog {
+            -moz-transform-style: preserve-3d;
+            transform-style: preserve-3d;
+            transform: rotateX(-60deg);
+            transform-origin: 50% 0;
+            opacity: 0;
+            transition: all 0.3s;
+        }
+        &.show .modal-dialog {
+            transform: rotateX(0deg);
+            opacity: 1;
+        }
+    }
+    &.effect-rotate-bottom {
+        perspective: 1300px;
+        .modal-dialog {
+            -moz-transform-style: preserve-3d;
+            transform-style: preserve-3d;
+            transform: translateY(100%) rotateX(90deg);
+            transform-origin: 0 100%;
+            opacity: 0;
+            transition: all 0.3s ease-out;
+        }
+        &.show .modal-dialog {
+            transform: translateY(0%) rotateX(0deg);
+            opacity: 1;
+        }
+    }
+    &.effect-rotate-left {
+        perspective: 1300px;
+        .modal-dialog {
+            -moz-transform-style: preserve-3d;
+            transform-style: preserve-3d;
+            transform: translateZ(100px) translateX(-30%) rotateY(90deg);
+            transform-origin: 0 100%;
+            opacity: 0;
+            transition: all 0.3s;
+        }
+        &.show .modal-dialog {
+            transform: translateZ(0px) translateX(0%) rotateY(0deg);
+            opacity: 1;
+        }
+    }
+}
+/* #add-units{
+    .modal-top{
+        .input-blocks{
+            margin-bottom: 4px;
+        }
+    }
+    .modal-btns{
+        border-top: 1px solid $secondary-transparent;
+        padding: 20px;
+        .row{
+            justify-content: flex-end;
+        }
+        .btn{
+            font-size: $font-size-13;
+            padding: 5px 12px;
+            font-weight: $font-weight-medium;
+        }
+        .btn-cancel {
+            background-color: $secondary;
+        }
+    }
+    .close{
+      width: 16px;
+      height: 16px;
+      background-color: $danger;
+      color: $white;
+      font-size: $font-size-13;
+    }
+}
+#add-units-category{
+    .close{
+        width: 16px;
+        height: 16px;
+        background-color: $danger;
+        color: $white;
+        font-size: $font-size-13;
+      }
+      .modal-footer-btn{
+        border-top: 1px solid $secondary-transparent;
+        padding: 20px;
+        margin-top: 0;
+        .btn{
+            font-size: $font-size-13;
+            padding: 5px 12px;
+            font-weight: $font-weight-medium;
+        }
+        .btn-cancel {
+            background-color: $secondary;
+        }
+    }
+    .modal-top{
+        .input-blocks{
+            margin-bottom: 4px;
+        }
+    }
+} */
+.modal-footer-btn.popup{
+    margin-top: 0;
+}
+
+.pos-modal {
+    .modal-header {
+        h5 {
+            margin-bottom: 0;
+        }
+    } 
+} 
+.custom-modal-header {
+    .page-title {
+        h4 {
+            margin-bottom: 0;
+        }
+    } 
+} 

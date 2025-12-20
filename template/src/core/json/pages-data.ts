@@ -1,0 +1,73 @@
+export const pagesData = [
+  {
+    id: "1",
+    page: "Products",
+    pageSlug: "products",
+    lastEdited: "24 Dec 2024, 09:00AM",
+    status: "Active",
+  },
+  {
+    id: "2",
+    page: "Expired Products",
+    pageSlug: "expired products",
+    lastEdited: "10 Dec 2024, 11:20 AM",
+    status: "Active",
+  },
+  {
+    id: "3",
+    page: "Low Stocks",
+    pageSlug: "low stocks",
+    lastEdited: "27 Nov 2024, 08:30 AM",
+    status: "Active",
+  },
+  {
+    id: "4",
+    page: "Catergory",
+    pageSlug: "catergory",
+    lastEdited: "18 Nov 2024, 03:15 PM",
+    status: "Active",
+  },
+  {
+    id: "5",
+    page: "Sub Category",
+    pageSlug: "sub category",
+    lastEdited: "06 Nov 2024, 04:00 PM",
+    status: "Active",
+  },
+  {
+    id: "6",
+    page: "Brands",
+    pageSlug: "brands",
+    lastEdited: "25 Oct 2024, 06:20 PM",
+    status: "Active",
+  },
+  {
+    id: "7",
+    page: "Units",
+    pageSlug: "units",
+    lastEdited: "14 Oct 2024, 11:40 AM",
+    status: "Active",
+  },
+  {
+    id: "8",
+    page: "Warranties",
+    pageSlug: "warranties",
+    lastEdited: "03 Oct 2024, 12:10 PM",
+    status: "Active",
+  },
+  {
+    id: "9",
+    page: "Coupons",
+    pageSlug: "coupons",
+    lastEdited: "20 Sep 2024, 10:00 AM",
+    status: "Active",
+  },
+  {
+    id: "10",
+    page: "Gift Card",
+    pageSlug: "gift card",
+    lastEdited: "10 Sep 2024, 05:30 PM",
+    status: "Active",
+  },
+];
+

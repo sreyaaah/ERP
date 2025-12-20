@@ -1,0 +1,196 @@
+@use "../utils/mixins";
+@use "../utils/variables";
+
+.sale-widget {
+    .sale-icon {
+        width: 44px;
+        height: 44px;
+        @include mixins.rounded(8px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+    .badge {
+        font-size: variables.$font-size-10;
+    }
+}
+.revenue-widget {
+    .revenue-icon {
+        width: 36px;
+        height: 36px;
+        @include mixins.rounded(8px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+}
+.sell-product {
+    & > div {
+        padding-bottom: 12px;
+        margin-bottom: 12px;
+        &:last-child {
+            padding-bottom: 0;
+            margin-bottom: 0;
+        }
+    }
+}
+.title-icon {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    @include mixins.rounded(8px);
+}
+.item-list {
+    p {
+        padding-right: 12px;
+        margin: 0 8px 0 0;
+        position: relative;
+        font-size: variables.$font-size-13;
+        &::before {
+            content: "";
+            position: absolute;
+            top: 50%;
+            @include mixins.transform(translateY(-50%));
+            right: 0;
+            background: variables.$orange;
+            width: 4px;
+            height: 4px;
+            @include mixins.rounded(50%);
+        }
+        &:last-child {
+            padding: 0;
+            margin: 0;
+            &::before {
+                content: none;
+            }
+        }
+    }
+}
+.info-item {
+    @include mixins.rounded(8px);
+}
+#customer-chart {
+    margin: 0;
+    padding: 0;
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    height: 130px; 
+    width: 100%;
+    .apexcharts-canvas {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+}
+.category-item {
+    margin-bottom: 12px;
+    p {
+        position: relative;
+        padding-left: 12px;
+        &::before {
+            content: "";
+            width: 4px;
+            height: 10px;
+            position: absolute;
+            top: 50%;
+            left: 0;
+            @include mixins.transform(translateY(-50%));
+            @include mixins.rounded(4px);
+        }
+    }
+    &.category-primary {
+        p {
+            &::before {
+                background: variables.$primary;
+            }
+        }
+    }
+    &.category-orange {
+        p {
+            &::before {
+                background: variables.$orange;
+            }
+        }
+    }
+    &.category-secondary {
+        p {
+            &::before {
+                background: variables.$secondary;
+            }
+        }
+    }
+    &:last-child {
+        margin-bottom: 0;
+    }
+}
+.transaction-tab {
+    &.nav-tabs {
+        padding: 0 16px;
+        li {
+            a {
+                font-size: variables.$font-size-14;
+                font-weight: variables.$font-weight-semibold;
+                color: variables.$gray-900;
+                border: 0;
+                border-radius: 0;
+                border-bottom: 2px solid variables.$white;
+                &.active, &:hover {
+                    color: variables.$orange !important;
+                    border-color: variables.$primary;
+                }
+            } 
+        }
+    }
+}
+.days-tab.nav-tabs {
+    li {
+        margin: 0;
+        .nav-link {
+            font-size: variables.$font-size-12;
+            font-weight: variables.$font-weight-medium;
+            color: variables.$gray-900;
+            width: 41px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            border-width: 0 1px 0 0;
+            border-right: 1px solid variables.$secondary-transparent;
+            background: variables.$light;
+            &.active {
+                background: variables.$orange;
+                color: variables.$white;
+            }
+        }
+        &:first-child {
+            a {
+                @include mixins.rounded(4px 0 0 4px);
+            }
+        }
+        &:last-child {
+            a {
+                @include mixins.rounded(0 4px 4px 0);
+                border-right: 0;
+            }
+        }
+    }
+}
+.copyright-footer {
+    padding: 12px 24px;
+}
+.btn-group.custom-btn-group {
+    .btn {
+        background: variables.$light;
+        padding: 0.35rem 0.75rem;
+        &.active {
+            border-color: variables.$primary;
+            background: variables.$primary;
+            color: variables.$white !important;
+        }
+    }
+}

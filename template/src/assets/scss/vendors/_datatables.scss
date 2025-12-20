@@ -1,0 +1,169 @@
+@use "../utils/mixins";
+@use "../utils/variables";
+
+table.dataTable>thead .sorting:after, 
+table.dataTable>thead .sorting_asc:after,
+table.dataTable>thead .sorting_desc:after,
+table.dataTable>thead .sorting_asc_disabled:after, 
+table.dataTable>thead .sorting_desc_disabled:after {
+    right: 0.5em !important;
+    content: "\f107" !important;
+    font-family: 'Font Awesome 5 Free';
+    bottom: 12px !important;
+    color: #BABFC7 !important;
+    font-size: 12px !important;
+    opacity: 1 !important;
+    position: absolute;
+}
+table.dataTable>thead .sorting:before, 
+table.dataTable>thead .sorting_asc:before, 
+table.dataTable>thead .sorting_desc:before, 
+table.dataTable>thead .sorting_asc_disabled:before, 
+table.dataTable>thead .sorting_desc_disabled:before {
+    right: 0.5em !important;
+    content: "\f106" !important;
+    font-family: 'Font Awesome 5 Free';
+    top: 12px !important;
+    color: #BABFC7 !important;
+    font-size: 12px !important;
+    opacity: 1 !important;
+    position: absolute;
+}
+table.dataTable>thead .sorting:before, table.dataTable>thead .sorting:after{
+    display: none !important;
+}
+table.dataTable>thead .sku:before{
+    display: block !important;
+    content: "\edb6" !important;
+    font-family: 'tabler-icons';
+    top: 14px !important;
+    color: #212B36 !important;
+}
+.dataTables_paginate .paging_numbers {
+    float: right;
+}
+.dataTables_info {
+    float: left;
+    padding-right: 15px;
+    font-size: 14px;
+    color: variables.$gray-600;
+    font-weight: variables.$font-weight-normal;
+    margin-top: -50px;
+    padding-bottom: 20px;
+}
+.custom-select {
+    min-width: 80px;
+    background: url(/src/assets/img/icons/dropdown.svg) no-repeat 95% 50%;
+}
+.dataTables_paginate .pagination{
+    li{
+        @include mixins.margin-padding(0 5px, null);
+        a{
+            background: var(--Stroke, rgba(145, 158, 171, 0.30));
+            border-radius: 85px !important;
+            width: 25px;
+            height: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #5B6670;
+            font-size: variables.$font-size-12;
+            &:hover{
+                background: variables.$primary;
+                color: variables.$white;
+            }
+        }
+        &.active a.page-link{
+            background: variables.$primary;
+            border-color: variables.$primary;
+            @include mixins.rounded(85px);
+            width: 25px;
+            height: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        &.previous.disabled {
+            width: 20px;
+            a {
+                background-color: transparent;
+                border: 0;
+                width: 20px;
+            }
+        }
+        &.next.disabled {
+            width: 20px;
+            a {
+                background-color: transparent;
+                border: 0;
+                width: 20px;
+            }
+        }
+    }
+}
+.dataTables_length,
+.dataTables_paginate {
+    padding: 10px 15px;
+}
+
+div.dataTables_wrapper div.dataTables_info {
+    padding-top: 23px;
+    display: none;
+}
+table.dataTable thead>tr>th.no-sort.sorting_asc:before {
+    display: none;
+}
+table.dataTable thead>tr>th.no-sort.sorting_asc::after {
+    display: none;
+}
+table.dataTable thead>tr>th.no-sort.sorting:before {
+    display: none;
+}
+table.dataTable thead>tr>th.no-sort.sorting::after {
+    display: none;
+}
+.dataTables_length {
+    label {
+        display: -webkit-box;
+        display: -ms-flexbox;
+        display: flex;
+        -webkit-box-align: center;
+        -ms-flex-align: center;
+        align-items: center;
+        color: variables.$gray-600;
+        font-size: variables.$font-size-14;     
+        select {
+            border: 1px solid variables.$input-border;
+            border-radius: 8px;
+            margin: 0 8px;
+            padding: 4px 25px 4px 10px;
+            font-size: variables.$font-size-12;
+        }
+    }
+}
+table.dataTable{
+    margin-bottom: 0 !important;
+    margin-top: 0 !important;
+}
+.dataTables_filter {
+    & + .dataTables_filter {
+        display: none;
+    }
+}
+.dataview {
+    .dataTables_length,
+    .dataTables_info,
+    .dataTables_paginate{
+        display: none !important;
+    }
+}
+.dataTables_length label:before {
+    margin-right: 5px;
+}
+.dataTables_length {
+    float: left;
+    font-size: variables.$font-size-12;
+    @include mixins.respond-below(custom767){
+      float: none;
+    }
+}

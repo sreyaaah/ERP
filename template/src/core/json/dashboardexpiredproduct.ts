@@ -1,0 +1,55 @@
+import {
+  expireProduct01,
+  expireProduct02,
+  expireProduct03,
+  expireProduct04,
+  stockImg03,
+} from "../../utils/imagepath";
+
+export const expiredproductdata = [
+  {
+    id: 1,
+    product: "Red Premium Handy",
+    productImage: { expireProduct01 },
+    sku: "PT006", 
+    manufactureddate: "17 Jan 2023",
+    expireddate: "29 Mar 2023",
+    Action: "",
+  },
+  {
+    id: 2,
+    product: "Iphone 14 Pro",
+    productImage: { expireProduct02 },
+    sku: "PT007",
+    manufactureddate: "22 Feb 2023",
+    expireddate: "04 Apr 2023",
+    Action: "",
+  },
+  {
+    id: 3,
+    product: "Black Slim 200",
+    productImage: { expireProduct03 },
+    sku: "PT008",
+    manufactureddate: "18 Mar 2023",
+    expireddate: "13 May 2023",
+    Action: "",
+  },
+  {
+    id: 4,
+    product: "Woodcraft Sandal",
+    productImage: { expireProduct04 },
+    sku: "PT009",
+    manufactureddate: "29 Mar 2023",
+    expireddate: "27 May 2023",
+    Action: "",
+  },
+  {
+    id: 5,
+    product: "Apple Series 5 Watch",
+    productImage: { stockImg03 },
+    sku: "PT010",
+    manufactureddate: "24 Mar 2023",
+    expireddate: "26 May 2023",
+    Action: "",
+  },
+];

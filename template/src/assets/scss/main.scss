@@ -1,0 +1,82 @@
+/****** Utils ******/
+@use "utils/variables";
+@use "utils/mixins";
+
+/******* Base *******/
+@use "base/base";
+@use "base/background";
+
+/******* Components ******/
+@use "components/avatar";
+@use "components/boostrap";
+@use "components/button";
+@use "components/badge";
+@use "components/border";
+@use "components/calendar";
+@use "components/chart";
+@use "components/dropdown";
+@use "components/icons";
+@use "components/progress";
+@use "components/pagination";
+@use "components/font";
+@use "components/typography";
+@use "components/alerts";
+@use "components/popovers";
+@use "components/forms";
+@use "components/tables";
+@use "components/accordion";
+@use "components/breadcrumb";
+@use "components/cards";
+@use "components/tooltips";
+@use "components/navs-tabs";
+@use "components/ribbon";
+@use "components/popup";
+@use "components/grid";
+@use "components/dropzone";
+
+/******* Vendors ******/
+@use "vendors/select2";
+@use "vendors/datatables";
+
+/****** Layout ******/
+@use "layout/content";
+@use "layout/common";
+@use "layout/darktheme";
+@use "layout/header";
+@use "layout/loader";
+@use "layout/sidebar";
+@use "layout/notification";
+@use "layout/theme";
+@use "layout/theme-setting";
+@use "layout/theme-color";
+
+/****** Pages ******/
+@use "pages/chat";
+@use "pages/dashboard";
+@use "pages/sales-dashboard";
+@use "pages/admin-dashboard";
+@use "pages/email";
+@use "pages/error";
+@use "pages/login";
+@use "pages/product";
+@use "pages/pos";
+@use "pages/profile";
+@use "pages/stocks";
+@use "pages/product-list";
+@use "pages/add-product";
+@use "pages/notes";
+@use "pages/barcode";
+@use "pages/employees-grid";
+@use "pages/todo-inbox";
+@use "pages/transfer-list.scss";
+@use "pages/attendance-employee";
+@use "pages/settings";
+@use "pages/pos-design";
+@use "pages/call";
+@use "pages/file-manager";
+@use "pages/ui-pages";
+@use "pages/social-feed";
+@use "pages/super-admin";
+@use "pages/wishlist";
+@use "pages/blogs";
+@use "pages/group-video-call";
