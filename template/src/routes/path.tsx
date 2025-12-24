@@ -44,7 +44,7 @@ const ProductList = lazy(
   () => import("../feature-module/inventory/productlist")
 );
 const Dashboard = lazy(() => import("../feature-module/dashboard/Dashboard"));
-const AddProduct = lazy(() => import("../feature-module/inventory/addproduct"));
+const AddProduct = lazy(() => import("../feature-module/inventory/addProduct"));
 const SalesDashbaord = lazy(
   () => import("../feature-module/dashboard/salesdashbaord")
 );
@@ -85,7 +85,7 @@ const SubCategories = lazy(
   () => import("../feature-module/inventory/subcategories")
 );
 const EditProduct = lazy(
-  () => import("../feature-module/inventory/editproduct")
+  () => import("../feature-module/inventory/editProduct/editProduct")
 );
 const Videocall = lazy(() => import("../feature-module/application/videocall"));
 const Audiocall = lazy(() => import("../feature-module/application/audiocall"));
@@ -312,6 +312,7 @@ const LeaveTypes = lazy(() => import("../feature-module/hrm/leavetypes"));
 const ProductDetail = lazy(
   () => import("../feature-module/inventory/productdetail")
 );
+
 // const Units = lazy(()=>import('../feature-module/inventory/units'))
 const TaxRates = lazy(
   () => import("../feature-module/settings/financialsettings/taxrates")
@@ -556,6 +557,13 @@ export const authRoutes = [
     path: routes.addproduct,
     name: "products",
     element: <AddProduct />,
+    route: Route,
+  },
+  {
+    id: 104,
+    path: `${routes.editproduct}/:id`,
+    name: "editproduct",
+    element: <EditProduct />,
     route: Route,
   },
   {
