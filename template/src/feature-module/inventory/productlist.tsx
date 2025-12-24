@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Brand from "../../core/modals/inventory/brand";
 import { all_routes } from "../../routes/all_routes";
@@ -25,7 +25,6 @@ import {
   user5,
   user01,
 } from "../../utils/imagepath";
-import DeleteModal from "../../components/delete-modal";
 import SearchFromApi from "../../components/data-table/search";
 import TooltipIcons from "../../components/tooltip-content/tooltipIcons";
 import RefreshIcon from "../../components/tooltip-content/refresh";
@@ -184,8 +183,69 @@ const ProductList: React.FC = () => {
   const [rows, setRows] = useState<number>(10);
   const [searchQuery, setSearchQuery] = useState<string | undefined>(undefined);
   const [selectedProducts, setSelectedProducts] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>(productlistdata);
+
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  // Load products from localStorage
+  useEffect(() => {
+    loadProducts();
+  }, []);
+
+  const loadProducts = () => {
+    try {
+      const storedProducts = localStorage.getItem('products');
+      if (storedProducts) {
+        const parsedProducts = JSON.parse(storedProducts);
+        
+        // Transform localStorage products to match table format
+        const transformedProducts = parsedProducts.map((p: any) => ({
+          id: p.id,
+          product: p.productName,
+          productImage: p.images?.[0]?.url || stockImg1,
+          sku: p.sku,
+          category: p.category || 'N/A',
+          brand: p.brand || 'N/A',
+          price: `₹${p.priceAfterTax}`,
+          unit: p.unit || 'Pc',
+          qty: p.quantity || '0',
+          createdby: 'You',
+          img: user30,
+        }));
+        
+        setProducts(transformedProducts);
+
+      }
+    } catch (error) {
+      console.error('Error loading products:', error);
+    }
+  };
+
+  
+
   const handleSearch = (value: any) => {
     setSearchQuery(value);
+  };
+
+  const confirmDelete = () => {
+    if (!deleteId) return;
+
+    try {
+      const storedProducts = JSON.parse(localStorage.getItem('products') || '[]');
+      const updatedProducts = storedProducts.filter((p: any) => String(p.id) !== deleteId);
+      localStorage.setItem('products', JSON.stringify(updatedProducts));
+      
+      // Refresh the list
+      loadProducts();
+      
+      // Close modal programmatically (using close button click simulation or state)
+      const closeBtn = document.querySelector('.modal-footer-btn .btn-secondary') as HTMLButtonElement;
+      closeBtn?.click();
+      
+      setDeleteId(null);
+    } catch (error) {
+      console.error("Error deleting product:", error);
+    }
   };
 
   const route = all_routes;
@@ -259,11 +319,11 @@ const ProductList: React.FC = () => {
       field: "actions",
       key: "actions",
       sortable: false,
-      body: (_row: any) => (
+      body: (row: any) => (
         <div className="edit-delete-action d-flex align-items-center">
           <Link
             className="me-2 p-2 d-flex align-items-center border rounded"
-            to={all_routes.editproduct}
+            to={`${all_routes.editproduct}/${row.id}`}
           >
             <i className="feather icon-edit"></i>
           </Link>
@@ -272,6 +332,7 @@ const ProductList: React.FC = () => {
             to="#"
             data-bs-toggle="modal"
             data-bs-target="#delete-modal"
+            onClick={() => setDeleteId(String(row.id))}
           >
             <i className="feather icon-trash-2"></i>
           </Link>
@@ -393,7 +454,7 @@ const ProductList: React.FC = () => {
                 {/* <Table columns={columns} dataSource={productlistdata} /> */}
                 <PrimeDataTable
                   column={columns}
-                  data={productlistdata}
+                  data={products}
                   rows={rows}
                   setRows={setRows}
                   currentPage={currentPage}
@@ -411,7 +472,40 @@ const ProductList: React.FC = () => {
           <Brand />
         </div>
       </div>
-      <DeleteModal />
+      <div className="modal fade" id="delete-modal">
+        <div className="modal-dialog modal-dialog-centered">
+          <div className="modal-content">
+            <div className="page-wrapper-new p-0">
+              <div className="content p-5 px-3 text-center">
+                <span className="rounded-circle d-inline-flex p-2 bg-danger-transparent mb-2">
+                  <i className="ti ti-trash fs-24 text-danger" />
+                </span>
+                <h4 className="fs-20 fw-bold mb-2 mt-1">Delete Product</h4>
+                <p className="mb-0 fs-16">
+                  Are you sure you want to delete this product?
+                </p>
+                <div className="modal-footer-btn mt-3 d-flex justify-content-center">
+                  <button
+                    type="button"
+                    className="btn me-2 btn-secondary fs-13 fw-medium p-2 px-3 shadow-none"
+                    data-bs-dismiss="modal"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-primary fs-13 fw-medium p-2 px-3"
+                    onClick={confirmDelete}
+                  >
+                    Yes Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
     </>
   );
 };
