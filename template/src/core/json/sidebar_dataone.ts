@@ -462,7 +462,7 @@ export const SidebarData1 = [
             tittle: "Invoice",
             hasSubRoute: false,
             showSubRoute: false,
-            route: "/invoice-settings",
+            route: "/sales/invoices",
             subRoutes: [],
           },
           {
@@ -1721,13 +1721,7 @@ export const SidebarData1 = [
           },
         ],
       },
-      {
-        tittle: "Invoice Report",
-        hasSubRoute: false,
-        showSubRoute: false,
-        route: "/invoice-report",
-        subRoutes: [],
-      },
+
       {
         tittle: "Supplier Report",
         hasSubRoute: true,
@@ -1938,7 +1932,7 @@ export const SidebarData1 = [
         activeRoute: "users",
         subRoutes: [
           {
-            tittle: "Invoice",
+            tittle: "Invoice Config",
             hasSubRoute: true,
             showSubRoute: true,
             subRoutes: [
@@ -2195,42 +2189,42 @@ export const SidebarData1 = [
             subRoutes: [],
           },
           {
-          tittle: "Multi Level",
-          hasSubRoute: true,
-          showSubRoute: false,
-          subRoutes: [
-            {
-              tittle: "Level 1.1",
-              hasSubRoute: false,
-              showSubRoute: false,
-            },
-            {
-              tittle: "Level 1.2",
-              hasSubRoute: false,
-              showSubRoute: false,
-            },
-            {
-              tittle: "Level 2.1",
-              hasSubRoute: false,
-              showSubRoute: false,
-            },
-            {
-              tittle: "Level 2.2",
-              hasSubRoute: false,
-              showSubRoute: false,
-            },
-            {
-              tittle: "Level 3.1",
-              hasSubRoute: false,
-              showSubRoute: false,
-            },
-            {
-              tittle: "Level 3.2",
-              hasSubRoute: false,
-              showSubRoute: false,
-            },
-          ],
-        },
+            tittle: "Multi Level",
+            hasSubRoute: true,
+            showSubRoute: false,
+            subRoutes: [
+              {
+                tittle: "Level 1.1",
+                hasSubRoute: false,
+                showSubRoute: false,
+              },
+              {
+                tittle: "Level 1.2",
+                hasSubRoute: false,
+                showSubRoute: false,
+              },
+              {
+                tittle: "Level 2.1",
+                hasSubRoute: false,
+                showSubRoute: false,
+              },
+              {
+                tittle: "Level 2.2",
+                hasSubRoute: false,
+                showSubRoute: false,
+              },
+              {
+                tittle: "Level 3.1",
+                hasSubRoute: false,
+                showSubRoute: false,
+              },
+              {
+                tittle: "Level 3.2",
+                hasSubRoute: false,
+                showSubRoute: false,
+              },
+            ],
+          },
         ],
       },
     ],

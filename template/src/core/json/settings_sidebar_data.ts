@@ -42,7 +42,7 @@ export const SettingsSidebarData: SettingsMenuItem[] = [
     icon: "device-mobile",
     submenu: true,
     submenuItems: [
-      { label: "Invoice", link: route.invoicesettings },
+      { label: "Invoice Config", link: route.invoicesettings },
       { label: "Invoice Templates", link: route.invoicetemplate },
       { label: "Printer", link: route.printersettings },
       { label: "POS", link: route.possettings },

@@ -218,6 +218,9 @@ const SalesReturn = lazy(() => import("../feature-module/sales/salesreturn"));
 const QuotationList = lazy(
   () => import("../feature-module/sales/quotationlist")
 );
+const InvoiceList = lazy(
+  () => import("../feature-module/sales/invoicelist")
+);
 const Notes = lazy(() => import("../feature-module/application/notes"));
 const FileManager = lazy(
   () => import("../feature-module/application/filemanager")
@@ -343,7 +346,7 @@ const Pos5 = lazy(() => import("../feature-module/pos/pos5"));
 const PosOrder = lazy(
   () => import("../feature-module/sales/pos-order/posOrder")
 );
-const Invoice = lazy(() => import("../feature-module/sales/invoicereport"));
+
 const Invoicedetails = lazy(
   () => import("../feature-module/sales/invoicedetails")
 );
@@ -382,9 +385,7 @@ const Stockhistory = lazy(
 );
 const SoldStock = lazy(() => import("../feature-module/Reports/soldstock"));
 const BestSeller = lazy(() => import("../feature-module/Reports/bestseller"));
-const Invoicereportnew = lazy(
-  () => import("../feature-module/Reports/invoicereportnew")
-);
+
 const Languagesetteingsweb = lazy(
   () =>
     import("../feature-module/settings/websitesettings/languagesetteingsweb")
@@ -1106,13 +1107,7 @@ export const authRoutes = [
     element: <SalesList />,
     route: Route,
   },
-  {
-    id: 102,
-    path: routes.invoicereport,
-    name: "invoicereport",
-    element: <Invoicereportnew />,
-    route: Route,
-  },
+
   {
     id: 102,
     path: routes.holidays,
@@ -1132,6 +1127,20 @@ export const authRoutes = [
     path: routes.quotationlist,
     name: "quotationlist",
     element: <QuotationList />,
+    route: Route,
+  },
+  {
+    id: 103.1,
+    path: routes.invoicelist,
+    name: "invoicelist",
+    element: <InvoiceList />,
+    route: Route,
+  },
+  {
+    id: 103.2,
+    path: routes.invoicedetails,
+    name: "invoicedetails",
+    element: <Invoicedetails />,
     route: Route,
   },
   {
@@ -1299,7 +1308,7 @@ export const authRoutes = [
     id: 122,
     path: routes.invoice,
     name: "invoice",
-    element: <Invoice />,
+    element: <InvoiceList />,
     route: Route,
   },
   {
@@ -1407,13 +1416,7 @@ export const authRoutes = [
     element: <BestSeller />,
     route: Route,
   },
-  {
-    id: 135,
-    path: routes.invoicereportnew,
-    name: "invoice-report",
-    element: <Invoicereportnew />,
-    route: Route,
-  },
+
   {
     id: 135,
     path: routes.languagesettingsweb,

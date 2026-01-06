@@ -6,6 +6,7 @@ import CommonSelect from "../../../components/select/common-select";
 import CommonDatePicker from "../../../components/date-picker/common-date-picker";
 import { CustomerService } from "../../../feature-module/services/customer.service";
 import { productlistdata } from "../../../feature-module/inventory/productlist";
+import { customersData } from "../../json/customers-data";
 
 const AddQuotation = () => {
   const [date, setDate] = useState<Date | null>(new Date());
@@ -29,12 +30,16 @@ const AddQuotation = () => {
 
   useEffect(() => {
     const storedCustomers = CustomerService.getAll();
-    const formatted = storedCustomers.map((c: any) => ({
+    const mergedCustomers = [...customersData, ...storedCustomers];
+
+    const formatted = mergedCustomers.map((c: any) => ({
       label: c.customer,
       value: c.code,
       ...c
     }));
-    setCustomers(formatted);
+    
+    const uniqueCustomers = Array.from(new Map(formatted.map(item => [item.value, item])).values());
+    setCustomers(uniqueCustomers);
   }, []);
 
   const Status  = [
@@ -473,7 +478,7 @@ const getDefaultTaxByQuotationType = (
                               onFocus={() => setShowCustomerDropdown(true)}
                             />
                             
-                            {showCustomerDropdown && customerSearch && (
+                            {showCustomerDropdown && (
                               <div className="absolute z-50 w-full mt-1 bg-white border rounded shadow-lg max-h-60 overflow-y-auto">
                                 {filteredCustomers.length > 0 ? (
                                   filteredCustomers.map((customer) => (

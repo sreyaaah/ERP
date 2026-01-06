@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import EditQuotation from "../../core/modals/sales/editquotation";
 import CommonFooter from "../../components/footer/commonFooter";
 import TableTopHead from "../../components/table-top-head";
@@ -7,8 +7,10 @@ import { useState, useEffect } from "react";
 import PrimeDataTable from "../../components/data-table";
 import AddQuotation from "../../core/modals/sales/addquotation";
 import { quotationlistdata } from "../../core/json/quotationlistdata";
+import { InvoiceService } from "../services/invoice.service";
 
 const QuotationList = () => {
+  const navigate = useNavigate();
   const [dataSource, setDataSource] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
@@ -16,6 +18,8 @@ const QuotationList = () => {
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<string | null>(null);
   const [filteredData, setFilteredData] = useState<any[]>([]);
+  const [showConvertModal, setShowConvertModal] = useState(false);
+  const [convertQuotation, setConvertQuotation] = useState<any>(null);
 
   useEffect(() => {
     let temp = [...dataSource];
@@ -149,6 +153,18 @@ const QuotationList = () => {
             <button
               type="button"
               className="me-2 p-2 border-0 bg-transparent"
+              title="Convert to Invoice"
+              onClick={() => {
+                setConvertQuotation(rowData);
+                setShowConvertModal(true);
+              }}
+            >
+              <i className="feather icon-file-text text-success"></i>
+            </button>
+
+            <button
+              type="button"
+              className="me-2 p-2 border-0 bg-transparent"
               title="Download PDF"
             >
               <i className="feather icon-download text-primary"></i>
@@ -192,6 +208,41 @@ const QuotationList = () => {
 
     setDeleteId(null);
     setShowDeleteModal(false);
+  };
+
+  const handleConvertToInvoice = () => {
+    if (!convertQuotation) return;
+
+    const invoice = InvoiceService.createInvoiceFromQuotation(convertQuotation);
+    InvoiceService.saveInvoice(invoice);
+
+    const storedQuotations = JSON.parse(
+      localStorage.getItem("quotationList") || "[]"
+    );
+
+    const updatedQuotations = storedQuotations.map((q: any) =>
+      q.id === convertQuotation.id
+        ? { ...q, Status: "Converted", invoiceId: invoice.id }
+        : q
+    );
+
+    localStorage.setItem(
+      "quotationList",
+      JSON.stringify(updatedQuotations)
+    );
+
+    setDataSource((prev) =>
+      prev.map((q) =>
+        q.id === convertQuotation.id
+          ? { ...q, Status: "Converted", invoiceId: invoice.id }
+          : q
+      )
+    );
+
+    setConvertQuotation(null);
+    setShowConvertModal(false);
+
+    navigate(`/sales/invoice-details/${invoice.id}`);
   };
 
   return (
@@ -419,6 +470,61 @@ const QuotationList = () => {
                   onClick={handleDeleteQuotation}
                 >
                   Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showConvertModal && (
+        <div
+          className="modal show d-block"
+          style={{ background: "rgba(0,0,0,0.4)" }}
+        >
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Convert to Invoice</h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => setShowConvertModal(false)}
+                />
+              </div>
+
+              <div className="modal-body">
+                <p>Are you sure you want to convert this quotation to an invoice?</p>
+                {convertQuotation && (
+                  <div className="mt-3">
+                    <p className="mb-1">
+                      <strong>Quotation No:</strong> {convertQuotation.Quotation_No}
+                    </p>
+                    <p className="mb-1">
+                      <strong>Customer:</strong> {convertQuotation.Custmer_Name}
+                    </p>
+                    <p className="mb-0">
+                      <strong>Amount:</strong> ₹{convertQuotation.GrandTotal}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setShowConvertModal(false)}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  className="btn btn-success"
+                  onClick={handleConvertToInvoice}
+                >
+                  Convert to Invoice
                 </button>
               </div>
             </div>
