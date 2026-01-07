@@ -2,7 +2,7 @@ import React from "react";
 
 // Define the props interface
 interface DeleteModalProps {
-  onConfirm: () => void;
+  onConfirm?: () => void;
   title?: string;
 }
 
@@ -33,7 +33,7 @@ const DeleteModal: React.FC<DeleteModalProps> = ({
                     type="button"
                     className="btn btn-primary fs-13 fw-medium p-2 px-3"
                     data-bs-dismiss="modal"
-                    onClick={onConfirm}
+                    onClick={() =>onConfirm?.()}
                   >
                     Yes Delete
                   </button>
