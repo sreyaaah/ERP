@@ -85,7 +85,7 @@ const SubCategories = lazy(
   () => import("../feature-module/inventory/subcategories")
 );
 const EditProduct = lazy(
-  () => import("../feature-module/inventory/editProduct/editProduct")
+  () => import("../feature-module/inventory/editProduct/EditProduct")
 );
 const Videocall = lazy(() => import("../feature-module/application/videocall"));
 const Audiocall = lazy(() => import("../feature-module/application/audiocall"));
