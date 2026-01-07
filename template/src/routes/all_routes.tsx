@@ -209,6 +209,7 @@ export const all_routes = {
   invoice: "/sales/invoices",
   invoicelist: "/sales/invoices",
   invoicedetails: "/sales/invoice-details/:id",
+  invoicereport: "/invoice-report",
   pos3: "/pos-3",
   pos4: "/pos-4",
   pos5: "/pos-5",

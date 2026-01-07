@@ -730,11 +730,7 @@ const TwoColumnSidebar = () => {
                         </li>
                       </ul>
                     </li>
-                    <li>
-                      <Link to={route.invoicereport}>
-                        <span>Invoice Report</span>
-                      </Link>
-                    </li>
+
                     <li className="submenu">
                       <Link to="#">
                         <span>Supplier Report</span>
