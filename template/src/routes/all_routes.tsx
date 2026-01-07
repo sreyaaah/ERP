@@ -138,7 +138,7 @@ export const all_routes = {
   prefixes: "/prefixes",
   preference: "/preference",
   saleslist: "/sales-list",
-
+ invoicereportnew: "/invoice-report",
   salesreturn: "/sales-returns",
   quotationlist: "/quotation-list",
   pos2: "/pos-2",
