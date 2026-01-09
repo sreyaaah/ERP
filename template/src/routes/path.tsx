@@ -221,6 +221,9 @@ const QuotationList = lazy(
 const InvoiceList = lazy(
   () => import("../feature-module/sales/invoicelist")
 );
+const AddInvoice = lazy(
+  () => import("../feature-module/sales/addInvoice")
+);
 const Notes = lazy(() => import("../feature-module/application/notes"));
 const FileManager = lazy(
   () => import("../feature-module/application/filemanager")
@@ -1317,6 +1320,13 @@ export const authRoutes = [
     path: routes.invoice,
     name: "invoice",
     element: <InvoiceList />,
+    route: Route,
+  },
+  {
+    id: 125, // Use a unique ID
+    path: routes.addinvoice,
+    name: "add-invoice",
+    element: <AddInvoice />,
     route: Route,
   },
   {

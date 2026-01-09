@@ -259,6 +259,13 @@ const InvoiceList = () => {
                 <i className="ti ti-file-text me-1"></i>
                 View Quotations
               </Link>
+              <Link
+                to={route.addinvoice}
+                className="btn btn-primary"
+              >
+                <i className="ti ti-circle-plus me-1"></i>
+                Add Invoice
+              </Link>
             </div>
           </div>
           <div className="card table-list-card">
