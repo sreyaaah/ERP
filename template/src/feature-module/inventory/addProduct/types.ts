@@ -14,7 +14,7 @@ export interface ProductFormData {
   description: string;
 
   quantity: string;
-  taxMode: "inclusive" | "exclusive";
+  taxMode: "inclusive" | "exclusive" | "no-tax";
   taxRate: string;
   priceBeforeTax: string;
   taxAmount: string;

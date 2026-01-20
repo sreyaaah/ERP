@@ -46,9 +46,9 @@ export const useEditProduct = (productId: string) => {
         const existingProducts = JSON.parse(
           localStorage.getItem("products") || "[]"
         );
-        
+
         const product = existingProducts.find((p: Product) => p.id === productId);
-        
+
         if (product) {
           setFormData({
             store: product.store,
@@ -91,7 +91,7 @@ export const useEditProduct = (productId: string) => {
             })));
           }
         }
-        
+
         setLoading(false);
       } catch (err) {
         console.error("Failed to load product:", err);
@@ -173,6 +173,30 @@ export const useEditProduct = (productId: string) => {
       return "SKU is required";
     }
 
+    if (!formData.store) {
+      return "Store is required";
+    }
+
+    if (!formData.warehouse) {
+      return "Warehouse is required";
+    }
+
+    if (!formData.sellingType) {
+      return "Selling type is required";
+    }
+
+    if (!formData.category) {
+      return "Category is required";
+    }
+
+    if (!formData.unit) {
+      return "Unit is required";
+    }
+
+    if (!formData.itemCode?.trim()) {
+      return "Item code is required";
+    }
+
     if (!formData.priceBeforeTax || Number(formData.priceBeforeTax) <= 0) {
       return "Price must be greater than zero";
     }
@@ -224,13 +248,32 @@ export const useEditProduct = (productId: string) => {
 
   // Tax calculation effect
   useEffect(() => {
-    const rate = Number(formData.taxRate);
     const inputPrice = Number(formData.priceBeforeTax);
-    if (!rate || !inputPrice) {
+
+    if (!inputPrice) {
       setFormData((prev) => ({
         ...prev,
         taxAmount: "",
         priceAfterTax: "",
+      }));
+      return;
+    }
+
+    if (formData.taxMode === "no-tax") {
+      setFormData((prev) => ({
+        ...prev,
+        taxAmount: "0.00",
+        priceAfterTax: inputPrice.toFixed(2),
+      }));
+      return;
+    }
+
+    const rate = Number(formData.taxRate);
+    if (!rate) {
+      setFormData((prev) => ({
+        ...prev,
+        taxAmount: "0.00",
+        priceAfterTax: inputPrice.toFixed(2),
       }));
       return;
     }

@@ -61,7 +61,7 @@ const PriceCalculation = ({ formData, updateField }: Props) => {
                 Exclusive Tax
               </label>
 
-              <label className="custom_radio">
+              <label className="custom_radio me-4">
                 <input
                   type="radio"
                   name="taxMode"
@@ -80,6 +80,27 @@ const PriceCalculation = ({ formData, updateField }: Props) => {
                   }
                 />{" "}
                 Inclusive Tax
+              </label>
+
+              <label className="custom_radio">
+                <input
+                  type="radio"
+                  name="taxMode"
+                  checked={formData.taxMode === "no-tax"}
+                  onChange={() => updateField("taxMode", "no-tax")}
+                />
+                <span
+                  className="checkmark"
+                  style={
+                    formData.taxMode === "no-tax"
+                      ? {
+                          backgroundColor: "#ffc107",
+                          borderColor: "#ffc107",
+                        }
+                      : {}
+                  }
+                />{" "}
+                Without Tax
               </label>
             </div>
           </div>
@@ -105,7 +126,9 @@ const PriceCalculation = ({ formData, updateField }: Props) => {
                 <label className="form-label">
                   {formData.taxMode === "exclusive"
                     ? "Price Before Tax"
-                    : "Final Price (Tax Included)"}
+                    : formData.taxMode === "inclusive"
+                    ? "Final Price (Tax Included)"
+                    : "Product Price"}
                   <span className="text-danger ms-1">*</span>
                 </label>
                 <input
@@ -118,7 +141,9 @@ const PriceCalculation = ({ formData, updateField }: Props) => {
                   placeholder={
                     formData.taxMode === "exclusive"
                       ? "Enter base price"
-                      : "Enter final price"
+                      : formData.taxMode === "inclusive"
+                      ? "Enter final price"
+                      : "Enter price"
                   }
                   step="0.01"
                   min="0"
@@ -126,7 +151,9 @@ const PriceCalculation = ({ formData, updateField }: Props) => {
                 <small className="text-muted">
                   {formData.taxMode === "exclusive"
                     ? "Enter the base price (tax will be added)"
-                    : "Enter the final price (tax is included)"}
+                    : formData.taxMode === "inclusive"
+                    ? "Enter the final price (tax is included)"
+                    : "Enter the product price (no tax applied)"}
                 </small>
               </div>
             </div>
@@ -155,7 +182,9 @@ const PriceCalculation = ({ formData, updateField }: Props) => {
                 <label className="form-label">
                   {formData.taxMode === "exclusive"
                     ? "Price After Tax"
-                    : "Price Before Tax"}
+                    : formData.taxMode === "inclusive"
+                    ? "Price Before Tax"
+                    : "Final Price"}
                   <span
                     className="badge bg-info ms-2"
                     style={{ fontSize: "0.65rem" }}
@@ -175,7 +204,9 @@ const PriceCalculation = ({ formData, updateField }: Props) => {
                 <small className="text-muted">
                   {formData.taxMode === "exclusive"
                     ? "Final price with tax"
-                    : "Base price without tax"}
+                    : formData.taxMode === "inclusive"
+                    ? "Base price without tax"
+                    : "Calculated final price"}
                 </small>
               </div>
             </div>
@@ -194,13 +225,17 @@ const PriceCalculation = ({ formData, updateField }: Props) => {
                         Price:{" "}
                         <strong>₹{formData.priceAfterTax || "0.00"}</strong>
                       </>
-                    ) : (
+                    ) : formData.taxMode === "inclusive" ? (
                       <>
                         Final Price: <strong>₹{formData.priceBeforeTax}</strong>{" "}
                         = Base Price:{" "}
                         <strong>₹{formData.priceAfterTax || "0.00"}</strong> +
                         Tax ({formData.taxRate}%):{" "}
                         <strong>₹{formData.taxAmount || "0.00"}</strong>
+                      </>
+                    ) : (
+                      <>
+                        Product Price: <strong>₹{formData.priceBeforeTax}</strong> (No Tax Applied)
                       </>
                     )}
                   </span>

@@ -3,6 +3,7 @@ export const STORE_OPTIONS = [
   { value: "thomas", label: "Thomas" },
   { value: "rasmussen", label: "Rasmussen" },
   { value: "fredJohn", label: "Fred John" },
+  { value: "others", label: "Others" },
 ];
 
 export const WAREHOUSE_OPTIONS = [
@@ -10,6 +11,7 @@ export const WAREHOUSE_OPTIONS = [
   { value: "legendary", label: "Legendary" },
   { value: "determined", label: "Determined" },
   { value: "sincere", label: "Sincere" },
+  { value: "others", label: "Others" },
 ];
 
 export const CATEGORY_OPTIONS = [
@@ -28,18 +30,21 @@ export const BRAND_OPTIONS = [
   { value: "choose", label: "Choose" },
   { value: "nike", label: "Nike" },
   { value: "bolt", label: "Bolt" },
+  { value: "others", label: "Others" },
 ];
 
 export const UNIT_OPTIONS = [
   { value: "choose", label: "Choose" },
   { value: "kg", label: "Kg" },
   { value: "pc", label: "Pc" },
+  { value: "others", label: "Others" },
 ];
 
 export const SELLING_TYPE_OPTIONS = [
   { value: "choose", label: "Choose" },
   { value: "transactionalSelling", label: "Transactional selling" },
   { value: "solutionSelling", label: "Solution selling" },
+  { value: "others", label: "Others" },
 ];
 
 export const BARCODE_SYMBOL_OPTIONS = [
@@ -47,6 +52,7 @@ export const BARCODE_SYMBOL_OPTIONS = [
   { value: "code34", label: "Code34" },
   { value: "code35", label: "Code35" },
   { value: "code36", label: "Code36" },
+  { value: "others", label: "Others" },
 ];
 
 export const TAX_TYPE_OPTIONS = [
@@ -65,6 +71,7 @@ export const WARRANTY_OPTIONS = [
   { value: "Replacement Warranty", label: "Replacement Warranty" },
   { value: "On-Site Warranty", label: "On-Site Warranty" },
   { value: "Accidental Protection Plan", label: "Accidental Protection Plan" },
+  { value: "others", label: "Others" },
 ];
 
 export const VARIANT_OPTIONS = [
