@@ -1,97 +1,95 @@
+import { useState } from "react";
 
+/* ---------- TYPES ---------- */
+interface CurrencyForm {
+  name: string;
+  code: string;
+  symbol: string;
+  rate: string;
+}
 
-const AddCurrency = () => {
+interface AddCurrencyProps {
+  onAddCurrency: (data: CurrencyForm) => void;
+}
+
+const AddCurrency: React.FC<AddCurrencyProps> = ({ onAddCurrency }) => {
+  const [form, setForm] = useState<CurrencyForm>({
+    name: "",
+    code: "",
+    symbol: "",
+    rate: "",
+  });
+
+  /* ---------- FIX event any ---------- */
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSave = (): void => {
+    if (!form.name || !form.code || !form.symbol) return;
+
+    onAddCurrency(form);
+    setForm({ name: "", code: "", symbol: "", rate: "" });
+
+    /* ---------- FIX null error ---------- */
+    document.getElementById("closeAddCurrency")?.click();
+  };
+
   return (
-    <div>
-      <>
-        {/* Add Currency */}
-        <div className="modal fade" id="add-currency">
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content">
-              <div className="modal-header">
-                <div className="page-title">
-                  <h4>Add Currency</h4>
-                </div>
-                <button
-                  type="button"
-                  className="close"
-                  data-bs-dismiss="modal"
-                  aria-label="Close"
-                >
-                  <span aria-hidden="true">×</span>
-                </button>
-              </div>
-              <form>
-                <div className="modal-body">
-                  <div className="row">
-                    <div className="col-lg-12">
-                      <div className="mb-3">
-                        <label className="form-label">
-                          Currency Name <span> *</span>
-                        </label>
-                        <input type="text" className="form-control" />
-                      </div>
-                    </div>
-                    <div className="col-lg-12">
-                      <div className="mb-3">
-                        <label className="form-label">
-                          Currency Symbol <span> *</span>
-                        </label>
-                        <input type="text" className="form-control" />
-                      </div>
-                    </div>
-                    <div className="col-lg-12">
-                      <div className="mb-3">
-                        <label className="form-label">
-                          Currency Code <span> *</span>
-                        </label>
-                        <input type="text" className="form-control" />
-                      </div>
-                    </div>
-                    <div className="col-lg-12">
-                      <div className="mb-3">
-                        <label className="form-label">
-                          Currency Rate <span> *</span>
-                        </label>
-                        <input type="text" className="form-control" />
-                      </div>
-                    </div>
-                    <div className="col-lg-12">
-                      <div className="status-toggle modal-status d-flex justify-content-between align-items-center">
-                        <span className="status-label">Status</span>
-                        <input
-                          type="checkbox"
-                          id="user6"
-                          className="check"
-                          defaultChecked
-                        />
-                        <label htmlFor="user6" className="checktoggle" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="modal-footer">
-                  <button
-                    type="button"
-                    className="btn btn-secondary me-2"
-                    data-bs-dismiss="modal"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-primary"
-                    data-bs-dismiss="modal"
-                  >
-                    Submit
-                  </button>
-                </div>
-              </form>
-            </div>
+    <div className="modal fade" id="add-currency">
+      <div className="modal-dialog modal-dialog-centered">
+        <div className="modal-content">
+          <div className="modal-header">
+            <h5>Add Currency</h5>
+            <button
+              id="closeAddCurrency"
+              className="btn-close"
+              data-bs-dismiss="modal"
+            />
+          </div>
+
+          <div className="modal-body">
+            <input
+              name="name"
+              value={form.name}
+              onChange={handleChange}
+              className="form-control mb-2"
+              placeholder="Currency Name"
+            />
+            <input
+              name="code"
+              value={form.code}
+              onChange={handleChange}
+              className="form-control mb-2"
+              placeholder="Code"
+            />
+            <input
+              name="symbol"
+              value={form.symbol}
+              onChange={handleChange}
+              className="form-control mb-2"
+              placeholder="Symbol"
+            />
+            <input
+              name="rate"
+              value={form.rate}
+              onChange={handleChange}
+              className="form-control"
+              placeholder="Exchange Rate"
+            />
+          </div>
+
+          <div className="modal-footer">
+            <button className="btn btn-secondary" data-bs-dismiss="modal">
+              Cancel
+            </button>
+            <button className="btn btn-primary" onClick={handleSave}>
+              Save
+            </button>
           </div>
         </div>
-        {/* /Add Currency */}
-      </>
+      </div>
     </div>
   );
 };

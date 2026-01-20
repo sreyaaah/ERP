@@ -1,65 +1,109 @@
+import React, { useState } from "react";
 
+interface AddTaxRatesProps {
+  onAdd: (data: { name: string; type: any; rate: number }) => void;
+}
 
-const AddTaxRates = () => {
+const AddTaxRates: React.FC<AddTaxRatesProps> = ({ onAdd }) => {
+  const [form, setForm] = useState({
+    name: "",
+    type: "GST",
+    rate: 0,
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({
+      ...prev,
+      [name]: name === "rate" ? Number(value) : value,
+    }));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name || form.rate < 0) return;
+    onAdd(form);
+    setForm({ name: "", type: "GST", rate: 0 });
+    // Close modal
+    document.getElementById("closeAddTax")?.click();
+  };
+
   return (
-    <div>
-      <>
-        {/* Add Tax Rates */}
-        <div className="modal fade" id="add-tax">
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content">
-              <div className="modal-header">
-                <div className="page-title">
-                  <h4>Add Tax Rates</h4>
-                </div>
-                <button
-                  type="button"
-                  className="close"
-                  data-bs-dismiss="modal"
-                  aria-label="Close"
-                >
-                  <span aria-hidden="true">×</span>
-                </button>
-              </div>
-              <form>
-                <div className="modal-body">
-                  <div className="row">
-                    <div className="col-lg-12">
-                      <div className="mb-3">
-                        <label className="form-label">
-                          Name <span> *</span>
-                        </label>
-                        <input type="text" className="form-control" />
-                      </div>
-                    </div>
-                    <div className="col-lg-12">
-                      <div className="mb-0">
-                        <label className="form-label">
-                          Tax Rate % <span> *</span>
-                        </label>
-                        <input type="text" className="form-control" />
-                      </div>
-                    </div>
+    <div className="modal fade" id="add-tax">
+      <div className="modal-dialog modal-dialog-centered">
+        <div className="modal-content">
+          <div className="modal-header">
+            <h4>Add Tax Rates</h4>
+            <button
+              id="closeAddTax"
+              type="button"
+              className="btn-close"
+              data-bs-dismiss="modal"
+            />
+          </div>
+          <form onSubmit={handleSubmit}>
+            <div className="modal-body">
+              <div className="row">
+                <div className="col-lg-12">
+                  <div className="mb-3">
+                    <label className="form-label">Name *</label>
+                    <input
+                      name="name"
+                      type="text"
+                      className="form-control"
+                      value={form.name}
+                      onChange={handleChange}
+                      required
+                    />
                   </div>
                 </div>
-                <div className="modal-footer">
-                  <button type="button" className="btn btn-secondary me-2">
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-primary"
-                    data-bs-dismiss="modal"
-                  >
-                    Submit
-                  </button>
+                <div className="col-lg-12">
+                  <div className="mb-3">
+                    <label className="form-label">Tax Type *</label>
+                    <select
+                      name="type"
+                      className="form-select"
+                      value={form.type}
+                      onChange={handleChange}
+                    >
+                      <option value="GST">GST</option>
+                      <option value="VAT">VAT</option>
+                      <option value="CGST">CGST</option>
+                      <option value="SGST">SGST</option>
+                      <option value="IGST">IGST</option>
+                    </select>
+                  </div>
                 </div>
-              </form>
+                <div className="col-lg-12">
+                  <div className="mb-0">
+                    <label className="form-label">Tax Rate % *</label>
+                    <input
+                      name="rate"
+                      type="number"
+                      className="form-control"
+                      value={form.rate}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="btn btn-secondary me-2"
+                data-bs-dismiss="modal"
+              >
+                Cancel
+              </button>
+              <button type="submit" className="btn btn-primary">
+                Submit
+              </button>
+            </div>
+          </form>
         </div>
-        {/* /Add Tax Rates */}
-      </>
+      </div>
     </div>
   );
 };
