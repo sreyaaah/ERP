@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
+
 import AddTaxRates from "../../../core/modals/settings/addtaxrates";
 import EditTaxRates from "../../../core/modals/settings/edittaxrates";
 import SettingsSideBar from "../settingssidebar";
@@ -6,143 +8,193 @@ import RefreshIcon from "../../../components/tooltip-content/refresh";
 import CollapesIcon from "../../../components/tooltip-content/collapes";
 import CommonFooter from "../../../components/footer/commonFooter";
 import DeleteModal from "../../../components/delete-modal";
+
+/* ---------- TYPES ---------- */
+type TaxType = "GST" | "VAT" | "CGST" | "SGST" | "IGST";
+
+interface TaxRate {
+  id: number;
+  name: string;
+  type: TaxType;
+  rate: number; // numeric for calculation
+  createdOn: string;
+}
+
+interface TaxForm {
+  name: string;
+  type: TaxType;
+  rate: number;
+}
+
 const TaxRates = () => {
+  /* ---------- STATE ---------- */
+  const currentDate = new Date().toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+
+  const [taxRates, setTaxRates] = useState<TaxRate[]>([
+    /* 🇮🇳 GST */
+    { id: 1, name: "GST 5%", type: "GST", rate: 5, createdOn: currentDate },
+    { id: 2, name: "GST 12%", type: "GST", rate: 12, createdOn: currentDate },
+    { id: 3, name: "GST 18%", type: "GST", rate: 18, createdOn: currentDate },
+    { id: 4, name: "GST 28%", type: "GST", rate: 28, createdOn: currentDate },
+
+    /* 🇮🇳 Individual */
+    { id: 5, name: "CGST", type: "CGST", rate: 9, createdOn: currentDate },
+    { id: 6, name: "SGST", type: "SGST", rate: 9, createdOn: currentDate },
+    { id: 7, name: "IGST", type: "IGST", rate: 18, createdOn: currentDate },
+
+    /* 🌍 VAT */
+    { id: 8, name: "VAT 5%", type: "VAT", rate: 5, createdOn: currentDate },
+    { id: 9, name: "VAT 10%", type: "VAT", rate: 10, createdOn: currentDate },
+    { id: 10, name: "VAT 20%", type: "VAT", rate: 20, createdOn: currentDate },
+  ]);
+
+  const [selectedTax, setSelectedTax] = useState<TaxRate | null>(null);
+  const [taxToDelete, setTaxToDelete] = useState<TaxRate | null>(null);
+
+  /* ---------- HELPERS ---------- */
+  const renderRate = (tax: TaxRate): string => {
+    if (tax.type === "GST") {
+      const half = tax.rate / 2;
+      return `${tax.rate}% (CGST ${half}% + SGST ${half}%)`;
+    }
+    return `${tax.rate}%`;
+  };
+
+  /* ---------- ADD ---------- */
+  const handleAddTax = (data: TaxForm) => {
+    setTaxRates((prev) => [
+      ...prev,
+      {
+        id: Date.now(),
+        ...data,
+        createdOn: new Date().toLocaleDateString("en-GB", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        }),
+      },
+    ]);
+  };
+
+  /* ---------- UPDATE ---------- */
+  const handleUpdateTax = (updated: TaxRate) => {
+    setTaxRates((prev) =>
+      prev.map((t) => (t.id === updated.id ? updated : t))
+    );
+    setSelectedTax(null);
+  };
+
+  /* ---------- DELETE ---------- */
+  const handleDeleteTax = () => {
+    if (!taxToDelete) return;
+    setTaxRates((prev) =>
+      prev.filter((t) => t.id !== taxToDelete.id)
+    );
+    setTaxToDelete(null);
+  };
+
   return (
-    <div>
+    <>
       <div className="page-wrapper">
         <div className="content settings-content">
           <div className="page-header settings-pg-header">
-            <div className="add-item d-flex">
-              <div className="page-title">
-                <h4>Settings</h4>
-                <h6>Manage your settings on portal</h6>
-              </div>
+            <div className="page-title">
+              <h4>Settings</h4>
+              <h6>Manage your settings on portal</h6>
             </div>
             <ul className="table-top-head">
               <RefreshIcon />
               <CollapesIcon />
             </ul>
           </div>
-          <div className="row">
-            <div className="col-xl-12">
-              <div className="settings-wrapper d-flex">
-                <SettingsSideBar />
-                <div className="card flex-fill mb-0 w-50">
-                  <div className="card-header d-flex align-items-center justify-content-between">
-                    <h4>Tax Rates</h4>
-                    <Link
-                      to="#"
-                      className="btn btn-primary"
-                      data-bs-toggle="modal"
-                      data-bs-target="#add-tax"
-                    >
-                      <i className="ti ti-circle-plus me-1" />
-                      Add New Tax Rate
-                    </Link>
-                  </div>
-                  <div className="card-body">
-                    <div className="table-responsive">
-                      <table className="table border">
-                        <thead className="thead-light">
-                          <tr>
-                            <th>Tax Name</th>
-                            <th>Tax rates</th>
-                            <th>Created On</th>
-                            <th className="no-sort" />
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr>
-                            <td>VAT</td>
-                            <td>10%</td>
-                            <td>12 Jan 2025</td>
-                            <td className="action-table-data justify-content-end">
-                              <div className="edit-delete-action">
-                                <Link
-                                  className="me-2 p-2"
-                                  to="#"
-                                  data-bs-toggle="modal"
-                                  data-bs-target="#edit-tax"
-                                >
-                                  <i className="ti ti-edit" />
-                                </Link>
-                                <Link
-                                  className="p-2"
-                                  to="#;"
-                                  data-bs-toggle="modal"
-                                  data-bs-target="#delete-modal"
-                                >
-                                  <i className="ti ti-trash" />
-                                </Link>
-                              </div>
-                            </td>
-                          </tr>
-                          <tr>
-                            <td>CGST</td>
-                            <td>08%</td>
-                            <td>10 Jan 2025</td>
-                            <td className="action-table-data justify-content-end">
-                              <div className="edit-delete-action">
-                                <Link
-                                  className="me-2 p-2"
-                                  to="#"
-                                  data-bs-toggle="modal"
-                                  data-bs-target="#edit-tax"
-                                >
-                                  <i className="ti ti-edit" />
-                                </Link>
-                                <Link
-                                  className="p-2"
-                                  to="#;"
-                                  data-bs-toggle="modal"
-                                  data-bs-target="#delete-modal"
-                                >
-                                  <i className="ti ti-trash" />
-                                </Link>
-                              </div>
-                            </td>
-                          </tr>
-                          <tr>
-                            <td>SGST</td>
-                            <td>10%</td>
-                            <td>06 Jan 2025</td>
-                            <td className="action-table-data justify-content-end">
-                              <div className="edit-delete-action">
-                                <Link
-                                  className="me-2 p-2"
-                                  to="#"
-                                  data-bs-toggle="modal"
-                                  data-bs-target="#edit-tax"
-                                >
-                                  <i className="ti ti-edit" />
-                                </Link>
-                                <Link
-                                  className="p-2"
-                                  to="#;"
-                                  data-bs-toggle="modal"
-                                  data-bs-target="#delete-modal"
-                                >
-                                  <i className="ti ti-trash" />
-                                </Link>
-                              </div>
-                            </td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </div>
+
+          <div className="settings-wrapper d-flex">
+            <SettingsSideBar />
+
+            <div className="card flex-fill mb-0 w-50">
+              <div className="card-header d-flex justify-content-between">
+                <h4>Tax Rates</h4>
+                <Link
+                  to="#"
+                  className="btn btn-primary"
+                  data-bs-toggle="modal"
+                  data-bs-target="#add-tax"
+                >
+                  <i className="ti ti-circle-plus me-1" />
+                  Add New Tax Rate
+                </Link>
+              </div>
+
+              <div className="card-body">
+                <table className="table border">
+                  <thead>
+                    <tr>
+                      <th>Tax Name</th>
+                      <th>Tax Type</th>
+                      <th>Tax Rate</th>
+                      <th>Created On</th>
+                      <th className="text-end">Action</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {taxRates.map((t) => (
+                      <tr key={t.id}>
+                        <td>{t.name}</td>
+                        <td>
+                          <span className="badge bg-info">{t.type}</span>
+                        </td>
+                        <td>{renderRate(t)}</td>
+                        <td>{t.createdOn}</td>
+                        <td className="text-end">
+                          <Link
+                            to="#"
+                            className="me-2"
+                            data-bs-toggle="modal"
+                            data-bs-target="#edit-tax"
+                            onClick={() => setSelectedTax(t)}
+                          >
+                            <i className="ti ti-edit" />
+                          </Link>
+
+                          <Link
+                            to="#"
+                            data-bs-toggle="modal"
+                            data-bs-target="#delete-modal"
+                            onClick={() => setTaxToDelete(t)}
+                          >
+                            <i className="ti ti-trash" />
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+
+                    {taxRates.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="text-center">
+                          No tax rates found
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
         </div>
+
         <CommonFooter />
       </div>
 
-      <AddTaxRates />
-      <EditTaxRates />
-    <DeleteModal />
-    </div>
+      {/* MODALS */}
+      <AddTaxRates onAdd={handleAddTax} />
+      <EditTaxRates tax={selectedTax} onSave={handleUpdateTax} />
+      <DeleteModal onConfirm={handleDeleteTax} />
+    </>
   );
 };
 
