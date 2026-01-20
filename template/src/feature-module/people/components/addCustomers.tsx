@@ -122,7 +122,7 @@ const AddCustomers: React.FC<AddCustomersProps> = ({
               </div>
               <div className="col-lg-6 mb-3">
                 <label className="form-label">
-                  Last Name<span className="text-danger ms-1">*</span>
+                  Last Name
                 </label>
                 <input
                   type="text"
@@ -139,7 +139,7 @@ const AddCustomers: React.FC<AddCustomersProps> = ({
               </div>
               <div className="col-lg-12 mb-3">
                 <label className="form-label">
-                  Email<span className="text-danger ms-1">*</span>
+                  Email
                 </label>
                 <input
                   type="email"
@@ -195,6 +195,7 @@ const AddCustomers: React.FC<AddCustomersProps> = ({
                   filter={true}
                   onChange={(e) => setSelectedCity(e.value)}
                   placeholder="Select City"
+                  editable={true}
                 />
                 {errors.city && (
                   <small className="text-danger">{errors.city}</small>
@@ -211,6 +212,7 @@ const AddCustomers: React.FC<AddCustomersProps> = ({
                   filter={true}
                   onChange={(e) => setSelectedState(e.value)}
                   placeholder="Select State"
+                  editable={true}
                 />
                 {errors.state && (
                   <small className="text-danger">{errors.state}</small>
@@ -227,6 +229,7 @@ const AddCustomers: React.FC<AddCustomersProps> = ({
                   filter={true}
                   onChange={(e) => setSelectedCountry(e.value)}
                   placeholder="Select Country"
+                  editable={true}
                 />
                 {errors.country && (
                   <small className="text-danger">{errors.country}</small>

@@ -123,72 +123,115 @@ export const useProductForm = () => {
   };
 
   const validateProduct = () => {
-  if (!formData.productName.trim()) {
-    return "Product name is required";
-  }
+    if (!formData.productName.trim()) {
+      return "Product name is required";
+    }
 
-  if (!formData.sku.trim()) {
-    return "SKU is required";
-  }
+    if (!formData.sku.trim()) {
+      return "SKU is required";
+    }
 
-  if (!formData.priceBeforeTax || Number(formData.priceBeforeTax) <= 0) {
-    return "Price must be greater than zero";
-  }
+    if (!formData.store) {
+      return "Store is required";
+    }
 
-  if (!formData.taxRate || Number(formData.taxRate) < 0) {
-    return "Tax rate must be valid";
-  }
+    if (!formData.warehouse) {
+      return "Warehouse is required";
+    }
 
-  return null;
-};
+    if (!formData.sellingType) {
+      return "Selling type is required";
+    }
 
-const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-  e.preventDefault();
+    if (!formData.category) {
+      return "Category is required";
+    }
 
-  const error = validateProduct();
-  if (error) {
-    return { success: false, error };
-  }
+    if (!formData.unit) {
+      return "Unit is required";
+    }
 
-  try {
-    const newProduct = {
-      id: crypto.randomUUID(),
-      ...formData,
-      images: images.map((img) => ({
-        id: img.id,
-        url: img.url,
-      })),
-      imageCount: images.length,
-      createdAt: new Date().toISOString(),
-    };
+    if (!formData.itemCode?.trim()) {
+      return "Item code is required";
+    }
 
-    const existingProducts = JSON.parse(
-      localStorage.getItem("products") || "[]"
-    );
+    if (!formData.priceBeforeTax || Number(formData.priceBeforeTax) <= 0) {
+      return "Price must be greater than zero";
+    }
 
-    localStorage.setItem(
-      "products",
-      JSON.stringify([...existingProducts, newProduct])
-    );
+    if (!formData.taxRate || Number(formData.taxRate) < 0) {
+      return "Tax rate must be valid";
+    }
 
-    return { success: true };
+    return null;
+  };
 
-  } catch (err) {
-    console.error("Add product failed:", err);
-    return { success: false, error: "Something went wrong" };
-  }
-};
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const error = validateProduct();
+    if (error) {
+      return { success: false, error };
+    }
+
+    try {
+      const newProduct = {
+        id: crypto.randomUUID(),
+        ...formData,
+        images: images.map((img) => ({
+          id: img.id,
+          url: img.url,
+        })),
+        imageCount: images.length,
+        createdAt: new Date().toISOString(),
+      };
+
+      const existingProducts = JSON.parse(
+        localStorage.getItem("products") || "[]"
+      );
+
+      localStorage.setItem(
+        "products",
+        JSON.stringify([...existingProducts, newProduct])
+      );
+
+      return { success: true };
+
+    } catch (err) {
+      console.error("Add product failed:", err);
+      return { success: false, error: "Something went wrong" };
+    }
+  };
 
 
 
   useEffect(() => {
-    const rate = Number(formData.taxRate);
     const inputPrice = Number(formData.priceBeforeTax);
-    if (!rate || !inputPrice) {
+
+    if (!inputPrice) {
       setFormData((prev) => ({
         ...prev,
         taxAmount: "",
         priceAfterTax: "",
+      }));
+      return;
+    }
+
+    if (formData.taxMode === "no-tax") {
+      setFormData((prev) => ({
+        ...prev,
+        taxAmount: "0.00",
+        priceAfterTax: inputPrice.toFixed(2),
+      }));
+      return;
+    }
+
+    const rate = Number(formData.taxRate);
+    if (!rate) {
+      setFormData((prev) => ({
+        ...prev,
+        taxAmount: "0.00",
+        priceAfterTax: inputPrice.toFixed(2),
       }));
       return;
     }

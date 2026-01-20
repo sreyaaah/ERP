@@ -1,4 +1,3 @@
-import { Link } from "react-router-dom";
 import { Editor } from "primereact/editor";
 import CommonSelect from "../../../../components/select/common-select";
 import {
@@ -68,6 +67,7 @@ const ProductInformation = ({
                   onChange={(e) => updateField("store", e.value)}
                   placeholder="Choose"
                   filter={true}
+                  editable={true}
                 />
               </div>
             </div>
@@ -83,6 +83,7 @@ const ProductInformation = ({
                   onChange={(e) => updateField("warehouse", e.value)}
                   placeholder="Choose"
                   filter={true}
+                  editable={true}
                 />
               </div>
             </div>
@@ -105,7 +106,7 @@ const ProductInformation = ({
             <div className="col-sm-6 col-12">
               <div className="mb-3">
                 <label className="form-label">
-                  Slug<span className="text-danger ms-1">*</span>
+                  Slug
                 </label>
                 <input
                   type="text"
@@ -150,6 +151,7 @@ const ProductInformation = ({
                   onChange={(e) => updateField("sellingType", e.value)}
                   placeholder="Choose"
                   filter={true}
+                  editable={true}
                 />
               </div>
             </div>
@@ -163,14 +165,6 @@ const ProductInformation = ({
                     <label className="form-label">
                       Category<span className="text-danger ms-1">*</span>
                     </label>
-                    <Link
-                      to="#"
-                      data-bs-toggle="modal"
-                      data-bs-target="#add-units-category"
-                    >
-                      <i className="feather icon-plus-circle plus-down-add" />
-                      <span>Add New</span>
-                    </Link>
                   </div>
                   <CommonSelect
                     className="w-100"
@@ -179,13 +173,14 @@ const ProductInformation = ({
                     onChange={(e) => updateField("category", e.value)}
                     placeholder="Choose"
                     filter={true}
+                    editable={true}
                   />
                 </div>
               </div>
               <div className="col-sm-6 col-12">
                 <div className="mb-3">
                   <label className="form-label">
-                    Sub Category<span className="text-danger ms-1">*</span>
+                    Sub Category
                   </label>
                   <CommonSelect
                     className="w-100"
@@ -194,6 +189,7 @@ const ProductInformation = ({
                     onChange={(e) => updateField("subCategory", e.value)}
                     placeholder="Choose"
                     filter={true}
+                    editable={true}
                   />
                 </div>
               </div>
@@ -205,7 +201,7 @@ const ProductInformation = ({
               <div className="col-sm-6 col-12">
                 <div className="mb-3">
                   <label className="form-label">
-                    Brand<span className="text-danger ms-1">*</span>
+                    Brand
                   </label>
                   <CommonSelect
                     className="w-100"
@@ -214,6 +210,7 @@ const ProductInformation = ({
                     onChange={(e) => updateField("brand", e.value)}
                     placeholder="Choose"
                     filter={true}
+                    editable={true}
                   />
                 </div>
               </div>
@@ -229,6 +226,7 @@ const ProductInformation = ({
                     onChange={(e) => updateField("unit", e.value)}
                     placeholder="Choose"
                     filter={true}
+                    editable={true}
                   />
                 </div>
               </div>
@@ -239,7 +237,7 @@ const ProductInformation = ({
             <div className="col-lg-6 col-sm-6 col-12">
               <div className="mb-3">
                 <label className="form-label">
-                  Barcode Symbology<span className="text-danger ms-1">*</span>
+                  Barcode Symbology
                 </label>
                 <CommonSelect
                   className="w-100"
@@ -248,6 +246,7 @@ const ProductInformation = ({
                   onChange={(e) => updateField("barcodeSymbol", e.value)}
                   placeholder="Choose"
                   filter={true}
+                  editable={true}
                 />
               </div>
             </div>

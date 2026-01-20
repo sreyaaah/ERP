@@ -99,7 +99,7 @@ const EditCustomers: React.FC<EditCustomersProps> = ({
               </div>
               <div className="col-lg-6 mb-3">
                 <label className="form-label">
-                  Last Name<span className="text-danger ms-1">*</span>
+                  Last Name
                 </label>
                 <input
                   type="text"
@@ -117,7 +117,7 @@ const EditCustomers: React.FC<EditCustomersProps> = ({
               </div>
               <div className="col-lg-12 mb-3">
                 <label className="form-label">
-                  Email<span className="text-danger ms-1">*</span>
+                  Email
                 </label>
                 <input
                   type="email"
@@ -168,6 +168,7 @@ const EditCustomers: React.FC<EditCustomersProps> = ({
                   onChange={(e) => setSelectedCity(e.value)}
                   placeholder="Select City"
                   filter={false}
+                  editable={true}
                 />
               </div>
               <div className="col-lg-6 mb-3">
@@ -181,6 +182,7 @@ const EditCustomers: React.FC<EditCustomersProps> = ({
                   onChange={(e) => setSelectedState(e.value)}
                   placeholder="Select State"
                   filter={false}
+                  editable={true}
                 />
               </div>
               <div className="col-lg-6 mb-3">
@@ -194,6 +196,7 @@ const EditCustomers: React.FC<EditCustomersProps> = ({
                   onChange={(e) => setSelectedCountry(e.value)}
                   placeholder="Select Country"
                   filter={false}
+                  editable={true}
                 />
               </div>
               <div className="col-lg-6 mb-3">

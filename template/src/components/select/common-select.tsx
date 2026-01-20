@@ -9,6 +9,7 @@ interface CommonSelectProps {
   className?: string;
   disabled?: boolean;
   filter?: boolean;
+  editable?: boolean;
 }
 
 const CommonSelect: React.FC<CommonSelectProps> = ({
@@ -19,6 +20,7 @@ const CommonSelect: React.FC<CommonSelectProps> = ({
   className = "",
   disabled = false,
   filter = true,
+  editable = false,
 }) => {
   console.log("values", value);
   return (
@@ -31,6 +33,7 @@ const CommonSelect: React.FC<CommonSelectProps> = ({
       disabled={disabled}
       appendTo={"self"}
       filter={filter}
+      editable={editable}
     />
   );
 };
