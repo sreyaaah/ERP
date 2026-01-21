@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 
 import AddTaxRates from "../../../core/modals/settings/addtaxrates";
@@ -9,14 +9,14 @@ import CollapesIcon from "../../../components/tooltip-content/collapes";
 import CommonFooter from "../../../components/footer/commonFooter";
 import DeleteModal from "../../../components/delete-modal";
 
-/* ---------- TYPES ---------- */
+
 type TaxType = "GST" | "VAT" | "CGST" | "SGST" | "IGST";
 
 interface TaxRate {
   id: number;
   name: string;
   type: TaxType;
-  rate: number; // numeric for calculation
+  rate: number;
   createdOn: string;
 }
 
@@ -25,70 +25,63 @@ interface TaxForm {
   type: TaxType;
   rate: number;
 }
+const currentDate = new Date().toLocaleDateString("en-GB", {
+  day: "2-digit",
+  month: "short",
+  year: "numeric",
+});
+
+export const INITIAL_TAX_RATES: TaxRate[] = [
+  { id: 1, name: "GST 5%", type: "GST", rate: 5, createdOn: currentDate },
+  { id: 2, name: "GST 12%", type: "GST", rate: 12, createdOn: currentDate },
+  { id: 3, name: "GST 18%", type: "GST", rate: 18, createdOn: currentDate },
+  { id: 4, name: "GST 28%", type: "GST", rate: 28, createdOn: currentDate },
+  { id: 5, name: "VAT 5%", type: "VAT", rate: 5, createdOn: currentDate },
+  { id: 6, name: "VAT 10%", type: "VAT", rate: 10, createdOn: currentDate },
+  { id: 7, name: "VAT 20%", type: "VAT", rate: 20, createdOn: currentDate },
+];
 
 const TaxRates = () => {
-  /* ---------- STATE ---------- */
-  const currentDate = new Date().toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
+  const [taxRates, setTaxRates] = useState<TaxRate[]>(() => {
+    const saved = localStorage.getItem("taxRates");
+    return saved ? JSON.parse(saved) : INITIAL_TAX_RATES;
   });
-
-  const [taxRates, setTaxRates] = useState<TaxRate[]>([
-    /* 🇮🇳 GST */
-    { id: 1, name: "GST 5%", type: "GST", rate: 5, createdOn: currentDate },
-    { id: 2, name: "GST 12%", type: "GST", rate: 12, createdOn: currentDate },
-    { id: 3, name: "GST 18%", type: "GST", rate: 18, createdOn: currentDate },
-    { id: 4, name: "GST 28%", type: "GST", rate: 28, createdOn: currentDate },
-
-    /* 🇮🇳 Individual */
-    { id: 5, name: "CGST", type: "CGST", rate: 9, createdOn: currentDate },
-    { id: 6, name: "SGST", type: "SGST", rate: 9, createdOn: currentDate },
-    { id: 7, name: "IGST", type: "IGST", rate: 18, createdOn: currentDate },
-
-    /* 🌍 VAT */
-    { id: 8, name: "VAT 5%", type: "VAT", rate: 5, createdOn: currentDate },
-    { id: 9, name: "VAT 10%", type: "VAT", rate: 10, createdOn: currentDate },
-    { id: 10, name: "VAT 20%", type: "VAT", rate: 20, createdOn: currentDate },
-  ]);
 
   const [selectedTax, setSelectedTax] = useState<TaxRate | null>(null);
   const [taxToDelete, setTaxToDelete] = useState<TaxRate | null>(null);
 
-  /* ---------- HELPERS ---------- */
+  useEffect(() => {
+    localStorage.setItem("taxRates", JSON.stringify(taxRates));
+    window.dispatchEvent(new Event("storage"));
+  }, [taxRates]);
+
   const renderRate = (tax: TaxRate): string => {
     if (tax.type === "GST") {
       const half = tax.rate / 2;
-      return `${tax.rate}% (CGST ${half}% + SGST ${half}%)`;
+      return `${tax.rate}% (Intrastate: CGST ${half}% + SGST ${half}% | Interstate: IGST ${tax.rate}%)`;
     }
     return `${tax.rate}%`;
   };
 
-  /* ---------- ADD ---------- */
   const handleAddTax = (data: TaxForm) => {
+    if (data.type !== "GST" && data.type !== "VAT") return;
+
     setTaxRates((prev) => [
       ...prev,
       {
         id: Date.now(),
         ...data,
-        createdOn: new Date().toLocaleDateString("en-GB", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-        }),
+        createdOn: currentDate,
       },
     ]);
   };
 
-  /* ---------- UPDATE ---------- */
   const handleUpdateTax = (updated: TaxRate) => {
     setTaxRates((prev) =>
       prev.map((t) => (t.id === updated.id ? updated : t))
     );
     setSelectedTax(null);
   };
-
-  /* ---------- DELETE ---------- */
   const handleDeleteTax = () => {
     if (!taxToDelete) return;
     setTaxRates((prev) =>
