@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Editor } from "primereact/editor";
 import { plus1 } from "../../../utils/imagepath";
 import CommonSelect from "../../../components/select/common-select";
@@ -7,12 +7,22 @@ import CommonDatePicker from "../../../components/date-picker/common-date-picker
 import { CustomerService } from "../../../feature-module/services/customer.service";
 import { productlistdata } from "../../../feature-module/inventory/productlist";
 import { customersData } from "../../json/customers-data";
+import { all_routes } from "../../../routes/all_routes";
+import { ALL_SELECTED_CURRENCIES } from "../../../feature-module/settings/financialsettings/currencies";
+import { INITIAL_TAX_RATES } from "../../../feature-module/settings/financialsettings/taxrates";
+
+const FALLBACK_TAX_RATES = INITIAL_TAX_RATES.map(t => ({
+  label: t.name,
+  value: t.rate,
+  type: t.type
+}));
 
 const AddQuotation = () => {
   const [date, setDate] = useState<Date | null>(new Date());
   const [validityDate, setValidityDate] = useState<Date | null>(new Date());
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [selectedStatus, setSelectedStatus] = useState<any>(null);
+  const [selectedCurrency, setSelectedCurrency] = useState<any>(null);
   const [text, setText] = useState("");
   const [quotationNumber, setQuotationNumber] = useState<string>("");
   const [referenceNo, setReferenceNo] = useState("");
@@ -20,12 +30,28 @@ const AddQuotation = () => {
 
   
   const [customers, setCustomers] = useState<any[]>([]);
+  const navigate = useNavigate();
+
+  const [taxRates, setTaxRates] = useState<any[]>([]);
 
   useEffect(() => {
     const today = new Date();
     const dateStr = today.toISOString().slice(0, 10).replace(/-/g, "");
     const randomNum = Math.floor(1000 + Math.random() * 9000);
     setQuotationNumber(`QT-${dateStr}-${randomNum}`);
+  }, []);
+
+  useEffect(() => {
+    const modalElement = document.getElementById('add-units');
+    if (modalElement) {
+      const handleHidden = () => {
+        resetForm();
+      };
+      modalElement.addEventListener('hidden.bs.modal', handleHidden);
+      return () => {
+        modalElement.removeEventListener('hidden.bs.modal', handleHidden);
+      };
+    }
   }, []);
 
   useEffect(() => {
@@ -40,6 +66,32 @@ const AddQuotation = () => {
     
     const uniqueCustomers = Array.from(new Map(formatted.map(item => [item.value, item])).values());
     setCustomers(uniqueCustomers);
+  }, []);
+
+  useEffect(() => {
+    const loadTaxRates = () => {
+      try {
+        const storedStr = localStorage.getItem("taxRates");
+        const storedTaxRates = JSON.parse(storedStr || "[]");
+        
+        const isValid = storedTaxRates.length > 0 && storedTaxRates.every((t: any) => t.type);
+
+        if (isValid) {
+          setTaxRates(storedTaxRates.map((t: any) => ({ 
+            label: t.name, 
+            value: t.rate, 
+            type: t.type 
+          })));
+        } else {
+          setTaxRates(FALLBACK_TAX_RATES);
+        }
+      } catch (e) {
+        setTaxRates(FALLBACK_TAX_RATES);
+      }
+    };
+    loadTaxRates();
+    window.addEventListener("storage", loadTaxRates);
+    return () => window.removeEventListener("storage", loadTaxRates);
   }, []);
 
   const Status  = [
@@ -109,9 +161,11 @@ useEffect(() => {
 
     const qty = Number(row.qty || 0);
     const rate = Number(row.rate || 0);
-    const discount = Number(row.discount || 0);
+    const discountPercent = Number(row.discount || 0);
 
-    const baseAmount = qty * rate - discount;
+    const grossAmount = qty * rate;
+    const discountAmount = (grossAmount * discountPercent) / 100;
+    const baseAmount = grossAmount - discountAmount;
 
     const taxPercent = Number(row.tax || 0);
     const taxAmount = (baseAmount * taxPercent) / 100;
@@ -156,41 +210,48 @@ useEffect(() => {
 
 
   useEffect(() => {
-  const updated = [...rows];
+    const updated = [...rows];
+    updated.forEach((row) => {
+      if (!row.isTaxFromProduct) {
+        row.tax = getDefaultTaxByQuotationType(quotationType); 
+      }
+    });
+    setRows(updated);
 
-  updated.forEach((row) => {
-    if (!row.isTaxFromProduct) {
-      row.tax = getDefaultTaxByQuotationType(quotationType);
+    if (quotationType !== "international") {
+      setSelectedCurrency(null);
     }
-  });
-
-  setRows(updated);
-}, [quotationType]);
+  }, [quotationType]);
 
 
 
     const [subTotal, setSubTotal] = useState(0);
+    const [totalDiscount, setTotalDiscount] = useState(0);
     const [totalTax, setTotalTax] = useState(0);
     const [grandTotal, setGrandTotal] = useState(0);
 
     const calculateSummary = (rowsData: any[]) => {
       let sub = 0;
+      let discount = 0;
       let tax = 0;
 
       rowsData.forEach((row) => {
         const qty = Number(row.qty || 0);
         const rate = Number(row.rate || 0);
-        const discount = Number(row.discount || 0);
+        const rowDiscountPercent = Number(row.discount || 0);
 
-        const baseAmount = qty * rate - discount;
+        const grossAmount = qty * rate;
+        const rowDiscountAmount = (grossAmount * rowDiscountPercent) / 100;
 
-        sub += baseAmount;
+        sub += grossAmount;
+        discount += rowDiscountAmount;
         tax += Number(row.taxAmount || 0);
       });
 
       setSubTotal(Number(sub.toFixed(2)));
+      setTotalDiscount(Number(discount.toFixed(2)));
       setTotalTax(Number(tax.toFixed(2)));
-      setGrandTotal(Number((sub + tax).toFixed(2)));
+      setGrandTotal(Number((sub - discount + tax).toFixed(2)));
     };
 
     const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -249,49 +310,10 @@ useEffect(() => {
       return result.trim() + " Rupees Only";
     };
 
-    const numberToWordsUSD = (num: number): string => {
-      if (num === 0) return "Zero Dollars Only";
-
-      const ones = [
-        "", "One", "Two", "Three", "Four", "Five",
-        "Six", "Seven", "Eight", "Nine", "Ten",
-        "Eleven", "Twelve", "Thirteen", "Fourteen",
-        "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen",
-      ];
-
-      const tens = [
-        "", "", "Twenty", "Thirty", "Forty",
-        "Fifty", "Sixty", "Seventy", "Eighty", "Ninety",
-      ];
-
-      const convertLessThanThousand = (n: number): string => {
-        if (n === 0) return "";
-        if (n < 20) return ones[n];
-        if (n < 100)
-          return tens[Math.floor(n / 10)] + (n % 10 ? " " + ones[n % 10] : "");
-        return ones[Math.floor(n / 100)] + " Hundred " + convertLessThanThousand(n % 100);
-      };
-
-      let result = "";
-      let million = Math.floor(num / 1000000);
-      num %= 1000000;
-      let thousand = Math.floor(num / 1000);
-      num %= 1000;
-
-      if (million) result += convertLessThanThousand(million) + " Million ";
-      if (thousand) result += convertLessThanThousand(thousand) + " Thousand ";
-      if (num) result += convertLessThanThousand(num);
-
-      return result.trim() + " Dollars Only";
-    };
 
     useEffect(() => {
-      if (quotationType === "international") {
-        setAmountInWords(numberToWordsUSD(Math.round(grandTotal)));
-      } else {
-        setAmountInWords(numberToWordsINR(Math.round(grandTotal)));
-      }
-    }, [grandTotal, quotationType]);
+      setAmountInWords(numberToWordsINR(Math.round(grandTotal)));
+    }, [grandTotal]);
 
     const requiredFields = {
       customer: true,
@@ -353,7 +375,7 @@ useEffect(() => {
         qty: 1,
         rate: 0,
         discount: 0,
-        tax: 0,
+        tax: getDefaultTaxByQuotationType(quotationType),
         taxAmount: 0,
         unitCost: 0,
         total: 0,
@@ -383,7 +405,8 @@ useEffect(() => {
       Quotation_No: quotationNumber,
       quotationType: quotationType,
       Validity: validityDate?.toLocaleDateString('en-GB'),
-      Description: text
+      Description: text,
+      Amount_In_Words: amountInWords
     };
 
     const existingQuotations = JSON.parse(localStorage.getItem("quotationList") || "[]");
@@ -391,8 +414,6 @@ useEffect(() => {
 
     window.dispatchEvent(new Event("storage"));
     
-    resetForm();
-
     const closeBtn = document.querySelector('#add-units .close') as HTMLElement;
     closeBtn?.click();
   };
@@ -426,17 +447,36 @@ const filteredCustomers = customers.filter(customer =>
 const getDefaultTaxByQuotationType = (
   type: "international" | "interstate" | "intrastate"
 ) => {
-  if (type === "international") return 0;
+  if (type === "international") return 5;
   if (type === "interstate") return 18;  
   return 18;                       
+};
+
+
+const getFilteredTaxRates = () => {
+  if (quotationType === "intrastate") {
+    return taxRates.filter(t => ["GST", "CGST", "SGST"].includes(t.type));
+  }
+  if (quotationType === "interstate") {
+    return taxRates
+      .filter(t => t.type === "GST" || t.type === "IGST")
+      .map(t => ({
+        ...t,
+        label: t.label.includes("GST") ? t.label.replace("GST", "IGST") : t.label
+      }));
+  }
+  if (quotationType === "international") {
+    return taxRates.filter(t => t.type === "VAT");
+  }
+  return taxRates;
 };
 
 
   return (
     <div>
         {/*Add Quotation */}
-        <div className="modal fade " id="add-units">
-          <div className="modal-dialog purchase modal-dialog-centered stock-adjust-modal  ">
+        <div className="modal fade" id="add-units">
+          <div className="modal-dialog purchase modal-dialog-centered stock-adjust-modal modal-xl modal-fullscreen-sm-down" style={{ maxWidth: "85%" }}>
             <div className="modal-content">
               <div className="modal-header">
                 <div className="page-title">
@@ -505,16 +545,19 @@ const getDefaultTaxByQuotationType = (
                           </div>
                           <div className="col-lg-2 col-sm-2 col-2 p-0">
                             <div className="add-icon tab">
-                              <Link to="#"
-                                className="bg-dark text-white p-2 rounded"
-                                data-bs-toggle="modal"
-                                data-bs-target="#add-units"
-                              >
-                                <img
-                                  src={plus1}
-                                  alt="img"
-                                />
-                              </Link>
+                              <button
+                                type="button"
+                                className="bg-dark text-white p-2 rounded border-0"
+                                onClick={() => {
+                                  const modal = document.getElementById("add-units");
+                                  modal?.classList.remove("show");
+                                  document.body.classList.remove("modal-open");
+                                  document.querySelector(".modal-backdrop")?.remove();
+                                  navigate(all_routes.customers, { state: { openAddCustomer: true } });
+                                }}
+                                >
+                                  <img src={plus1} alt="Add Customer" />
+                                </button>
                             </div>
                           </div>
                         </div>
@@ -551,6 +594,24 @@ const getDefaultTaxByQuotationType = (
                       </div>
                     </div>
                   </div>
+                  {quotationType === "international" && (
+                     <div className="row">
+                       <div className="col-lg-12">
+                         <div className="mb-3">
+                           <label className="form-label">Currency</label>
+                           <CommonSelect
+                             className="select"
+                             value={selectedCurrency}
+                             options={ALL_SELECTED_CURRENCIES.map((c) => ({
+                               label: `${c.name} (${c.symbol})`,
+                               value: c.code,
+                             }))}
+                             onChange={(e: any) => setSelectedCurrency(e.value)}
+                           />
+                         </div>
+                       </div>
+                     </div>
+                   )}
                   <div className="row">
                     <div className="col-lg-4 col-md-6 col-sm-12">
                       <div className="mb-3 add-product">
@@ -663,29 +724,29 @@ const getDefaultTaxByQuotationType = (
                             {errors.products}
                           </div>
                         )}
-                        <div>
+                        <div className="table-responsive">
                           <table className="table table-bordered mb-0">
                             <thead className="table-light">
-                              <tr>
-                                <th>Item</th>
-                                <th>Qty</th>
-                                <th>Rate</th>
-                                <th>Discount</th>
-                                <th>Tax (%)</th>
-                                <th>Tax Amount</th>
-                                <th>Unit Cost</th>
-                                <th>Total Cost</th>
-                                <th></th>
-                              </tr>
+                                <tr>
+                                  <th style={{ minWidth: "200px" }}>Item</th>
+                                  <th style={{ width: "100px", textAlign: "center" }}>Qty</th>
+                                  <th style={{ width: "200px", textAlign: "right" }}>Rate</th>
+                                  <th style={{ width: "110px", textAlign: "right" }}>Discount (%)</th>
+                                  <th style={{ width: "180px" }}>Tax (%)</th>
+                                  <th style={{ width: "120px", textAlign: "right" }}>Tax Amount</th>
+                                  <th style={{ width: "120px", textAlign: "right" }}>Unit Cost</th>
+                                  <th style={{ width: "130px", textAlign: "right" }}>Total Cost</th>
+                                  <th style={{ width: "30px" }}></th>
+                                </tr>
                             </thead>
                             <tbody>
                               {rows.map((row, index) => (
                                 <tr key={index}>
-                                  <td style={{ minWidth: "220px" }}>
+                                  <td style={{ minWidth: "200px" }}>
                                     <div className="position-relative">
                                       <input
                                         type="text"
-                                        className="form-control"
+                                        className="form-control w-100"
                                         placeholder="Search product..."
                                         value={row.productSearch}
                                         onChange={(e) => {
@@ -735,10 +796,10 @@ const getDefaultTaxByQuotationType = (
                                       )}
                                     </div>
                                   </td>
-                                  <td>
+                                  <td style={{ textAlign: "center" }}>
                                     <input
                                       type="number"
-                                      className="form-control"
+                                      className="form-control text-center"
                                       min={1}
                                       value={row.qty}
                                       onChange={(e) =>
@@ -747,10 +808,10 @@ const getDefaultTaxByQuotationType = (
                                     />
                                   </td>
 
-                                  <td>
+                                  <td style={{ textAlign: "right" }}>
                                     <input
                                       type="number"
-                                      className="form-control no-spinner"
+                                      className="form-control text-end no-spinner"
                                       value={row.rate}
                                       onChange={(e) =>
                                         onInputChange(index, "rate", Number(e.target.value))
@@ -758,10 +819,10 @@ const getDefaultTaxByQuotationType = (
                                     />
                                   </td>
 
-                                  <td>
+                                  <td style={{ textAlign: "right" }}>
                                     <input
                                       type="number"
-                                      className="form-control no-spinner"
+                                      className="form-control text-end no-spinner"
                                       value={row.discount}
                                       onChange={(e) =>
                                         onInputChange(index, "discount", Number(e.target.value))
@@ -769,18 +830,28 @@ const getDefaultTaxByQuotationType = (
                                     />
                                   </td>
                                   <td>
-                                    <input
-                                      type="number"
-                                      className="form-control no-spinner"
-                                      value={row.tax}
-                                      onChange={(e) =>
-                                        onInputChange(index, "tax", Number(e.target.value))
-                                      }
-                                    />
+                                      <select
+                                        className="form-select"
+                                        value={row.tax}
+                                        onChange={(e) =>
+                                          onInputChange(
+                                            index,
+                                            "tax",
+                                            Number(e.target.value)
+                                          )
+                                        }
+                                      >
+                                        <option value={0}>0%</option>
+                                        {getFilteredTaxRates().map((rate: { label: string; value: number }) => (
+                                          <option key={rate.label} value={rate.value}>
+                                            {rate.label}
+                                          </option>
+                                        ))}
+                                      </select>
                                   </td>
-                                  <td>{row.taxAmount || 0}</td>
-                                  <td>{row.unitCost || 0}</td>
-                                  <td>{row.total || 0}</td>
+                                  <td style={{ textAlign: "right" }}>{row.taxAmount || 0}</td>
+                                  <td style={{ textAlign: "right" }}>{row.unitCost || 0}</td>
+                                  <td style={{ textAlign: "right" }}>{row.total || 0}</td>
                                   <td className="text-center">
                                     <button
                                       type="button"
@@ -816,11 +887,36 @@ const getDefaultTaxByQuotationType = (
                               <span>Subtotal</span>
                               <span>₹{subTotal.toFixed(2)}</span>
                             </div>
-
-                            <div className="d-flex justify-content-between mb-2">
-                              <span>Tax</span>
-                              <span>₹{totalTax.toFixed(2)}</span>
-                            </div>
+                            {totalDiscount > 0 && (
+                              <div className="d-flex justify-content-between mb-2 text-danger font-weight-bold">
+                                <span>Discount</span>
+                                <span>-₹{totalDiscount.toFixed(2)}</span>
+                              </div>
+                            )}
+                            {quotationType === "intrastate" && totalTax > 0 && (
+                              <>
+                                <div className="d-flex justify-content-between mb-2">
+                                  <span>CGST</span>
+                                  <span>₹{(totalTax / 2).toFixed(2)}</span>
+                                </div>
+                                <div className="d-flex justify-content-between mb-2">
+                                  <span>SGST</span>
+                                  <span>₹{(totalTax / 2).toFixed(2)}</span>
+                                </div>
+                              </>
+                            )}
+                            {quotationType === "interstate" && totalTax > 0 && (
+                              <div className="d-flex justify-content-between mb-2">
+                                <span>IGST</span>
+                                <span>₹{totalTax.toFixed(2)}</span>
+                              </div>
+                            )}
+                            {quotationType === "international" && totalTax > 0 && (
+                              <div className="d-flex justify-content-between mb-2">
+                                <span>VAT</span>
+                                <span>₹{totalTax.toFixed(2)}</span>
+                              </div>
+                            )}
 
                             <div className="d-flex justify-content-between fw-bold border-top pt-2">
                               <span>Grand Total</span>

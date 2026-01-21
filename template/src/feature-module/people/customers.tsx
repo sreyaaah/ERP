@@ -4,7 +4,7 @@ import SearchFromApi from "../../components/data-table/search";
 import DeleteModal from "../../components/delete-modal";
 import { user41 } from "../../utils/imagepath";
 import { useState, useEffect } from "react";
-import { Link } from "react-router";
+import { Link, useLocation } from "react-router-dom";
 import TooltipIcons from "../../components/tooltip-content/tooltipIcons";
 import RefreshIcon from "../../components/tooltip-content/refresh";
 import CollapesIcon from "../../components/tooltip-content/collapes";
@@ -13,6 +13,16 @@ import AddCustomers from "./components/addCustomers";
 import EditCustomers from "./components/editCustomers";
 
 const Customers = () => {
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.state?.openAddCustomer) {
+      const btn = document.getElementById("add-customer-btn");
+      if (btn) {
+        btn.click();
+      }
+    }
+  }, [location]);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [rows, setRows] = useState<number>(10);
   const [searchQuery, setSearchQuery] = useState<string | undefined>(undefined);
@@ -330,6 +340,7 @@ const Customers = () => {
             <div className="page-btn">
               <Link
                 to="#"
+                id="add-customer-btn"
                 className="btn btn-primary text-white"
                 data-bs-toggle="modal"
                 data-bs-target="#add-customer"
