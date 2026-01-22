@@ -4,6 +4,9 @@ import { InvoiceService, type Invoice, type InvoiceItem } from "../services/invo
 import { all_routes } from "../../routes/all_routes";
 import CommonFooter from "../../components/footer/commonFooter";
 import { productlistdata } from "../inventory/productlist";
+import CommonSelect from "../../components/select/common-select";
+import { ALL_SELECTED_CURRENCIES } from "../settings/financialsettings/currencies";
+import { INITIAL_TAX_RATES } from "../settings/financialsettings/taxrates";
 
 
 
@@ -42,7 +45,9 @@ const AddInvoice = () => {
   const customerDropdownRef = useRef<HTMLDivElement>(null);
   const productDropdownRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
-  const [invoiceType, setInvoiceType] = useState<'interstate' | 'intrastate' | 'international'>('intrastate');
+  const [invoiceType, setInvoiceType] = useState<'interstate' | 'intrastate' | 'international' | ''>('');
+  const [selectedCurrency, setSelectedCurrency] = useState<any>(null);
+  const [taxRates, setTaxRates] = useState<any[]>([]);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
@@ -67,15 +72,59 @@ const AddInvoice = () => {
 
   const [subtotal, setSubtotal] = useState(0);
   const [totalTax, setTotalTax] = useState(0);
+  const [totalDiscount, setTotalDiscount] = useState(0);
   const [grandTotal, setGrandTotal] = useState(0);
 
   const currencySymbol = invoiceType === 'international' ? '$' : '₹';
+
+  const getFilteredTaxRates = () => {
+    if (invoiceType === "intrastate") {
+      return taxRates.filter((t: any) => ["GST", "CGST", "SGST"].includes(t.type));
+    }
+    if (invoiceType === "interstate") {
+      return taxRates
+        .filter((t: any) => t.type === "GST" || t.type === "IGST")
+        .map((t: any) => ({
+          ...t,
+          name: t.name.includes("GST") ? t.name.replace("GST", "IGST") : t.name
+        }));
+    }
+    if (invoiceType === "international") {
+      return taxRates.filter((t: any) => t.type === "VAT");
+    }
+    return taxRates;
+  };
 
   useEffect(() => {
     const today = new Date();
     const due = new Date(today);
     due.setDate(due.getDate() + 30);
     setDueDate(due.toLocaleDateString("en-GB"));
+  }, []);
+
+  useEffect(() => {
+    if (invoiceType !== "international") {
+      setSelectedCurrency(null);
+    }
+  }, [invoiceType]);
+
+  useEffect(() => {
+    const savedTaxRates = localStorage.getItem('taxRates');
+    if (savedTaxRates) {
+      setTaxRates(JSON.parse(savedTaxRates));
+    } else {
+      setTaxRates(INITIAL_TAX_RATES);
+    }
+
+    const handleStorageChange = () => {
+      const updatedTaxRates = localStorage.getItem('taxRates');
+      if (updatedTaxRates) {
+        setTaxRates(JSON.parse(updatedTaxRates));
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   useEffect(() => {
@@ -265,6 +314,7 @@ useEffect(() => {
   useEffect(() => {
     let sub = 0;
     let tax = 0;
+    let discount = 0;
     items.forEach(item => {
       const baseAmount = item.quantity * item.rate;
       const discountAmount = item.discount;
@@ -272,20 +322,23 @@ useEffect(() => {
       const taxAmount = (amountAfterDiscount * item.tax) / 100;
       sub += amountAfterDiscount;
       tax += taxAmount;
+      discount += discountAmount;
     });
     setSubtotal(sub);
     setTotalTax(tax);
+    setTotalDiscount(discount);
     setGrandTotal(sub + tax);
   }, [items]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!invoiceType) {
+      return;
+    }
     if (!customerName || !customerEmail || !dueDate) {
-      alert("Please fill in all required fields");
       return;
     }
     if (items.some(item => !item.productName || item.quantity <= 0 || item.rate <= 0)) {
-      alert("Please fill in all item details correctly");
       return;
     }
 
@@ -318,6 +371,7 @@ useEffect(() => {
       customerAddress,
       customerImage: customerImage,
       invoiceType,
+      currency: selectedCurrency || undefined,
       items: invoiceItems,
       subTotal: subtotal,
       totalTax: totalTax,
@@ -359,7 +413,7 @@ useEffect(() => {
 
             <div className="card mb-3">
               <div className="card-body">
-                <h5 className="card-title mb-3">Invoice Type</h5>
+                <h5 className="card-title mb-3">Invoice Type <span className="text-danger">*</span></h5>
                 <div className="row">
                   <div className="col-md-4">
                     <div className="form-check">
@@ -384,13 +438,36 @@ useEffect(() => {
                       <input className="form-check-input" type="radio" name="invoiceType" id="international"
                         checked={invoiceType === 'international'} onChange={() => setInvoiceType('international')} />
                       <label className="form-check-label" htmlFor="international">
-                        International Invoice (USD - $)
+                        International Invoice
                       </label>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
+
+            {invoiceType === "international" && (
+              <div className="card mb-3">
+                <div className="card-body">
+                  <div className="row">
+                    <div className="col-lg-12">
+                      <div className="mb-3">
+                        <label className="form-label">Currency</label>
+                        <CommonSelect
+                          className="select"
+                          value={selectedCurrency}
+                          options={ALL_SELECTED_CURRENCIES.map((c) => ({
+                            label: `${c.name} (${c.symbol})`,
+                            value: c.code,
+                          }))}
+                          onChange={(e: any) => setSelectedCurrency(e.value)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="card mb-3">
               <div className="card-body">
@@ -636,23 +713,20 @@ useEffect(() => {
                                 placeholder="Discount"
                               />
                             </td>
-
                             <td>
-                              <input
-                                type="number"
-                                className="form-control form-control-sm"
-                                value={item.tax === 0 ? "" : item.tax}
-                                onChange={(e) =>
-                                  updateItem(
-                                    item.id,
-                                    "tax",
-                                    e.target.value === "" ? 0 : parseFloat(e.target.value)
-                                  )
+                              <CommonSelect
+                                className="select"
+                                value={item.tax}
+                                options={[
+                                  { label: "No Tax", value: 0 },
+                                  ...getFilteredTaxRates().map((t: any) => ({
+                                    label: t.name,
+                                    value: t.rate,
+                                  })),
+                                ]}
+                                onChange={(e: any) =>
+                                  updateItem(item.id, "tax", e.value)
                                 }
-                                step="0.01"
-                                min="0"
-                                max="100"
-                                placeholder="Tax %"
                               />
                             </td>
 
@@ -707,8 +781,14 @@ useEffect(() => {
                           <td className="fw-medium">Subtotal:</td>
                           <td className="text-end">{currencySymbol}{subtotal.toFixed(2)}</td>
                         </tr>
+                        {totalDiscount > 0 && (
+                          <tr>
+                            <td className="fw-medium">Total Discount:</td>
+                            <td className="text-end">{currencySymbol}{totalDiscount.toFixed(2)}</td>
+                          </tr>
+                        )}
                         <tr>
-                          <td className="fw-medium">Tax:</td>
+                          <td className="fw-medium">Tax ({invoiceType === 'intrastate' ? 'GST/CGST/SGST' : invoiceType === 'interstate' ? 'IGST' : 'VAT'}):</td>
                           <td className="text-end">{currencySymbol}{totalTax.toFixed(2)}</td>
                         </tr>
                         <tr className="border-top">
