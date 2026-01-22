@@ -5,6 +5,7 @@ import { CustomerService } from "../../../feature-module/services/customer.servi
 import { productlistdata } from "../../../feature-module/inventory/productlist";
 import { InvoiceService } from "../../../feature-module/services/invoice.service";
 import { customersData } from "../../json/customers-data";
+import { INITIAL_TAX_RATES } from "../../../feature-module/settings/financialsettings/taxrates";
 
 interface EditInvoiceProps {
   invoice: any;
@@ -14,6 +15,8 @@ interface EditInvoiceProps {
 const EditInvoice = ({ invoice, onUpdate }: EditInvoiceProps) => {
   const [date, setDate] = useState<Date | null>(new Date());
   const [dueDate, setDueDate] = useState<Date | null>(new Date());
+  const [invoiceType, setInvoiceType] = useState<'interstate' | 'intrastate' | 'international' | ''>('');
+  const [taxRates, setTaxRates] = useState<any[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [selectedStatus, setSelectedStatus] = useState<any>(null);
   const [invoiceNumber, setInvoiceNumber] = useState<string>("");
@@ -23,6 +26,7 @@ const EditInvoice = ({ invoice, onUpdate }: EditInvoiceProps) => {
   const [rows, setRows] = useState<any[]>([]);
   const [subTotal, setSubTotal] = useState(0);
   const [totalTax, setTotalTax] = useState(0);
+  const [totalDiscount, setTotalDiscount] = useState(0);
   const [grandTotal, setGrandTotal] = useState(0);
   const [customerSearch, setCustomerSearch] = useState("");
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
@@ -63,6 +67,25 @@ const EditInvoice = ({ invoice, onUpdate }: EditInvoiceProps) => {
   }, []);
 
   useEffect(() => {
+    const savedTaxRates = localStorage.getItem('taxRates');
+    if (savedTaxRates) {
+      setTaxRates(JSON.parse(savedTaxRates));
+    } else {
+      setTaxRates(INITIAL_TAX_RATES);
+    }
+
+    const handleStorageChange = () => {
+      const updatedTaxRates = localStorage.getItem('taxRates');
+      if (updatedTaxRates) {
+        setTaxRates(JSON.parse(updatedTaxRates));
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  useEffect(() => {
     if (!invoice) return;
 
     const parseDate = (dateStr: any) => {
@@ -81,6 +104,7 @@ const EditInvoice = ({ invoice, onUpdate }: EditInvoiceProps) => {
     setReferenceNo(invoice.referenceNo || "");
     setDate(parseDate(invoice.createdDate || invoice.createdAt));
     setDueDate(parseDate(invoice.dueDate));
+    setInvoiceType(invoice.invoiceType || 'intrastate');
 
     if (invoice.customerName) {
       setCustomerSearch(invoice.customerName);
@@ -99,6 +123,7 @@ const EditInvoice = ({ invoice, onUpdate }: EditInvoiceProps) => {
         product: { label: item.productName, value: item.productId }, 
         productSearch: item.productName,
         showProductDropdown: false,
+        description: item.description || "",
         qty: Number(item.qty),
         rate: Number(item.rate),
         discount: Number(item.discount),
@@ -116,6 +141,7 @@ const EditInvoice = ({ invoice, onUpdate }: EditInvoiceProps) => {
             product: null,
             productSearch: "",
             showProductDropdown: false,
+            description: "",
             qty: 1,
             rate: 0,
             discount: 0,
@@ -136,6 +162,24 @@ const EditInvoice = ({ invoice, onUpdate }: EditInvoiceProps) => {
     { label: 'Partially Paid', value: 'Partially Paid' },
   ];
 
+  const getFilteredTaxRates = () => {
+    if (invoiceType === "intrastate") {
+      return taxRates.filter((t: any) => ["GST", "CGST", "SGST"].includes(t.type));
+    }
+    if (invoiceType === "interstate") {
+      return taxRates
+        .filter((t: any) => t.type === "GST" || t.type === "IGST")
+        .map((t: any) => ({
+          ...t,
+          name: t.name.includes("GST") ? t.name.replace("GST", "IGST") : t.name
+        }));
+    }
+    if (invoiceType === "international") {
+      return taxRates.filter((t: any) => t.type === "VAT");
+    }
+    return taxRates;
+  };
+
   const filteredCustomers = customers.filter(customer =>
     customer.label.toLowerCase().includes(customerSearch.toLowerCase())
   );
@@ -150,19 +194,22 @@ const EditInvoice = ({ invoice, onUpdate }: EditInvoiceProps) => {
   const calculateSummary = (rowsData: any[]) => {
     let sub = 0;
     let tax = 0;
+    let discount = 0;
 
     rowsData.forEach((row) => {
       const qty = Number(row.qty || 0);
       const rate = Number(row.rate || 0);
-      const discount = Number(row.discount || 0);
-      const baseAmount = qty * rate - discount;
+      const discountAmount = Number(row.discount || 0);
+      const baseAmount = qty * rate - discountAmount;
 
       sub += baseAmount;
       tax += Number(row.taxAmount || 0);
+      discount += discountAmount;
     });
 
     setSubTotal(Number(sub.toFixed(2)));
     setTotalTax(Number(tax.toFixed(2)));
+    setTotalDiscount(Number(discount.toFixed(2)));
     setGrandTotal(Number((sub + tax).toFixed(2)));
   };
 
@@ -214,6 +261,12 @@ const EditInvoice = ({ invoice, onUpdate }: EditInvoiceProps) => {
       recalculateRow(updated, index);
   };
 
+  const onStringInputChange = (index: number, field: string, value: string) => {
+      const updated = [...rows];
+      updated[index] = { ...updated[index], [field]: value };
+      setRows(updated);
+  };
+
   const addProductRow = () => {
     setRows([
       ...rows,
@@ -221,6 +274,7 @@ const EditInvoice = ({ invoice, onUpdate }: EditInvoiceProps) => {
         product: null,
         productSearch: "",
         showProductDropdown: false,
+        description: "",
         qty: 1,
         rate: 0,
         discount: 0,
@@ -253,6 +307,7 @@ const EditInvoice = ({ invoice, onUpdate }: EditInvoiceProps) => {
           items: rows.map(r => ({
               productId: r.product?.value || r.product?.id || "GENERIC",
               productName: r.productSearch,
+              description: r.description,
               qty: r.qty,
               rate: r.rate,
               discount: r.discount,
@@ -271,7 +326,7 @@ const EditInvoice = ({ invoice, onUpdate }: EditInvoiceProps) => {
 
   return (
     <div className="modal fade" id="edit-invoice">
-      <div className="modal-dialog purchase modal-dialog-centered stock-adjust-modal">
+      <div className="modal-dialog purchase modal-dialog-centered stock-adjust-modal" style={{ maxWidth: '85vw', width: '85%' }}>
         <div className="modal-content">
           <div className="modal-header">
             <div className="page-title">
@@ -287,6 +342,64 @@ const EditInvoice = ({ invoice, onUpdate }: EditInvoiceProps) => {
             </button>
           </div>
           <div className="modal-body">
+            <div className="card mb-3">
+              <div className="card-body">
+                <h5 className="card-title mb-3">Invoice Type</h5>
+                <div className="row">
+                  <div className="col-md-4">
+                    <div className="form-check">
+                      <input className="form-check-input" type="radio" name="invoiceType" id="edit-intrastate"
+                        checked={invoiceType === 'intrastate'} onChange={() => setInvoiceType('intrastate')} />
+                      <label className="form-check-label" htmlFor="edit-intrastate">
+                        Intrastate (Within State - INR ₹)
+                      </label>
+                    </div>
+                  </div>
+                  <div className="col-md-4">
+                    <div className="form-check">
+                      <input className="form-check-input" type="radio" name="invoiceType" id="edit-interstate"
+                        checked={invoiceType === 'interstate'} onChange={() => setInvoiceType('interstate')} />
+                      <label className="form-check-label" htmlFor="edit-interstate">
+                        Interstate (Between States - INR ₹)
+                      </label>
+                    </div>
+                  </div>
+                  <div className="col-md-4">
+                    <div className="form-check">
+                      <input className="form-check-input" type="radio" name="invoiceType" id="edit-international"
+                        checked={invoiceType === 'international'} onChange={() => setInvoiceType('international')} />
+                      <label className="form-check-label" htmlFor="edit-international">
+                        International
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {invoiceType === "international" && (
+              <div className="card mb-3">
+                <div className="card-body">
+                  <div className="row">
+                    <div className="col-lg-12">
+                      <div className="mb-3">
+                        <label className="form-label">Currency</label>
+                        <CommonSelect
+                          className="select"
+                          value={invoiceType === "international" ? null : undefined}
+                          options={taxRates.map((c: any) => ({
+                            label: c.name,
+                            value: c.code,
+                          }))}
+                          onChange={() => {}}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="row">
                 <div className="col-lg-4 col-md-6 col-sm-12">
                     <div className="mb-3">
@@ -377,11 +490,12 @@ const EditInvoice = ({ invoice, onUpdate }: EditInvoiceProps) => {
             
             <div className="row mt-3">
                  <div className="col-lg-12">
-                      <div className="table-responsive">
+                      <div className="table-responsive" style={{ overflow: "visible" }}>
                             <table className="table table-bordered">
                                 <thead>
                                     <tr>
                                         <th>Product</th>
+                                        <th>Description</th>
                                         <th>Qty</th>
                                         <th>Rate</th>
                                         <th>Discount</th>
@@ -427,6 +541,9 @@ const EditInvoice = ({ invoice, onUpdate }: EditInvoiceProps) => {
                                                  </div>
                                             </td>
                                             <td>
+                                                <input type="text" className="form-control" value={row.description || ""} onChange={(e) => onStringInputChange(index, 'description', e.target.value)} placeholder="Enter description" />
+                                            </td>
+                                            <td>
                                                 <input type="number" className="form-control" value={row.qty} onChange={(e) => onInputChange(index, 'qty', Number(e.target.value))} />
                                             </td>
                                             <td>
@@ -435,8 +552,19 @@ const EditInvoice = ({ invoice, onUpdate }: EditInvoiceProps) => {
                                              <td>
                                                 <input type="number" className="form-control" value={row.discount} onChange={(e) => onInputChange(index, 'discount', Number(e.target.value))} />
                                             </td>
-                                             <td>
-                                                <input type="number" className="form-control" value={row.tax} onChange={(e) => onInputChange(index, 'tax', Number(e.target.value))} />
+                                             <td style={{ position: 'relative' }}>
+                                                <CommonSelect
+                                                  className="form-control"
+                                                  value={row.tax}
+                                                  options={[
+                                                    { label: "No Tax", value: 0 },
+                                                    ...getFilteredTaxRates().map((t: any) => ({
+                                                      label: t.name,
+                                                      value: t.rate,
+                                                    })),
+                                                  ]}
+                                                  onChange={(e: any) => onInputChange(index, 'tax', e.value)}
+                                                />
                                             </td>
                                             <td>{row.total}</td>
                                             <td>
@@ -464,8 +592,14 @@ const EditInvoice = ({ invoice, onUpdate }: EditInvoiceProps) => {
                                 <h4>Sub Total</h4>
                                 <h5>$ {subTotal}</h5>
                             </li>
+                            {totalDiscount > 0 && (
+                              <li>
+                                <h4>Total Discount</h4>
+                                <h5>$ {totalDiscount}</h5>
+                              </li>
+                            )}
                              <li>
-                                <h4>Tax</h4>
+                                <h4>Tax ({invoiceType === 'intrastate' ? 'GST/CGST/SGST' : invoiceType === 'interstate' ? 'IGST' : 'VAT'})</h4>
                                 <h5>$ {totalTax}</h5>
                             </li>
                              <li className="total">
