@@ -25,6 +25,7 @@ export interface Invoice {
   quotationId?: number;
   quotationNumber?: string;
   invoiceType: "interstate" | "intrastate" | "international";
+  currency?: string;
   items: InvoiceItem[];
   subTotal: number;
   totalTax: number;
