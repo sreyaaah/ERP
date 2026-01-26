@@ -250,7 +250,7 @@ const ThemeSettings = () => {
                           />
                           <label htmlFor="defaultLayout">
                             <span className="d-block mb-2 layout-img">
-                              <img src="/assets/img/theme/default.svg" alt="img" />
+                              <img src="/img/theme/default.svg" alt="img" />
                             </span>
                             <span className="layout-type">Default</span>
                           </label>
@@ -268,7 +268,7 @@ const ThemeSettings = () => {
                           />
                           <label htmlFor="miniLayout">
                             <span className="d-block mb-2 layout-img">
-                              <img src="/assets/img/theme/mini.svg" alt="img" />
+                              <img src="/img/theme/mini.svg" alt="img" />
                             </span>
                             <span className="layout-type">Mini</span>
                           </label>
@@ -286,7 +286,7 @@ const ThemeSettings = () => {
                           />
                           <label htmlFor="twocolumnLayout">
                             <span className="d-block mb-2 layout-img">
-                              <img src="/assets/img/theme/two-column.svg" alt="img" />
+                              <img src="/img/theme/two-column.svg" alt="img" />
                             </span>
                             <span className="layout-type">Two Column</span>
                           </label>
@@ -304,7 +304,7 @@ const ThemeSettings = () => {
                           />
                           <label htmlFor="horizontalLayout">
                             <span className="d-block mb-2 layout-img">
-                              <img src="/assets/img/theme/horizontal.svg" alt="img" />
+                              <img src="/img/theme/horizontal.svg" alt="img" />
                             </span>
                             <span className="layout-type">Horizontal</span>
                           </label>
@@ -322,7 +322,7 @@ const ThemeSettings = () => {
                           />
                           <label htmlFor="detachedLayout">
                             <span className="d-block mb-2 layout-img">
-                              <img src="/assets/img/theme/detached.svg" alt="img" />
+                              <img src="/img/theme/detached.svg" alt="img" />
                             </span>
                             <span className="layout-type">Detached</span>
                           </label>
@@ -341,7 +341,7 @@ const ThemeSettings = () => {
                           <label htmlFor="without-headerLayout">
                             <span className="d-block mb-2 layout-img">
                               <img
-                                src="/assets/img/theme/without-header.svg"
+                                src="/img/theme/without-header.svg"
                                 alt="img"
                               />
                             </span>
@@ -370,7 +370,7 @@ const ThemeSettings = () => {
                       <div className="col-4" >
                         <Link to={all_routes.RTL} onClick={() => dispatch(setRtl('layout-mode-rtl'))} className="theme-layout mb-3" >
                           <span className="d-block mb-2 layout-img">
-                            <img src="/assets/img/theme/rtl.svg" alt="img" />
+                            <img src="/img/theme/rtl.svg" alt="img" />
                           </span>
                           <span className="layout-type d-block">RTL</span>
                         </Link>
@@ -956,7 +956,7 @@ const ThemeSettings = () => {
                         />
                         <label htmlFor="sidebarBg1" className="d-block rounded">
                           <img
-                            src="/assets/img/theme/sidebar-bg-01.svg"
+                            src="/img/theme/sidebar-bg-01.svg"
                             alt="img"
                             className="rounded"
                           />
@@ -973,7 +973,7 @@ const ThemeSettings = () => {
                         />
                         <label htmlFor="sidebarBg2" className="d-block rounded">
                           <img
-                            src="/assets/img/theme/sidebar-bg-02.svg"
+                            src="/img/theme/sidebar-bg-02.svg"
                             alt="img"
                             className="rounded"
                           />
@@ -990,7 +990,7 @@ const ThemeSettings = () => {
                         />
                         <label htmlFor="sidebarBg3" className="d-block rounded">
                           <img
-                            src="/assets/img/theme/sidebar-bg-03.svg"
+                            src="/img/theme/sidebar-bg-03.svg"
                             alt="img"
                             className="rounded"
                           />
@@ -1007,7 +1007,7 @@ const ThemeSettings = () => {
                         />
                         <label htmlFor="sidebarBg4" className="d-block rounded">
                           <img
-                            src="/assets/img/theme/sidebar-bg-04.svg"
+                            src="/img/theme/sidebar-bg-04.svg"
                             alt="img"
                             className="rounded"
                           />
@@ -1024,7 +1024,7 @@ const ThemeSettings = () => {
                         />
                         <label htmlFor="sidebarBg5" className="d-block rounded">
                           <img
-                            src="/assets/img/theme/sidebar-bg-05.svg"
+                            src="/img/theme/sidebar-bg-05.svg"
                             alt="img"
                             className="rounded"
                           />
@@ -1041,7 +1041,7 @@ const ThemeSettings = () => {
                         />
                         <label htmlFor="sidebarBg6" className="d-block rounded">
                           <img
-                            src="/assets/img/theme/sidebar-bg-06.svg"
+                            src="/img/theme/sidebar-bg-06.svg"
                             alt="img"
                             className="rounded"
                           />
