@@ -24,7 +24,7 @@ import {
 import { all_routes } from "../../routes/all_routes";
 
 
-type Color = Extract<
+  type Color = Extract<
   GetProp<ColorPickerProps, "value">,
   string | { cleared: any }
 >;
@@ -41,27 +41,27 @@ const ThemeSettings = () => {
   const dispatch = useDispatch();
 
   // Redux state selectors
-  const dataLayout = useSelector((state: any) => state.themeSetting.dataLayout);
-  const dataWidth = useSelector((state: any) => state.themeSetting.dataWidth);
-  const dataTopBar = useSelector((state: any) => state.themeSetting.dataTopBar);
+  const dataLayout = useSelector((state:any) => state.themeSetting.dataLayout);
+  const dataWidth = useSelector((state:any) => state.themeSetting.dataWidth);
+  const dataTopBar = useSelector((state:any) => state.themeSetting.dataTopBar);
   const dataTopBarColor = useSelector(
-    (state: any) => state.themeSetting.dataTopBarColor
+    (state:any) => state.themeSetting.dataTopBarColor
   );
-  const dataTheme = useSelector((state: any) => state.themeSetting.dataTheme);
-  const dataSidebarAll = useSelector((state: any) => state.themeSetting.dataSidebarAll);
-  const dataColorAll = useSelector((state: any) => state.themeSetting.dataColorAll);
-  const dataTopBarColorAll = useSelector((state: any) => state.themeSetting.dataTopBarColorAll);
-  const dataTopbarAll = useSelector((state: any) => state.themeSetting.dataTopbarAll);
-  const dataSidebar = useSelector((state: any) => state.themeSetting.dataSidebar);
-  const dataSidebarBg = useSelector((state: any) => state.themeSetting.dataSidebarBg);
-  const dataTopbarBg = useSelector((state: any) => state.themeSetting.dataTopbarBg);
-  const dataColor = useSelector((state: any) => state.themeSetting.dataColor);
+  const dataTheme = useSelector((state:any) => state.themeSetting.dataTheme);
+  const dataSidebarAll = useSelector((state:any) => state.themeSetting.dataSidebarAll);
+  const dataColorAll = useSelector((state:any) => state.themeSetting.dataColorAll);
+  const dataTopBarColorAll = useSelector((state:any) => state.themeSetting.dataTopBarColorAll);
+  const dataTopbarAll = useSelector((state:any) => state.themeSetting.dataTopbarAll);
+  const dataSidebar = useSelector((state:any) => state.themeSetting.dataSidebar);
+  const dataSidebarBg = useSelector((state:any) => state.themeSetting.dataSidebarBg);
+  const dataTopbarBg = useSelector((state:any) => state.themeSetting.dataTopbarBg);
+  const dataColor = useSelector((state:any) => state.themeSetting.dataColor);
 
 
   const [colorRgb, setColorRgb] = useState<Color>(`rgb(${dataSidebarAll})`);
   const [colorRgb2, setColorRgb2] = useState<Color>(`rgb(${dataTopbarAll})`);
   const [colorRgb3, setColorRgb3] = useState<Color>(`rgb(${dataTopBarColorAll})`);
-  const [colorRgb4, setColorRgb4] = useState<Color>(`rgb(${dataColorAll})`);
+   const [colorRgb4, setColorRgb4] = useState<Color>(`rgb(${dataColorAll})`);
   const [formatRgb, setFormatRgb] = useState<ColorFormatType>("rgb");
 
   // RGB String calculations
@@ -94,35 +94,35 @@ const ThemeSettings = () => {
   }, [dispatch, rgbString, rgbString2, rgbString3, rgbString4]);
 
   // Event handlers for dispatching actions
-  const handleLayoutChange = (layout: any) => {
+  const handleLayoutChange = (layout:any) => {
     dispatch(setDataLayout(layout));
   };
 
-  const handleLayoutWidthChange = (layout: any) => {
+  const handleLayoutWidthChange = (layout:any) => {
     dispatch(setDataWidth(layout));
   };
 
 
-  const handleTopBarColorChange = (color: any) => {
+  const handleTopBarColorChange = (color:any) => {
     dispatch(setTopBarColor(color));
   };
 
 
-  const handleDataThemeChange = (theme: any) => {
+  const handleDataThemeChange = (theme:any) => {
     dispatch(setDataTheme(theme));
   };
 
-  const handleDataSidebarChange = (theme: any) => {
+  const handleDataSidebarChange = (theme:any) => {
     dispatch(setDataSidebar(theme));
   };
 
-  const handleDataSidebarBgChange = (bg: any) => {
+  const handleDataSidebarBgChange = (bg:any) => {
     dispatch(setDataSidebarBg(bg));
   };
 
 
 
-  const handleDataColorChange = (bg: any) => {
+  const handleDataColorChange = (bg:any) => {
     dispatch(setDataColor(bg));
   };
 
@@ -175,13 +175,13 @@ const ThemeSettings = () => {
     document.documentElement.setAttribute("data-color", dataColor);
     document.body.setAttribute("data-sidebarbg", dataSidebarBg);
     document.body.setAttribute("data-topbarbg", dataTopbarBg);
-
+    
     // Ensure mini-sidebar class is always added to body for layout-hovered and layout-boxed
     // This should be done at the end to ensure it persists regardless of other operations
     if (dataLayout === "layout-hovered" || (dataLayout === "mini" && dataWidth === "box")) {
       document.body.classList.add("mini-sidebar");
     }
-
+    
     setColorRgb(`rgb(${dataSidebarAll})`)
     setColorRgb2(`rgb(${dataTopbarAll})`)
     setColorRgb3(`rgb(${dataTopBarColorAll})`)
@@ -250,7 +250,7 @@ const ThemeSettings = () => {
                           />
                           <label htmlFor="defaultLayout">
                             <span className="d-block mb-2 layout-img">
-                              <img src="/img/theme/default.svg" alt="img" />
+                              <img src="/assets/img/theme/default.svg" alt="img" />
                             </span>
                             <span className="layout-type">Default</span>
                           </label>
@@ -268,7 +268,7 @@ const ThemeSettings = () => {
                           />
                           <label htmlFor="miniLayout">
                             <span className="d-block mb-2 layout-img">
-                              <img src="/img/theme/mini.svg" alt="img" />
+                              <img src="/assets/img/theme/mini.svg" alt="img" />
                             </span>
                             <span className="layout-type">Mini</span>
                           </label>
@@ -286,7 +286,7 @@ const ThemeSettings = () => {
                           />
                           <label htmlFor="twocolumnLayout">
                             <span className="d-block mb-2 layout-img">
-                              <img src="/img/theme/two-column.svg" alt="img" />
+                              <img src="/assets/img/theme/two-column.svg" alt="img" />
                             </span>
                             <span className="layout-type">Two Column</span>
                           </label>
@@ -304,7 +304,7 @@ const ThemeSettings = () => {
                           />
                           <label htmlFor="horizontalLayout">
                             <span className="d-block mb-2 layout-img">
-                              <img src="/img/theme/horizontal.svg" alt="img" />
+                              <img src="/assets/img/theme/horizontal.svg" alt="img" />
                             </span>
                             <span className="layout-type">Horizontal</span>
                           </label>
@@ -322,7 +322,7 @@ const ThemeSettings = () => {
                           />
                           <label htmlFor="detachedLayout">
                             <span className="d-block mb-2 layout-img">
-                              <img src="/img/theme/detached.svg" alt="img" />
+                              <img src="/assets/img/theme/detached.svg" alt="img" />
                             </span>
                             <span className="layout-type">Detached</span>
                           </label>
@@ -341,7 +341,7 @@ const ThemeSettings = () => {
                           <label htmlFor="without-headerLayout">
                             <span className="d-block mb-2 layout-img">
                               <img
-                                src="/img/theme/without-header.svg"
+                                src="/assets/img/theme/without-header.svg"
                                 alt="img"
                               />
                             </span>
@@ -361,7 +361,7 @@ const ThemeSettings = () => {
                     />
                     <label htmlFor="horizontal-overlayLayout">
                       <span className="d-block mb-2 layout-img">
-                        <img src="/img/theme/overlay.svg" alt="img" />
+                        <img src="/src/assets/img/theme/overlay.svg" alt="img" />
                       </span>
                       <span className="layout-type">Overlay</span>
                     </label>
@@ -370,7 +370,7 @@ const ThemeSettings = () => {
                       <div className="col-4" >
                         <Link to={all_routes.RTL} onClick={() => dispatch(setRtl('layout-mode-rtl'))} className="theme-layout mb-3" >
                           <span className="d-block mb-2 layout-img">
-                            <img src="/img/theme/rtl.svg" alt="img" />
+                            <img src="/assets/img/theme/rtl.svg" alt="img" />
                           </span>
                           <span className="layout-type d-block">RTL</span>
                         </Link>
@@ -725,7 +725,7 @@ const ThemeSettings = () => {
                           format={formatRgb}
                           value={colorRgb}
                           onChange={setColorRgb}
-                          onFormatChange={(format) => {
+                           onFormatChange={(format) => {
                             if (format) setFormatRgb(format);
                           }}
                         />
@@ -956,7 +956,7 @@ const ThemeSettings = () => {
                         />
                         <label htmlFor="sidebarBg1" className="d-block rounded">
                           <img
-                            src="/img/theme/sidebar-bg-01.svg"
+                            src="src/assets/img/theme/sidebar-bg-01.svg"
                             alt="img"
                             className="rounded"
                           />
@@ -973,7 +973,7 @@ const ThemeSettings = () => {
                         />
                         <label htmlFor="sidebarBg2" className="d-block rounded">
                           <img
-                            src="/img/theme/sidebar-bg-02.svg"
+                            src="src/assets/img/theme/sidebar-bg-02.svg"
                             alt="img"
                             className="rounded"
                           />
@@ -990,7 +990,7 @@ const ThemeSettings = () => {
                         />
                         <label htmlFor="sidebarBg3" className="d-block rounded">
                           <img
-                            src="/img/theme/sidebar-bg-03.svg"
+                            src="src/assets/img/theme/sidebar-bg-03.svg"
                             alt="img"
                             className="rounded"
                           />
@@ -1007,7 +1007,7 @@ const ThemeSettings = () => {
                         />
                         <label htmlFor="sidebarBg4" className="d-block rounded">
                           <img
-                            src="/img/theme/sidebar-bg-04.svg"
+                            src="src/assets/img/theme/sidebar-bg-04.svg"
                             alt="img"
                             className="rounded"
                           />
@@ -1024,7 +1024,7 @@ const ThemeSettings = () => {
                         />
                         <label htmlFor="sidebarBg5" className="d-block rounded">
                           <img
-                            src="/img/theme/sidebar-bg-05.svg"
+                            src="src/assets/img/theme/sidebar-bg-05.svg"
                             alt="img"
                             className="rounded"
                           />
@@ -1041,7 +1041,7 @@ const ThemeSettings = () => {
                         />
                         <label htmlFor="sidebarBg6" className="d-block rounded">
                           <img
-                            src="/img/theme/sidebar-bg-06.svg"
+                            src="src/assets/img/theme/sidebar-bg-06.svg"
                             alt="img"
                             className="rounded"
                           />
