@@ -123,7 +123,7 @@ const QuotationList = () => {
       key: "Status",
       body: (rowData: any) => (
         <span
-          className={`badge  ${rowData.Status === "Sent" ? "badge-success" : rowData.Status === "Ordered" ? "badge-warning" : "badge-cyan"}`}
+          className={`badge status-badge ${rowData.Status === "Sent" ? "badge-success" : rowData.Status === "Ordered" ? "badge-warning" : "badge-cyan"}`}
         >
           {rowData.Status}
         </span>

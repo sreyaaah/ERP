@@ -162,25 +162,25 @@ const InvoiceList = () => {
       body: (rowData: Invoice) => (
         <div>
           {rowData.paymentStatus === "Paid" && (
-            <span className="badge badge-soft-success badge-xs shadow-none">
+            <span className="badge badge-soft-success status-badge badge-xs shadow-none">
               <i className="ti ti-point-filled me-1"></i>
               {rowData.paymentStatus}
             </span>
           )}
           {rowData.paymentStatus === "Unpaid" && (
-            <span className="badge badge-soft-danger badge-xs shadow-none">
+            <span className="badge badge-soft-danger status-badge badge-xs shadow-none">
               <i className="ti ti-point-filled me-1"></i>
               {rowData.paymentStatus}
             </span>
           )}
           {rowData.paymentStatus === "Overdue" && (
-            <span className="badge badge-soft-warning badge-xs shadow-none">
+            <span className="badge badge-soft-warning status-badge badge-xs shadow-none">
               <i className="ti ti-point-filled me-1"></i>
               {rowData.paymentStatus}
             </span>
           )}
           {rowData.paymentStatus === "Partially Paid" && (
-            <span className="badge badge-soft-info badge-xs shadow-none">
+            <span className="badge badge-soft-info status-badge badge-xs shadow-none">
               <i className="ti ti-point-filled me-1"></i>
               {rowData.paymentStatus}
             </span>
