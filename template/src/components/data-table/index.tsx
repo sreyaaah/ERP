@@ -101,7 +101,8 @@ const PrimeDataTable: React.FC<Props> = ({
       paginator: false,
       emptyMessage: customEmptyMessage,
       footer: footer,
-      dataKey: "id"
+      dataKey: "id",
+      responsiveLayout: "scroll" as any
     };
 
     if (selectionMode && ['multiple', 'checkbox'].includes(selectionMode)) {
