@@ -73,9 +73,13 @@ export const CustomerService = {
   },
 
   // Add new customer
-  addCustomer: async (customerData: Partial<Customer>): Promise<CustomerResponse> => {
+  addCustomer: async (customerData: Partial<Customer> | FormData): Promise<CustomerResponse> => {
     try {
-      const response = await apiClient.post("/customers/add", customerData);
+      const config = customerData instanceof FormData
+        ? { headers: { "Content-Type": "multipart/form-data" } }
+        : {};
+
+      const response = await apiClient.post("/customers/add", customerData, config);
       return response.data;
     } catch (error: any) {
       console.error("Add customer failed:", error);
@@ -83,10 +87,14 @@ export const CustomerService = {
     }
   },
 
-  // Update customer
-  updateCustomer: async (id: string, customerData: Partial<Customer>): Promise<CustomerResponse> => {
+  // Update customer 
+  updateCustomer: async (id: string, customerData: Partial<Customer> | FormData): Promise<CustomerResponse> => {
     try {
-      const response = await apiClient.put(`/customers/${id}`, customerData);
+      const config = customerData instanceof FormData
+        ? { headers: { "Content-Type": "multipart/form-data" } }
+        : {};
+
+      const response = await apiClient.put(`/customers/${id}`, customerData, config);
       return response.data;
     } catch (error: any) {
       console.error("Update customer failed:", error);
@@ -148,6 +156,19 @@ export const CustomerService = {
       return response.data;
     } catch (error: any) {
       console.error("Export customers failed:", error);
+      throw error;
+    }
+  },
+
+  // Get single customer report (PDF)
+  getCustomerReport: async (id: string): Promise<Blob> => {
+    try {
+      const response = await apiClient.get(`/customers/${id}/report`, {
+        responseType: "blob",
+      });
+      return response.data;
+    } catch (error: any) {
+      console.error("Get customer report failed:", error);
       throw error;
     }
   },

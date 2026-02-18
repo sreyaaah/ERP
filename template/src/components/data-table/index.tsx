@@ -44,11 +44,16 @@ const PrimeDataTable: React.FC<Props> = ({
   selection,
   onSelectionChange,
   searchQuery,
+  totalRecords,
 }) => {
   const skeletonRows = Array(rows).fill({});
 
   // Filter data based on search query
   const filteredData = useMemo(() => {
+    if (totalRecords !== undefined && totalRecords > 0) {
+      return data;
+    }
+
     if (!searchQuery || searchQuery.trim() === "") {
       return data;
     }
@@ -63,7 +68,7 @@ const PrimeDataTable: React.FC<Props> = ({
         return false;
       });
     });
-  }, [searchQuery, data, column]);
+  }, [searchQuery, data, column, totalRecords]);
 
   // Reset to first page when search query changes
   useEffect(() => {
@@ -72,13 +77,19 @@ const PrimeDataTable: React.FC<Props> = ({
     }
   }, [searchQuery, setCurrentPage]);
 
-  const filteredTotalRecords = filteredData.length;
-  const totalPages = Math.ceil(filteredTotalRecords / rows);
+  // Use totalRecords prop if provided (server-side pagination), otherwise use filtered data length
+  const effectiveTotalRecords = (totalRecords !== undefined && totalRecords > 0) ? totalRecords : filteredData.length;
+  const totalPages = Math.ceil(effectiveTotalRecords / rows);
 
-  // Calculate paginated data from filtered data
+  // Calculate paginated data
   const startIndex = (currentPage - 1) * rows;
   const endIndex = startIndex + rows;
-  const paginatedData = loading ? skeletonRows : filteredData.slice(startIndex, endIndex);
+  
+  // If effectiveTotalRecords is more than data.length, it means data is already paginated by the server
+  const isServerSide = totalRecords !== undefined && totalRecords > data.length;
+  const paginatedData = loading 
+    ? skeletonRows 
+    : (isServerSide ? filteredData : filteredData.slice(startIndex, endIndex));
 
   const onPageChange = (newPage: number) => {
     setCurrentPage(newPage);
@@ -97,7 +108,7 @@ const PrimeDataTable: React.FC<Props> = ({
     const baseProps = {
       value: paginatedData,
       className: "table custom-table datatable",
-      totalRecords: filteredTotalRecords,
+      totalRecords: effectiveTotalRecords,
       paginator: false,
       emptyMessage: customEmptyMessage,
       footer: footer,
@@ -168,7 +179,7 @@ const PrimeDataTable: React.FC<Props> = ({
         <CustomPaginator
           currentPage={currentPage}
           totalPages={totalPages}
-          totalRecords={filteredTotalRecords}
+          totalRecords={effectiveTotalRecords}
           onPageChange={onPageChange}
           rows={rows}
           setRows={setRows}

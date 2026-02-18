@@ -12,17 +12,10 @@ const apiClient: AxiosInstance = axios.create({
     timeout: 10000,
 });
 
-// Request interceptor - Add auth token to requests
+// Request interceptor
 apiClient.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
-        // Authentication is disabled on backend for testing
-        // Token injection is commented out
-        /*
-        const token = localStorage.getItem("authToken");
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
-        }
-        */
+        // No authentication needed
         return config;
     },
     (error: any) => {
@@ -43,13 +36,6 @@ apiClient.interceptors.response.use(
             method: error.config?.method,
         });
 
-        if (error.response?.status === 401) {
-            // Unauthorized - clear token and redirect to login
-            console.warn("Unauthorized request - authentication required");
-            localStorage.removeItem("authToken");
-            // Commented out redirect for debugging - uncomment when auth is implemented
-            // window.location.href = "/login";
-        }
         return Promise.reject(error);
     }
 );
