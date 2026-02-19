@@ -1,9 +1,9 @@
+import { Link } from "react-router-dom";
 import { Editor } from "primereact/editor";
 import CommonSelect from "../../../../components/select/common-select";
 import {
   STORE_OPTIONS,
   WAREHOUSE_OPTIONS,
-  CATEGORY_OPTIONS,
   SUBCATEGORY_OPTIONS,
   BRAND_OPTIONS,
   UNIT_OPTIONS,
@@ -20,8 +20,8 @@ interface Props {
   ) => void;
   generateSKU: () => void;
   generateItemCode: () => void;
-
   updateSlugManually: (value: string) => void;
+  categoryOptions: any[];
 }
 
 const ProductInfoSection = ({
@@ -29,7 +29,8 @@ const ProductInfoSection = ({
   updateField,
   generateSKU,
   generateItemCode,
-  updateSlugManually
+  updateSlugManually,
+  categoryOptions
 }: Props) => {
   return (
     <div className="accordion-item border mb-4">
@@ -162,14 +163,23 @@ const ProductInfoSection = ({
             <div className="row">
               <div className="col-sm-6 col-12">
                 <div className="mb-3">
-                  <div className="add-newplus">
+                  <div className="d-flex align-items-center justify-content-between">
                     <label className="form-label">
                       Category<span className="text-danger ms-1">*</span>
                     </label>
+                    <Link
+                      to="#"
+                      className="text-primary fw-medium"
+                      data-bs-toggle="modal"
+                      data-bs-target="#add-units-category"
+                    >
+                      <i className="feather icon-plus-circle me-1" />
+                      Add New
+                    </Link>
                   </div>
                   <CommonSelect
                     className="w-100"
-                    options={CATEGORY_OPTIONS}
+                    options={categoryOptions}
                     value={formData.category}
                     onChange={(e) => updateField("category", e.value)}
                     placeholder="Choose"
@@ -180,9 +190,18 @@ const ProductInfoSection = ({
               </div>
               <div className="col-sm-6 col-12">
                 <div className="mb-3">
-                  <label className="form-label">
-                    Sub Category
-                  </label>
+                  <div className="d-flex align-items-center justify-content-between">
+                    <label className="form-label">Sub Category</label>
+                    <Link
+                      to="#"
+                      className="text-primary fw-medium"
+                      data-bs-toggle="modal"
+                      data-bs-target="#add-units-subcategory"
+                    >
+                      <i className="feather icon-plus-circle me-1" />
+                      Add New
+                    </Link>
+                  </div>
                   <CommonSelect
                     className="w-100"
                     options={SUBCATEGORY_OPTIONS}
@@ -201,9 +220,18 @@ const ProductInfoSection = ({
             <div className="row">
               <div className="col-sm-6 col-12">
                 <div className="mb-3">
-                  <label className="form-label">
-                    Brand
-                  </label>
+                  <div className="d-flex align-items-center justify-content-between">
+                    <label className="form-label">Brand</label>
+                    <Link
+                      to="#"
+                      className="text-primary fw-medium"
+                      data-bs-toggle="modal"
+                      data-bs-target="#add-brand"
+                    >
+                      <i className="feather icon-plus-circle me-1" />
+                      Add New
+                    </Link>
+                  </div>
                   <CommonSelect
                     className="w-100"
                     options={BRAND_OPTIONS}
@@ -217,9 +245,20 @@ const ProductInfoSection = ({
               </div>
               <div className="col-sm-6 col-12">
                 <div className="mb-3">
-                  <label className="form-label">
-                    Unit<span className="text-danger ms-1">*</span>
-                  </label>
+                  <div className="d-flex align-items-center justify-content-between">
+                    <label className="form-label">
+                      Unit<span className="text-danger ms-1">*</span>
+                    </label>
+                    <Link
+                      to="#"
+                      className="text-primary fw-medium"
+                      data-bs-toggle="modal"
+                      data-bs-target="#add-unit"
+                    >
+                      <i className="feather icon-plus-circle me-1" />
+                      Add New
+                    </Link>
+                  </div>
                   <CommonSelect
                     className="w-100"
                     options={UNIT_OPTIONS}

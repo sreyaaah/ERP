@@ -127,15 +127,10 @@ const AddCustomers: React.FC<AddCustomersProps> = ({
                 <input
                   type="text"
                   name="lastName"
-                  className={`form-control ${
-                    errors.lastName ? "is-invalid" : ""
-                  }`}
+                  className="form-control"
                   value={formData.lastName}
                   onChange={onInputChange}
                 />
-                {errors.lastName && (
-                  <small className="text-danger">{errors.lastName}</small>
-                )}
               </div>
               <div className="col-lg-12 mb-3">
                 <label className="form-label">
@@ -186,19 +181,19 @@ const AddCustomers: React.FC<AddCustomersProps> = ({
               </div>
               <div className="col-lg-6 mb-3">
                 <label className="form-label">
-                  City<span className="text-danger ms-1">*</span>
+                  Country<span className="text-danger ms-1">*</span>
                 </label>
                 <CommonSelect
-                  className={`w-100 ${errors.city ? "is-invalid" : ""}`}
-                  options={cityOptions}
-                  value={selectedCity}
+                  className={`w-100 ${errors.country ? "is-invalid" : ""}`}
+                  options={countryOptions}
+                  value={selectedCountry}
                   filter={true}
-                  onChange={(e) => setSelectedCity(e.value)}
-                  placeholder="Select City"
+                  onChange={(e) => setSelectedCountry(e.value)}
+                  placeholder="Select Country"
                   editable={true}
                 />
-                {errors.city && (
-                  <small className="text-danger">{errors.city}</small>
+                {errors.country && (
+                  <small className="text-danger">{errors.country}</small>
                 )}
               </div>
               <div className="col-lg-6 mb-3">
@@ -220,19 +215,19 @@ const AddCustomers: React.FC<AddCustomersProps> = ({
               </div>
               <div className="col-lg-6 mb-3">
                 <label className="form-label">
-                  Country<span className="text-danger ms-1">*</span>
+                  City<span className="text-danger ms-1">*</span>
                 </label>
                 <CommonSelect
-                  className={`w-100 ${errors.country ? "is-invalid" : ""}`}
-                  options={countryOptions}
-                  value={selectedCountry}
+                  className={`w-100 ${errors.city ? "is-invalid" : ""}`}
+                  options={cityOptions}
+                  value={selectedCity}
                   filter={true}
-                  onChange={(e) => setSelectedCountry(e.value)}
-                  placeholder="Select Country"
+                  onChange={(e) => setSelectedCity(e.value)}
+                  placeholder="Select City"
                   editable={true}
                 />
-                {errors.country && (
-                  <small className="text-danger">{errors.country}</small>
+                {errors.city && (
+                  <small className="text-danger">{errors.city}</small>
                 )}
               </div>
               <div className="col-lg-6 mb-3">
@@ -252,7 +247,7 @@ const AddCustomers: React.FC<AddCustomersProps> = ({
                   <small className="text-danger">{errors.postalCode}</small>
                 )}
               </div>
-              <div className="col-lg-10 mb-3">
+              <div className="col-lg-12 mb-3">
                 <label className="form-label">GSTIN</label>
                 <input
                   type="text"
