@@ -395,7 +395,7 @@ const CategoryList: React.FC = () => {
         <CommonFooter />
       </div>
 
-      {/* ═══════════════════ ADD MODAL ═══════════════════ */}
+      {/*ADD MODAL*/}
       <div className="modal fade" id="add-category" tabIndex={-1} aria-hidden="true">
         <div className="modal-dialog modal-dialog-centered">
           <div className="modal-content">
