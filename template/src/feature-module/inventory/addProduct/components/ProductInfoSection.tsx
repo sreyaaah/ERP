@@ -4,7 +4,6 @@ import CommonSelect from "../../../../components/select/common-select";
 import {
   STORE_OPTIONS,
   WAREHOUSE_OPTIONS,
-  CATEGORY_OPTIONS,
   SUBCATEGORY_OPTIONS,
   BRAND_OPTIONS,
   UNIT_OPTIONS,
@@ -21,8 +20,8 @@ interface Props {
   ) => void;
   generateSKU: () => void;
   generateItemCode: () => void;
-
   updateSlugManually: (value: string) => void;
+  categoryOptions: any[];
 }
 
 const ProductInfoSection = ({
@@ -30,7 +29,8 @@ const ProductInfoSection = ({
   updateField,
   generateSKU,
   generateItemCode,
-  updateSlugManually
+  updateSlugManually,
+  categoryOptions
 }: Props) => {
   return (
     <div className="accordion-item border mb-4">
@@ -179,7 +179,7 @@ const ProductInfoSection = ({
                   </div>
                   <CommonSelect
                     className="w-100"
-                    options={CATEGORY_OPTIONS}
+                    options={categoryOptions}
                     value={formData.category}
                     onChange={(e) => updateField("category", e.value)}
                     placeholder="Choose"

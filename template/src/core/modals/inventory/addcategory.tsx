@@ -1,9 +1,24 @@
-
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { all_routes } from "../../../routes/all_routes";
+import { categoryService } from "../../../feature-module/inventory/categoryService";
 
 const AddCategory = () => {
-  const route = all_routes;
+  const [name, setName] = useState("");
+  
+  const handleSubmit = async () => {
+      try {
+          const slug = name.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
+          await categoryService.createCategory({
+              name,
+              slug,
+              status: "Active"
+          });
+          setName("");
+      } catch (error) {
+          console.error(error);
+      }
+  };
+
   return (
     <>
       {/* Add Category */}
@@ -28,7 +43,12 @@ const AddCategory = () => {
                 <div className="modal-body custom-modal-body">
                   <div className="mb-3">
                     <label className="form-label">Name</label>
-                    <input type="text" className="form-control" />
+                    <input 
+                        type="text" 
+                        className="form-control"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                    />
                   </div>
                 </div>
                 <div className="modal-footer">
@@ -39,9 +59,14 @@ const AddCategory = () => {
                   >
                     Cancel
                   </Link>
-                  <Link to={route.addproduct} className="btn btn-submit">
+                  <button 
+                    type="button" 
+                    className="btn btn-submit"
+                    data-bs-dismiss="modal"
+                    onClick={handleSubmit}
+                  >
                     Submit
-                  </Link>
+                  </button>
                 </div>
               </div>
             </div>
