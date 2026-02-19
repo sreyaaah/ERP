@@ -6,6 +6,9 @@ import CollapesIcon from "../../../components/tooltip-content/collapes";
 import AddCategory from "../../../core/modals/inventory/addcategory";
 import AddVariant from "../../../core/modals/inventory/addvariant";
 import AddVarientNew from "../../../core/modals/inventory/addVarientNew";
+import AddBrand from "../../../core/modals/inventory/addbrand";
+import AddUnits from "../../../core/modals/inventory/addunits";
+import AddSubCategory from "../../../core/modals/inventory/addsubcategory";
 
 import { useProductForm } from "./hooks/useProductForm";
 import ProductInfoSection from "./components/ProductInfoSection";
@@ -141,6 +144,9 @@ const AddProduct = () => {
       <AddCategory />
       <AddVariant />
       <AddVarientNew />
+      <AddBrand />
+      <AddUnits />
+      <AddSubCategory />
 
       {/* Delete Modal */}
       <div className="modal fade" id="delete-modal">
