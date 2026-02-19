@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { categoryService } from "./categoryService";
 import EditCategoryList from "../../core/modals/inventory/editcategorylist";
 import CommonFooter from "../../components/footer/commonFooter";
 import PrimeDataTable from "../../components/data-table";
@@ -10,52 +10,160 @@ import SearchFromApi from "../../components/data-table/search";
 
 // Define interfaces for type safety
 interface CategoryItem {
-  category: string;
-  categoryslug: string;
-  createdon: string;
+  id: string;
+  name: string;
+  slug: string;
+  createdAt: string;
   status: string;
-}
-
-interface RootState {
-  rootReducer: {
-    categotylist_data: CategoryItem[];
-  };
 }
 
 
 
 const CategoryList: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [totalRecords, _setTotalRecords] = useState<any>(5);
+  const [totalRecords, setTotalRecords] = useState<number>(0);
   const [rows, setRows] = useState<number>(10);
-  const [searchQuery, setSearchQuery] = useState<string | undefined>(undefined);
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedProducts, setSelectedProducts] = useState<any[]>([]);
+  const [dataSource, setDataSource] = useState<CategoryItem[]>([]);
+  const [originalData, setOriginalData] = useState<CategoryItem[]>([]);
+  const [sortText, setSortText] = useState('Sort By : Recently Added');
+
+  useEffect(() => {
+    loadCategories();
+  }, []);
+
+  const loadCategories = async () => {
+    try {
+      const response = await categoryService.getCategories({
+          limit: 0
+      });
+      
+      if (response.status) {
+         setOriginalData(response.data);
+         setDataSource(response.data);
+         setTotalRecords(response.data.length); 
+      }
+    } catch (error) {
+      console.error("Error loading categories:", error);
+    }
+  };
+
+  const handleSort = (option: string) => {
+      let sorted = [...originalData];
+      if (option === 'Recently Added') {
+          setSortText('Sort By : Recently Added');
+          sorted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      } else if (option === 'Ascending') {
+          setSortText('Sort By : Ascending');
+          sorted.sort((a, b) => a.name.localeCompare(b.name));
+      } else if (option === 'Descending') {
+          setSortText('Sort By : Descending');
+          sorted.sort((a, b) => b.name.localeCompare(a.name));
+      } else if (option === 'Last Month') {
+          setSortText('Sort By : Last Month');
+          const lastMonth = new Date();
+          lastMonth.setMonth(lastMonth.getMonth() - 1);
+          sorted = sorted.filter(item => new Date(item.createdAt) >= lastMonth);
+      } else if (option === 'Last 7 Days') {
+          setSortText('Sort By : Last 7 Days');
+          const last7Days = new Date();
+          last7Days.setDate(last7Days.getDate() - 7);
+          sorted = sorted.filter(item => new Date(item.createdAt) >= last7Days);
+      }
+      setDataSource(sorted);
+  };
 
   const handleSearch = (value: any) => {
     setSearchQuery(value);
+    setCurrentPage(1); 
   };
-  const dataSource: CategoryItem[] = useSelector(
-    (state: RootState) => state.rootReducer.categotylist_data
-  );
+
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [newCategorySlug, setNewCategorySlug] = useState("");
+  const [newCategoryStatus, setNewCategoryStatus] = useState("Active");
+
+  const handleAddCategory = async () => {
+      try {
+          await categoryService.createCategory({
+              name: newCategoryName,
+              slug: newCategorySlug,
+              status: newCategoryStatus
+          });
+          setNewCategoryName("");
+          setNewCategorySlug("");
+          setNewCategoryStatus("Active");
+          loadCategories();
+      } catch (error) {
+      }
+  };
+  
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const handleDelete = async () => {
+      if(deleteId) {
+          try {
+              await categoryService.deleteCategory(deleteId);
+              setDeleteId(null);
+              loadCategories();
+          } catch(error) {
+               console.error(error);
+          }
+      }
+  }
+
+  const [selectedCategory, setSelectedCategory] = useState<CategoryItem | null>(null);
+
+  const handleBulkDelete = async () => {
+    if (selectedProducts.length === 0) {
+      return;
+    }
+    if (window.confirm(`Are you sure you want to delete ${selectedProducts.length} categories?`)) {
+      try {
+        const ids = selectedProducts.map(p => p.id);
+        await categoryService.bulkDeleteCategories(ids);
+        setSelectedProducts([]);
+        loadCategories();
+      } catch (error) {
+        console.error("Error deleting categories:", error);
+      }
+    }
+  };
+
+  const handleBulkStatusUpdate = async (status: string) => {
+    if (selectedProducts.length === 0) {
+      return;
+    }
+    try {
+      const ids = selectedProducts.map(p => p.id);
+      await categoryService.bulkUpdateStatus(ids, status);
+      setSelectedProducts([]);
+      loadCategories();
+    } catch (error) {
+      console.error("Error updating status:", error);
+    }
+  };
 
   const columns = [
     {
       header: "Category",
-      field: "category",
-      key: "category",
+      field: "name",
+      key: "name",
       sortable: true,
     },
     {
       header: "Category Slug",
-      field: "categoryslug",
-      key: "categoryslug",
+      field: "slug",
+      key: "slug",
       sortable: true,
     },
     {
       header: "Created On",
-      field: "createdon",
-      key: "createdon",
+      field: "createdAt",
+      key: "createdAt",
       sortable: true,
+      body: (data: CategoryItem) => (
+          <span>{data.createdAt ? new Date(data.createdAt).toLocaleDateString('en-GB') : '-'}</span>
+      )
     },
     {
       header: "Status",
@@ -63,7 +171,7 @@ const CategoryList: React.FC = () => {
       key: "status",
       sortable: true,
       body: (data: CategoryItem) => (
-        <span className="badge bg-success fw-medium fs-10">{data.status}</span>
+        <span className={`badge ${data.status === 'Active' ? 'bg-success' : 'bg-danger'} fw-medium fs-10`}>{data.status}</span>
       ),
     },
     {
@@ -71,20 +179,23 @@ const CategoryList: React.FC = () => {
       field: "actions",
       key: "actions",
       sortable: false,
-      body: (_row: any) => (
+      body: (row: any) => (
         <div className="edit-delete-action d-flex align-items-center">
           <Link
             className="me-2 p-2 d-flex align-items-center border rounded"
             to="#"
             data-bs-toggle="modal"
-            data-bs-target="#edit-customer"
+            data-bs-target="#edit-category"
+            onClick={() => setSelectedCategory(row)}
           >
             <i  className="feather icon-edit"></i>
           </Link>
           <Link
             className="p-2 d-flex align-items-center border rounded"
             to="#"
-            data-bs-toggle="modal" data-bs-target="#delete-modal"
+            data-bs-toggle="modal" 
+            data-bs-target="#delete-modal"
+            onClick={() => setDeleteId(row.id)}
           >
             <i  className="feather icon-trash-2"></i>
           </Link>
@@ -92,6 +203,22 @@ const CategoryList: React.FC = () => {
       ),
     },
   ];
+
+  const handleExport = async (format: 'pdf' | 'xlsx') => {
+    try {
+      const blob = await categoryService.exportCategories(format);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `categories.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (error) {
+      console.error(`Error exporting ${format}:`, error);
+      alert(`Error exporting ${format}`);
+    }
+  };
 
   return (
     <div>
@@ -104,17 +231,20 @@ const CategoryList: React.FC = () => {
                 <h6>Manage your categories</h6>
               </div>
             </div>
-           <TableTopHead />
+           <TableTopHead 
+              onPdfExport={() => handleExport('pdf')}
+              onExcelExport={() => handleExport('xlsx')}
+           />
             <div className="page-btn">
-              <Link
-                to="#"
+              <button
+                type="button"
                 className="btn btn-primary"
                 data-bs-toggle="modal"
                 data-bs-target="#add-category"
               >
                 <i className="ti ti-circle-plus me-1"></i>
                 Add Category
-              </Link>
+              </button>
             </div>
           </div>
           {/* /product list */}
@@ -126,6 +256,23 @@ const CategoryList: React.FC = () => {
                 setRows={setRows}
               />
               <div className="d-flex table-dropdown my-xl-auto right-content align-items-center flex-wrap row-gap-3">
+                {selectedProducts.length > 0 && (
+                  <div className="d-flex align-items-center me-2">
+                    <button className="btn btn-danger me-2" onClick={handleBulkDelete}>
+                      <i className="feather icon-trash-2 me-1" />
+                      Scale Delete ({selectedProducts.length})
+                    </button>
+                    <div className="dropdown">
+                      <button className="btn btn-white dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        Bulk Status
+                      </button>
+                      <ul className="dropdown-menu">
+                        <li><button className="dropdown-item" onClick={() => handleBulkStatusUpdate('Active')}>Active</button></li>
+                        <li><button className="dropdown-item" onClick={() => handleBulkStatusUpdate('Inactive')}>Inactive</button></li>
+                      </ul>
+                    </div>
+                  </div>
+                )}
                 <div className="dropdown me-2">
                   <Link
                     to="#"
@@ -153,31 +300,31 @@ const CategoryList: React.FC = () => {
                     className="dropdown-toggle btn btn-white btn-md d-inline-flex align-items-center"
                     data-bs-toggle="dropdown"
                   >
-                    Sort By : Last 7 Days
+                    {sortText}
                   </Link>
                   <ul className="dropdown-menu  dropdown-menu-end p-3">
                     <li>
-                      <Link to="#" className="dropdown-item rounded-1">
+                      <Link to="#" className="dropdown-item rounded-1" onClick={() => handleSort('Recently Added')}>
                         Recently Added
                       </Link>
                     </li>
                     <li>
-                      <Link to="#" className="dropdown-item rounded-1">
+                      <Link to="#" className="dropdown-item rounded-1" onClick={() => handleSort('Ascending')}>
                         Ascending
                       </Link>
                     </li>
                     <li>
-                      <Link to="#" className="dropdown-item rounded-1">
-                        Desending
+                      <Link to="#" className="dropdown-item rounded-1" onClick={() => handleSort('Descending')}>
+                        Descending
                       </Link>
                     </li>
                     <li>
-                      <Link to="#" className="dropdown-item rounded-1">
+                      <Link to="#" className="dropdown-item rounded-1" onClick={() => handleSort('Last Month')}>
                         Last Month
                       </Link>
                     </li>
                     <li>
-                      <Link to="#" className="dropdown-item rounded-1">
+                      <Link to="#" className="dropdown-item rounded-1" onClick={() => handleSort('Last 7 Days')}>
                         Last 7 Days
                       </Link>
                     </li>
@@ -233,13 +380,23 @@ const CategoryList: React.FC = () => {
                       <label className="form-label">
                         Category<span className="text-danger ms-1">*</span>
                       </label>
-                      <input type="text" className="form-control" />
+                      <input 
+                        type="text" 
+                        className="form-control"
+                        value={newCategoryName}
+                        onChange={(e) => setNewCategoryName(e.target.value)}
+                      />
                     </div>
                     <div className="mb-3">
                       <label className="form-label">
                         Category Slug<span className="text-danger ms-1">*</span>
                       </label>
-                      <input type="text" className="form-control" />
+                      <input 
+                        type="text" 
+                        className="form-control"
+                        value={newCategorySlug}
+                        onChange={(e) => setNewCategorySlug(e.target.value)}
+                      />
                     </div>
                     <div className="mb-0">
                       <div className="status-toggle modal-status d-flex justify-content-between align-items-center">
@@ -250,7 +407,8 @@ const CategoryList: React.FC = () => {
                           type="checkbox"
                           id="user2"
                           className="check"
-                          defaultChecked
+                          checked={newCategoryStatus === "Active"}
+                          onChange={(e) => setNewCategoryStatus(e.target.checked ? "Active" : "Inactive")}
                         />
                         <label htmlFor="user2" className="checktoggle" />
                       </div>
@@ -265,13 +423,14 @@ const CategoryList: React.FC = () => {
                   >
                     Cancel
                   </button>
-                  <Link
-                    to="#"
+                  <button
+                    type="button"
                     data-bs-dismiss="modal"
                     className="btn btn-primary fs-13 fw-medium p-2 px-3"
+                    onClick={handleAddCategory}
                   >
                     Add Category
-                  </Link>
+                  </button>
                 </div>
               </div>
             </div>
@@ -280,8 +439,8 @@ const CategoryList: React.FC = () => {
       </div>
       {/* /Add Category */}
 
-      <EditCategoryList />
-      <DeleteModal />
+      <EditCategoryList category={selectedCategory} onUpdate={loadCategories} />
+      <DeleteModal onConfirm={handleDelete} title="Are you sure you want to delete this category?" />
     </div>
   );
 };

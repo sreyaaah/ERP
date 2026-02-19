@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { all_routes } from "../../../routes/all_routes";
 import RefreshIcon from "../../../components/tooltip-content/refresh";
 import CollapesIcon from "../../../components/tooltip-content/collapes";
@@ -18,7 +18,28 @@ import CustomFieldsSection from "./components/CustomFieldsSection";
 import { useNavigate } from "react-router-dom";
 
 
+import { categoryService } from "../categoryService";
+
 const AddProduct = () => {
+  const [categoryOptions, setCategoryOptions] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await categoryService.getCategories();
+        if(response.status) {
+           const options = response.data.map((cat: any) => ({
+               label: cat.name,
+               value: cat.id
+           }));
+           setCategoryOptions(options);
+        }
+      } catch (error) {
+        console.error("Failed to fetch categories", error);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   const [error, setError] = useState<string | null>(null);
 
@@ -93,6 +114,7 @@ const AddProduct = () => {
                   generateSKU={generateSKU}
                   generateItemCode={generateItemCode}
                   updateSlugManually={updateSlugManually}
+                  categoryOptions={categoryOptions}
                 />
 
                 <PricingStocksSection
