@@ -56,7 +56,7 @@ const CategoryList: React.FC = () => {
       const res = await CategoryService.getAll();
       setListData(res || []);
     } catch {
-      
+      // Error handling
     } finally {
       setLoading(false);
     }
@@ -231,8 +231,6 @@ const CategoryList: React.FC = () => {
     <>
       <div className="page-wrapper">
         <div className="content">
-
-          {/* Page Header */}
           <div className="page-header">
             <div className="add-item d-flex">
               <div className="page-title">
@@ -241,7 +239,6 @@ const CategoryList: React.FC = () => {
               </div>
             </div>
             
-            {/* Export tooltip icons */}
             <Tooltip target=".sub-pr-tooltip" />
             <ul className="table-top-head">
               <li>
@@ -300,7 +297,6 @@ const CategoryList: React.FC = () => {
             </div>
           </div>
 
-          {/* Table Card */}
           <div className="card table-list-card">
             <div className="card-header d-flex align-items-center justify-content-between flex-wrap row-gap-3">
               <SearchFromApi
@@ -309,8 +305,6 @@ const CategoryList: React.FC = () => {
                 setRows={setRows}
               />
               <div className="d-flex table-dropdown my-xl-auto right-content align-items-center flex-wrap row-gap-3">
-                
-                {/* Bulk Actions */}
                 {selectedItems.length > 0 && (
                   <div className="dropdown me-2">
                     <button className="btn btn-dark btn-md dropdown-toggle d-inline-flex align-items-center" data-bs-toggle="dropdown">
@@ -343,7 +337,6 @@ const CategoryList: React.FC = () => {
                   </div>
                 )}
 
-                {/* Status filter */}
                 <div className="dropdown">
                   <Link
                     to="#"
@@ -390,12 +383,11 @@ const CategoryList: React.FC = () => {
               )}
             </div>
           </div>
-
         </div>
         <CommonFooter />
       </div>
 
-      {/*ADD MODAL*/}
+      {/* MODALS */}
       <div className="modal fade" id="add-category" tabIndex={-1} aria-hidden="true">
         <div className="modal-dialog modal-dialog-centered">
           <div className="modal-content">
@@ -454,7 +446,7 @@ const CategoryList: React.FC = () => {
         </div>
       </div>
 
-      {/*EDIT MODAL*/}
+      {/* EDIT MODAL */}
       <div className="modal fade" id="edit-category" tabIndex={-1} aria-hidden="true">
         <div className="modal-dialog modal-dialog-centered">
           <div className="modal-content">
@@ -513,7 +505,7 @@ const CategoryList: React.FC = () => {
         </div>
       </div>
 
-      {/*  DELETE MODAL */}
+      {/* DELETE MODAL */}
       <div className="modal fade" id="delete-category" tabIndex={-1} aria-hidden="true">
         <div className="modal-dialog modal-dialog-centered">
           <div className="modal-content">
@@ -535,7 +527,7 @@ const CategoryList: React.FC = () => {
         </div>
       </div>
 
-      {/* BULK DELETE MODAL*/}
+      {/* BULK DELETE MODAL */}
       <div className="modal fade" id="bulk-delete-category" tabIndex={-1} aria-hidden="true">
         <div className="modal-dialog modal-dialog-centered">
           <div className="modal-content">
