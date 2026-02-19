@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Editor } from "primereact/editor";
 import CommonSelect from "../../../../components/select/common-select";
 import {
@@ -161,10 +162,19 @@ const ProductInformation = ({
             <div className="row">
               <div className="col-sm-6 col-12">
                 <div className="mb-3">
-                  <div className="add-newplus">
+                  <div className="d-flex align-items-center justify-content-between">
                     <label className="form-label">
                       Category<span className="text-danger ms-1">*</span>
                     </label>
+                    <Link
+                      to="#"
+                      className="text-primary fw-medium"
+                      data-bs-toggle="modal"
+                      data-bs-target="#add-units-category"
+                    >
+                      <i className="feather icon-plus-circle me-1" />
+                      Add New
+                    </Link>
                   </div>
                   <CommonSelect
                     className="w-100"
@@ -179,9 +189,18 @@ const ProductInformation = ({
               </div>
               <div className="col-sm-6 col-12">
                 <div className="mb-3">
-                  <label className="form-label">
-                    Sub Category
-                  </label>
+                  <div className="d-flex align-items-center justify-content-between">
+                    <label className="form-label">Sub Category</label>
+                    <Link
+                      to="#"
+                      className="text-primary fw-medium"
+                      data-bs-toggle="modal"
+                      data-bs-target="#add-units-subcategory"
+                    >
+                      <i className="feather icon-plus-circle me-1" />
+                      Add New
+                    </Link>
+                  </div>
                   <CommonSelect
                     className="w-100"
                     options={SUBCATEGORY_OPTIONS}
@@ -200,9 +219,18 @@ const ProductInformation = ({
             <div className="row">
               <div className="col-sm-6 col-12">
                 <div className="mb-3">
-                  <label className="form-label">
-                    Brand
-                  </label>
+                  <div className="d-flex align-items-center justify-content-between">
+                    <label className="form-label">Brand</label>
+                    <Link
+                      to="#"
+                      className="text-primary fw-medium"
+                      data-bs-toggle="modal"
+                      data-bs-target="#add-brand"
+                    >
+                      <i className="feather icon-plus-circle me-1" />
+                      Add New
+                    </Link>
+                  </div>
                   <CommonSelect
                     className="w-100"
                     options={BRAND_OPTIONS}
@@ -216,9 +244,20 @@ const ProductInformation = ({
               </div>
               <div className="col-sm-6 col-12">
                 <div className="mb-3">
-                  <label className="form-label">
-                    Unit<span className="text-danger ms-1">*</span>
-                  </label>
+                  <div className="d-flex align-items-center justify-content-between">
+                    <label className="form-label">
+                      Unit<span className="text-danger ms-1">*</span>
+                    </label>
+                    <Link
+                      to="#"
+                      className="text-primary fw-medium"
+                      data-bs-toggle="modal"
+                      data-bs-target="#add-unit"
+                    >
+                      <i className="feather icon-plus-circle me-1" />
+                      Add New
+                    </Link>
+                  </div>
                   <CommonSelect
                     className="w-100"
                     options={UNIT_OPTIONS}
