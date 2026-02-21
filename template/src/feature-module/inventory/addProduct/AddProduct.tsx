@@ -1,11 +1,14 @@
 import { Link } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { all_routes } from "../../../routes/all_routes";
 import RefreshIcon from "../../../components/tooltip-content/refresh";
 import CollapesIcon from "../../../components/tooltip-content/collapes";
 import AddCategory from "../../../core/modals/inventory/addcategory";
 import AddVariant from "../../../core/modals/inventory/addvariant";
 import AddVarientNew from "../../../core/modals/inventory/addVarientNew";
+import AddBrand from "../../../core/modals/inventory/addbrand";
+import AddUnits from "../../../core/modals/inventory/addunits";
+import AddSubCategory from "../../../core/modals/inventory/addsubcategory";
 
 import { useProductForm } from "./hooks/useProductForm";
 import ProductInfoSection from "./components/ProductInfoSection";
@@ -15,7 +18,28 @@ import CustomFieldsSection from "./components/CustomFieldsSection";
 import { useNavigate } from "react-router-dom";
 
 
+import { categoryService } from "../categoryService";
+
 const AddProduct = () => {
+  const [categoryOptions, setCategoryOptions] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await categoryService.getCategories();
+        if(response.status) {
+           const options = response.data.map((cat: any) => ({
+               label: cat.name,
+               value: cat.id
+           }));
+           setCategoryOptions(options);
+        }
+      } catch (error) {
+        console.error("Failed to fetch categories", error);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   const [error, setError] = useState<string | null>(null);
 
@@ -90,6 +114,7 @@ const AddProduct = () => {
                   generateSKU={generateSKU}
                   generateItemCode={generateItemCode}
                   updateSlugManually={updateSlugManually}
+                  categoryOptions={categoryOptions}
                 />
 
                 <PricingStocksSection
@@ -141,6 +166,9 @@ const AddProduct = () => {
       <AddCategory />
       <AddVariant />
       <AddVarientNew />
+      <AddBrand />
+      <AddUnits />
+      <AddSubCategory />
 
       {/* Delete Modal */}
       <div className="modal fade" id="delete-modal">
