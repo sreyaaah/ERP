@@ -1,10 +1,5 @@
 import { Link } from "react-router-dom";
-
-interface RefreshIconProps {
-  onClick?: () => void;
-}
-
-const RefreshIcon: React.FC<RefreshIconProps> = ({ onClick }) => {
+const RefreshIcon = () => {
   return (
     <li>
       <Link
@@ -12,10 +7,6 @@ const RefreshIcon: React.FC<RefreshIconProps> = ({ onClick }) => {
         className="pr-tooltip"
         data-pr-tooltip="Refresh"
         data-pr-position="top"
-        onClick={(e) => {
-          e.preventDefault();
-          onClick?.();
-        }}
       >
         <i className="ti ti-refresh" />
       </Link>
