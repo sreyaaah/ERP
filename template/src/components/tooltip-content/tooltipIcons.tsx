@@ -3,22 +3,24 @@ import { Tooltip } from "primereact/tooltip";
 import { pdf, excel } from "../../utils/imagepath";
 
 interface TooltipIconsProps {
-  onExcelClick?: () => void;
   onPdfClick?: () => void;
+  onExcelClick?: () => void;
 }
 
-const TooltipIcons = ({ onExcelClick, onPdfClick }: TooltipIconsProps) => {
+const TooltipIcons: React.FC<TooltipIconsProps> = ({ onPdfClick, onExcelClick }) => {
   return (
     <>
+      {/* Global Tooltip Instance */}
       <Tooltip target="[data-pr-tooltip]" />
 
       <li>
-        <Link to="#" data-pr-tooltip="Pdf" data-pr-position="top"
+        <Link 
+          to="#" 
+          data-pr-tooltip="Pdf" 
+          data-pr-position="top"
           onClick={(e) => {
-            if (onPdfClick) {
-              e.preventDefault();
-              onPdfClick();
-            }
+            e.preventDefault();
+            onPdfClick?.();
           }}
         >
           <img src={pdf} alt="img" />
@@ -26,12 +28,13 @@ const TooltipIcons = ({ onExcelClick, onPdfClick }: TooltipIconsProps) => {
       </li>
 
       <li>
-        <Link to="#" data-pr-tooltip="Excel" data-pr-position="top"
+        <Link 
+          to="#" 
+          data-pr-tooltip="Excel" 
+          data-pr-position="top"
           onClick={(e) => {
-            if (onExcelClick) {
-              e.preventDefault();
-              onExcelClick();
-            }
+            e.preventDefault();
+            onExcelClick?.();
           }}
         >
           <img src={excel} alt="img" />
