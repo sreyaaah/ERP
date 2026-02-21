@@ -5,7 +5,12 @@ import { useSelector } from "react-redux";
 import { useDispatch } from "react-redux";
 import { setToggleHeader } from "../../core/redux/sidebarSlice";
 
-const TableTopHead = () => {
+interface TableTopHeadProps {
+  onPdfExport?: () => void;
+  onExcelExport?: () => void;
+}
+
+const TableTopHead = ({ onPdfExport, onExcelExport }: TableTopHeadProps) => {
   const dispatch = useDispatch();
   const { toggleHeader } = useSelector((state: any) => state.sidebar);
   const handleToggleHeader = () => {
@@ -21,6 +26,7 @@ const TableTopHead = () => {
             className="pr-tooltip"
             data-pr-tooltip="Pdf"
             data-pr-position="top"
+            onClick={(e) => { e.preventDefault(); onPdfExport && onPdfExport(); }}
           >
             <img src={pdf} alt="img" />
           </Link>
@@ -31,6 +37,7 @@ const TableTopHead = () => {
             className="pr-tooltip"
             data-pr-tooltip="Excel"
             data-pr-position="top"
+            onClick={(e) => { e.preventDefault(); onExcelExport && onExcelExport(); }}
           >
             <img src={excel} alt="img" />
           </Link>
@@ -41,6 +48,7 @@ const TableTopHead = () => {
             className="pr-tooltip"
             data-pr-tooltip="Refresh"
             data-pr-position="top"
+            onClick={(e) => e.preventDefault()}
           >
             <i className="ti ti-refresh" />
           </Link>

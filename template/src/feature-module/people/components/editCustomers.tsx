@@ -5,6 +5,8 @@ import { user41 } from "../../../utils/imagepath";
 interface EditCustomersProps {
   editCustomer: any | null;
   setEditCustomer: (customer: any) => void;
+  errors: any;
+  validateField: (name: string, value: string) => void;
   selectedCity: string;
   selectedState: string;
   selectedCountry: string;
@@ -21,6 +23,8 @@ interface EditCustomersProps {
 const EditCustomers: React.FC<EditCustomersProps> = ({
   editCustomer,
   setEditCustomer,
+  errors,
+  validateField,
   selectedCity,
   selectedState,
   selectedCountry,
@@ -55,7 +59,7 @@ const EditCustomers: React.FC<EditCustomersProps> = ({
               <div className="profile-pic-upload image-field">
                 <div className="profile-pic p-2">
                   <img
-                    src={editCustomer?.avatar || user41}
+                    src={editCustomer?.avatar ? (editCustomer.avatar.startsWith('blob:') ? editCustomer.avatar : `http://localhost:5000${editCustomer.avatar}`) : user41}
                     className="object-fit-cover h-100 rounded-1"
                     alt="customer"
                   />
@@ -85,17 +89,19 @@ const EditCustomers: React.FC<EditCustomersProps> = ({
                 </label>
                 <input
                   type="text"
-                  className="form-control"
+                  className={`form-control ${errors.firstName ? 'is-invalid' : ''}`}
                   value={editCustomer?.customer?.split(" ")[0] || ""}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    const firstName = e.target.value;
+                    const lastName = editCustomer?.customer?.split(" ")[1] || "";
                     setEditCustomer({
                       ...editCustomer,
-                      customer: `${e.target.value} ${
-                        editCustomer?.customer?.split(" ")[1] || ""
-                      }`,
-                    })
-                  }
+                      customer: `${firstName} ${lastName}`,
+                    });
+                    validateField("firstName", firstName);
+                  }}
                 />
+                {errors.firstName && <small className="text-danger">{errors.firstName}</small>}
               </div>
               <div className="col-lg-6 mb-3">
                 <label className="form-label">
@@ -105,14 +111,14 @@ const EditCustomers: React.FC<EditCustomersProps> = ({
                   type="text"
                   className="form-control"
                   value={editCustomer?.customer?.split(" ")[1] || ""}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    const firstName = editCustomer?.customer?.split(" ")[0] || "";
+                    const lastName = e.target.value;
                     setEditCustomer({
                       ...editCustomer,
-                      customer: `${
-                        editCustomer?.customer?.split(" ")[0] || ""
-                      } ${e.target.value}`,
-                    })
-                  }
+                      customer: `${firstName} ${lastName}`,
+                    });
+                  }}
                 />
               </div>
               <div className="col-lg-12 mb-3">
@@ -121,12 +127,14 @@ const EditCustomers: React.FC<EditCustomersProps> = ({
                 </label>
                 <input
                   type="email"
-                  className="form-control"
+                  className={`form-control ${errors.email ? 'is-invalid' : ''}`}
                   value={editCustomer?.email || ""}
-                  onChange={(e) =>
-                    setEditCustomer({ ...editCustomer, email: e.target.value })
-                  }
+                  onChange={(e) => {
+                    setEditCustomer({ ...editCustomer, email: e.target.value });
+                    validateField("email", e.target.value);
+                  }}
                 />
+                {errors.email && <small className="text-danger">{errors.email}</small>}
               </div>
               <div className="col-lg-12 mb-3">
                 <label className="form-label">
@@ -134,12 +142,14 @@ const EditCustomers: React.FC<EditCustomersProps> = ({
                 </label>
                 <input
                   type="tel"
-                  className="form-control"
+                  className={`form-control ${errors.phone ? 'is-invalid' : ''}`}
                   value={editCustomer?.phone || ""}
-                  onChange={(e) =>
-                    setEditCustomer({ ...editCustomer, phone: e.target.value })
-                  }
+                  onChange={(e) => {
+                    setEditCustomer({ ...editCustomer, phone: e.target.value });
+                    validateField("phone", e.target.value);
+                  }}
                 />
+                {errors.phone && <small className="text-danger">{errors.phone}</small>}
               </div>
               <div className="col-lg-12 mb-3">
                 <label className="form-label">
@@ -147,50 +157,24 @@ const EditCustomers: React.FC<EditCustomersProps> = ({
                 </label>
                 <input
                   type="text"
-                  className="form-control"
+                  className={`form-control ${errors.address ? 'is-invalid' : ''}`}
                   value={editCustomer?.address || ""}
-                  onChange={(e) =>
+                  onChange={(e) => {
                     setEditCustomer({
                       ...editCustomer,
                       address: e.target.value,
-                    })
-                  }
+                    });
+                    validateField("address", e.target.value);
+                  }}
                 />
-              </div>
-              <div className="col-lg-6 mb-3">
-                <label className="form-label">
-                  City<span className="text-danger ms-1">*</span>
-                </label>
-                <CommonSelect
-                  className="w-100"
-                  options={cityOptions}
-                  value={selectedCity}
-                  onChange={(e) => setSelectedCity(e.value)}
-                  placeholder="Select City"
-                  filter={false}
-                  editable={true}
-                />
-              </div>
-              <div className="col-lg-6 mb-3">
-                <label className="form-label">
-                  State<span className="text-danger ms-1">*</span>
-                </label>
-                <CommonSelect
-                  className="w-100"
-                  options={stateOptions}
-                  value={selectedState}
-                  onChange={(e) => setSelectedState(e.value)}
-                  placeholder="Select State"
-                  filter={false}
-                  editable={true}
-                />
+                {errors.address && <small className="text-danger">{errors.address}</small>}
               </div>
               <div className="col-lg-6 mb-3">
                 <label className="form-label">
                   Country<span className="text-danger ms-1">*</span>
                 </label>
                 <CommonSelect
-                  className="w-100"
+                  className={`w-100 ${errors.country ? 'is-invalid' : ''}`}
                   options={countryOptions}
                   value={selectedCountry}
                   onChange={(e) => setSelectedCountry(e.value)}
@@ -198,6 +182,37 @@ const EditCustomers: React.FC<EditCustomersProps> = ({
                   filter={false}
                   editable={true}
                 />
+                {errors.country && <small className="text-danger">{errors.country}</small>}
+              </div>
+              <div className="col-lg-6 mb-3">
+                <label className="form-label">
+                  State<span className="text-danger ms-1">*</span>
+                </label>
+                <CommonSelect
+                  className={`w-100 ${errors.state ? 'is-invalid' : ''}`}
+                  options={stateOptions}
+                  value={selectedState}
+                  onChange={(e) => setSelectedState(e.value)}
+                  placeholder="Select State"
+                  filter={false}
+                  editable={true}
+                />
+                {errors.state && <small className="text-danger">{errors.state}</small>}
+              </div>
+              <div className="col-lg-6 mb-3">
+                <label className="form-label">
+                  City<span className="text-danger ms-1">*</span>
+                </label>
+                <CommonSelect
+                  className={`w-100 ${errors.city ? 'is-invalid' : ''}`}
+                  options={cityOptions}
+                  value={selectedCity}
+                  onChange={(e) => setSelectedCity(e.value)}
+                  placeholder="Select City"
+                  filter={false}
+                  editable={true}
+                />
+                {errors.city && <small className="text-danger">{errors.city}</small>}
               </div>
               <div className="col-lg-6 mb-3">
                 <label className="form-label">
@@ -205,30 +220,34 @@ const EditCustomers: React.FC<EditCustomersProps> = ({
                 </label>
                 <input
                   type="text"
-                  className="form-control"
+                  className={`form-control ${errors.postalCode ? 'is-invalid' : ''}`}
                   value={editCustomer?.postalCode || ""}
-                  onChange={(e) =>
+                  onChange={(e) => {
                     setEditCustomer({
                       ...editCustomer,
                       postalCode: e.target.value,
-                    })
-                  }
+                    });
+                    validateField("postalCode", e.target.value);
+                  }}
                 />
+                {errors.postalCode && <small className="text-danger">{errors.postalCode}</small>}
               </div>
-              <div className="col-lg-10 mb-3">
+              <div className="col-lg-12 mb-3">
                 <label className="form-label">GSTIN</label>
                 <input
                   type="text"
                   name="gstin"
-                  className="form-control"
+                  className={`form-control ${errors.gstin ? 'is-invalid' : ''}`}
                   value={editCustomer?.gstin || ""}
-                  onChange={(e) =>
+                  onChange={(e) => {
                     setEditCustomer({
                       ...editCustomer,
                       gstin: e.target.value,
-                    })
-                  }
+                    });
+                    validateField("gstin", e.target.value);
+                  }}
                 />
+                {errors.gstin && <small className="text-danger">{errors.gstin}</small>}
               </div>
               <div className="col-lg-12">
                 <div className="status-toggle modal-status d-flex justify-content-between align-items-center">
@@ -263,11 +282,16 @@ const EditCustomers: React.FC<EditCustomersProps> = ({
             <button
               type="button"
               className="btn btn-primary"
-              data-bs-dismiss="modal"
               onClick={onSave}
             >
               Save Changes
             </button>
+            <button
+              type="button"
+              id="editCustomerModalClose"
+              className="d-none"
+              data-bs-dismiss="modal"
+            ></button>
           </div>
         </form>
       </div>

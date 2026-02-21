@@ -323,6 +323,18 @@ const ProductList: React.FC = () => {
         <div className="edit-delete-action d-flex align-items-center">
           <Link
             className="me-2 p-2 d-flex align-items-center border rounded"
+            to={`${route.productdetails}/${row.id}`}
+          >
+            <i className="feather icon-eye"></i>
+          </Link>
+          <Link
+            className="me-2 p-2 d-flex align-items-center border rounded"
+            to="#"
+          >
+            <i className="feather icon-download"></i>
+          </Link>
+          <Link
+            className="me-2 p-2 d-flex align-items-center border rounded"
             to={`${all_routes.editproduct}/${row.id}`}
           >
             <i className="feather icon-edit"></i>

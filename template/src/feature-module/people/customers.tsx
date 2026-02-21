@@ -1,4 +1,3 @@
-import { customersData } from "../../core/json/customers-data";
 import PrimeDataTable from "../../components/data-table";
 import SearchFromApi from "../../components/data-table/search";
 import DeleteModal from "../../components/delete-modal";
@@ -9,20 +8,19 @@ import TooltipIcons from "../../components/tooltip-content/tooltipIcons";
 import RefreshIcon from "../../components/tooltip-content/refresh";
 import CollapesIcon from "../../components/tooltip-content/collapes";
 import { CustomerService } from "../services/customer.service";
+import { LocationService } from "../services/location.service";
+import type { Country, State, City } from "../services/location.service";
 import AddCustomers from "./components/addCustomers";
 import EditCustomers from "./components/editCustomers";
+
+// API base URL for image display
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
+const IMG_BASE_URL = "http://localhost:5000";
 
 const Customers = () => {
   const location = useLocation();
 
-  useEffect(() => {
-    if (location.state?.openAddCustomer) {
-      const btn = document.getElementById("add-customer-btn");
-      if (btn) {
-        btn.click();
-      }
-    }
-  }, [location]);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [rows, setRows] = useState<number>(10);
   const [searchQuery, setSearchQuery] = useState<string | undefined>(undefined);
@@ -31,44 +29,78 @@ const Customers = () => {
   const [selectedState, setSelectedState] = useState("");
   const [selectedCountry, setSelectedCountry] = useState("");
   const [customerImage, setCustomerImage] = useState<string | null>(null);
+  const [customerImageFile, setCustomerImageFile] = useState<File | null>(null);
   const [errors, setErrors] = useState<any>({});
-  const [deleteCustomerCode, setDeleteCustomerCode] = useState<string | null>(null);
+  const [deleteCustomerId, setDeleteCustomerId] = useState<string | null>(null);
   const [status, setStatus] = useState<"Active" | "Inactive">("Active");
   const [editCustomer, setEditCustomer] = useState<any | null>(null);
+  const [editImageFile, setEditImageFile] = useState<File | null>(null);
+  const [listData, setListData] = useState<any[]>([]);
+  const [totalRecords, setTotalRecords] = useState<number>(0);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [statusFilter, setStatusFilter] = useState<"All" | "Active" | "Inactive">("All");
 
-  const normalizeCustomer = (c: any) => ({
-    ...c,
-    address: c?.address ?? "",
-    postalCode: c?.postalCode ?? "",
-    city: c?.city ?? "",
-    state: c?.state ?? "",
-    country: c?.country ?? "",
-    gstin: c?.gstin ?? "",
-    avatar: c?.avatar ?? user41,
-  });
+  const [countryOptions, setCountryOptions] = useState<Country[]>([]);
+  const [stateOptions, setStateOptions] = useState<State[]>([]);
+  const [cityOptions, setCityOptions] = useState<City[]>([]);
 
-  const [listData, setListData] = useState<any[]>(() => {
-    try {
-      const stored = CustomerService.getAll();
-      const data = Array.isArray(stored) && stored.length
-        ? stored
-        : customersData;
-
-      return data.map(normalizeCustomer);
-    } catch (error) {
-      console.error("Customer load failed:", error);
-      return [];
+  // Open add customer modal if navigated from another page
+  useEffect(() => {
+    if (location.state?.openAddCustomer) {
+      const btn = document.getElementById("add-customer-btn");
+      if (btn) {
+        btn.click();
+      }
     }
-  });
+  }, [location]);
 
-  const [statusFilter, setStatusFilter] = useState<
-    "All" | "Active" | "Inactive"
-  >("All");
+  // Fetch customers from backend
+  const fetchCustomers = async () => {
+    setLoading(true);
+    try {
+      const response = await CustomerService.getCustomers({
+        page: currentPage,
+        limit: rows,
+        search: searchQuery,
+        status: statusFilter === "All" ? undefined : statusFilter,
+        sortBy: "createdAt",
+        sortOrder: "desc",
+      });
 
-  const filteredListData = listData.filter((customer) => {
-    if (statusFilter === "All") return true;
-    return customer.status === statusFilter;
-  });
+      if (response.status && response.dataFound) {
+        // Transform data to match frontend structure
+        const transformedData = response.data.map((c: any) => ({
+          ...c,
+          id: c.id || c._id,
+          customer: c.customer || `${c.firstName || ""} ${c.lastName || ""}`.trim(),
+          // Display uploaded avatar from backend or fallback to default
+          avatar: c.avatar ? `${API_BASE_URL}${c.avatar}` : user41,
+          address: c.address || "",
+          postalCode: c.postalCode || "",
+          city: c.city || "",
+          state: c.state || "",
+          country: c.country || "",
+          gstin: c.gstin || "",
+        }));
+        setListData(transformedData);
+        setTotalRecords(response.pagination.total);
+      } else {
+        setListData([]);
+        setTotalRecords(0);
+      }
+    } catch (error: any) {
+      console.error("Failed to fetch customers:", error);
+      setListData([]);
+      setTotalRecords(0);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch customers on mount and when dependencies change
+  useEffect(() => {
+    fetchCustomers();
+  }, [currentPage, rows, searchQuery, statusFilter]);
 
   const columns = [
     { header: "Code", field: "code", key: "code" },
@@ -79,7 +111,10 @@ const Customers = () => {
       body: (data: any) => (
         <div className="d-flex align-items-center">
           <Link to="#" className="avatar avatar-md me-2">
-            <img src={data.avatar} alt="product" />
+            <img 
+              src={data.avatar ? `${IMG_BASE_URL}${data.avatar}` : user41} 
+              alt="customer" 
+            />
           </Link>
           <Link to="#">{data.customer}</Link>
         </div>
@@ -94,9 +129,8 @@ const Customers = () => {
       key: "status",
       body: (data: any) => (
         <span
-          className={`d-inline-flex align-items-center p-1 pe-2 rounded-1 text-white bg-${
-            data.status === "Active" ? "success" : "danger"
-          } fs-10`}
+          className={`d-inline-flex align-items-center p-1 pe-2 rounded-1 text-white bg-${data.status === "Active" ? "success" : "danger"
+            } fs-10`}
         >
           <i className="ti ti-point-filled me-1 fs-11"></i>
           {data.status}
@@ -113,6 +147,23 @@ const Customers = () => {
           <Link
             className="me-2 p-2 d-flex align-items-center border rounded"
             to="#"
+            onClick={async (e) => {
+              e.preventDefault();
+              try {
+                const blob = await CustomerService.getCustomerReport(_row.id);
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.setAttribute('download', `customer-report-${_row.code || 'details'}.pdf`);
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                window.URL.revokeObjectURL(url);
+              } catch (error) {
+                console.error("Failed to generate report:", error);
+                alert("Failed to generate customer report. Please try again.");
+              }
+            }}
           >
             <i className="feather icon-eye"></i>
           </Link>
@@ -143,7 +194,7 @@ const Customers = () => {
             to="#"
             data-bs-toggle="modal"
             data-bs-target="#delete-modal"
-            onClick={() => setDeleteCustomerCode(_row.code)}
+            onClick={() => setDeleteCustomerId(_row.id || _row._id)}
           >
             <i className="feather icon-trash-2"></i>
           </Link>
@@ -164,114 +215,198 @@ const Customers = () => {
 
   const handleSearch = (value: any) => {
     setSearchQuery(value);
+    setCurrentPage(1);
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      if (file.size > 2 * 1024 * 1024) {
-        alert("Image must be less than 2MB");
+      if (file.size > 5 * 1024 * 1024) {
+        alert("Image must be less than 5MB");
         return;
       }
 
       const imageUrl = URL.createObjectURL(file);
       setCustomerImage(imageUrl);
+      setCustomerImageFile(file);
     }
+  };
+
+  const validateField = (name: string, value: string) => {
+    const newErrors = { ...errors };
+
+    switch (name) {
+      case "firstName":
+        if (!value.trim()) newErrors.firstName = "First name is required";
+        else if (value.length < 2) newErrors.firstName = "First name must be at least 2 characters";
+        else delete newErrors.firstName;
+        break;
+      case "email":
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (value && !emailRegex.test(value)) newErrors.email = "Please provide a valid email address";
+        else delete newErrors.email;
+        break;
+      case "phone":
+        const phoneRegex = /^\+?[0-9\s-]{10,20}$/;
+        if (!value.trim()) newErrors.phone = "Phone number is required";
+        else if (!phoneRegex.test(value)) newErrors.phone = "Phone number must be 10-20 characters (digits, spaces, dashes or +)";
+        else delete newErrors.phone;
+        break;
+      case "address":
+        if (!value.trim()) newErrors.address = "Address is required";
+        else delete newErrors.address;
+        break;
+      case "postalCode":
+        const postalRegex = /^[A-Za-z0-9\s-]{3,10}$/;
+        if (!value.trim()) newErrors.postalCode = "Postal code is required";
+        else if (!postalRegex.test(value)) newErrors.postalCode = "Invalid postal code format";
+        else delete newErrors.postalCode;
+        break;
+      case "gstin":
+        if (value && value.length > 15) newErrors.gstin = "GSTIN should not exceed 15 characters";
+        else delete newErrors.gstin;
+        break;
+      default:
+        break;
+    }
+
+    setErrors(newErrors);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
+    validateField(name, value);
   };
 
-  const handleDeleteCustomer = () => {
-    if (!deleteCustomerCode) return;
+  const handleDeleteCustomer = async () => {
+    if (!deleteCustomerId) return;
 
-    const updated = CustomerService.remove(deleteCustomerCode);
-    setListData(updated);
-
-    setDeleteCustomerCode(null);
+    try {
+      setLoading(true);
+      await CustomerService.deleteCustomer(deleteCustomerId);
+      fetchCustomers();
+      setDeleteCustomerId(null);
+    } catch (error: any) {
+      console.error("Delete failed:", error);
+      console.error("Failed to delete customer. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const validateForm = () => {
     const newErrors: any = {};
+    const trimmedData = {
+      firstName: formData.firstName.trim(),
+      email: formData.email.trim(),
+      phone: formData.phone.trim(),
+      address: formData.address.trim(),
+      postalCode: formData.postalCode.trim(),
+    };
 
-    if (!formData.firstName.trim())
+    if (!trimmedData.firstName)
       newErrors.firstName = "First name is required";
-    if (!formData.phone.trim()) newErrors.phone = "Phone number is required";
-    if (!formData.address.trim()) newErrors.address = "Address is required";
+    if (!trimmedData.phone) newErrors.phone = "Phone number is required";
+    
+    const phoneRegex = /^\+?[0-9\s-]{10,20}$/;
+    if (trimmedData.phone && !phoneRegex.test(trimmedData.phone))
+      newErrors.phone = "Phone number must be 10-20 characters (digits, spaces, dashes or +)";
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (trimmedData.email && !emailRegex.test(trimmedData.email))
+      newErrors.email = "Please provide a valid email address";
+
+    if (!trimmedData.address) newErrors.address = "Address is required";
     if (!selectedCity) newErrors.city = "City is required";
     if (!selectedState) newErrors.state = "State is required";
     if (!selectedCountry) newErrors.country = "Country is required";
-    if (!formData.postalCode.trim())
+    if (!trimmedData.postalCode)
       newErrors.postalCode = "Postal code is required";
+    
+    const postalRegex = /^[A-Za-z0-9\s-]{3,10}$/;
+    if (trimmedData.postalCode && !postalRegex.test(trimmedData.postalCode))
+      newErrors.postalCode = "Invalid postal code format";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const generateCustomerCode = (customers: any[]) => {
-    if (!customers || customers.length === 0) return "CU001";
-
-    const numbers = customers
-      .map((c) => {
-        if (typeof c.code === "string" && c.code.startsWith("CU")) {
-          return parseInt(c.code.replace("CU", ""), 10);
-        }
-        return 0;
-      })
-      .filter((n) => !isNaN(n));
-
-    const maxNumber = numbers.length > 0 ? Math.max(...numbers) : 0;
-    const nextNumber = maxNumber + 1;
-
-    return `CU${String(nextNumber).padStart(3, "0")}`;
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      alert("Please check the form for errors. Ensure all required fields (marked with *) are filled correctly.");
+      return;
+    }
 
-    const newCustomer = {
-      code: generateCustomerCode(listData),
-      customer: `${formData.firstName} ${formData.lastName}`,
-      email: formData.email,
-      phone: formData.phone,
-      address: formData.address,
-      city: selectedCity,
-      state: selectedState,
-      country: selectedCountry,
-      postalCode: formData.postalCode,
-      gstin: formData.gstin,
-      status,
-      avatar: customerImage || user41,
-    };
+    try {
+      setLoading(true);
+      
+      const formDataToSend = new FormData();
+      formDataToSend.append('firstName', String(formData.firstName.trim()));
+      formDataToSend.append('lastName', String(formData.lastName.trim()));
+      formDataToSend.append('email', String(formData.email.trim()));
+      formDataToSend.append('phone', String(formData.phone.trim()));
+      formDataToSend.append('address', String(formData.address.trim()));
+      formDataToSend.append('city', String(selectedCity));
+      formDataToSend.append('state', String(selectedState));
+      formDataToSend.append('country', String(selectedCountry));
+      formDataToSend.append('postalCode', String(formData.postalCode.trim()));
+      formDataToSend.append('gstin', String(formData.gstin.trim() || ''));
+      formDataToSend.append('status', String(status));
+      if (customerImageFile) {
+        formDataToSend.append('avatar', customerImageFile);
+      }
 
-    const updated = CustomerService.add(newCustomer);
-    setListData(updated.map(normalizeCustomer));
+      await CustomerService.addCustomer(formDataToSend);
 
-    setFormData({
-      firstName: "",
-      lastName: "",
-      email: "",
-      phone: "",
-      address: "",
-      postalCode: "",
-      gstin: "",
-    });
+      // Reset form
+      setFormData({
+        firstName: "",
+        lastName: "",
+        email: "",
+        phone: "",
+        address: "",
+        postalCode: "",
+        gstin: "",
+      });
 
-    setSelectedCity("");
-    setSelectedState("");
-    setSelectedCountry("");
-    setCustomerImage(null);
-    setErrors({});
+      setSelectedCity("");
+      setSelectedState("");
+      setSelectedCountry("");
+      setCustomerImage(null);
+      setCustomerImageFile(null);
+      setErrors({});
 
-    const closeBtn = document.getElementById(
-      "addCustomerModalClose"
-    ) as HTMLButtonElement | null;
+      // Close modal
+      const closeBtn = document.getElementById(
+        "addCustomerModalClose"
+      ) as HTMLButtonElement | null;
+      closeBtn?.click();
 
-    closeBtn?.click();
+      // Refresh list
+      fetchCustomers();
+    } catch (error: any) {
+      console.error("Add customer failed:", error);
+      
+      // Show backend validation errors if available
+      if (error.response?.data?.errors) {
+        setErrors(error.response.data.errors);
+        alert("Please fix the validation errors shown on the form.");
+      } else if (error.response?.data?.message) {
+        const message = error.response.data.message;
+        alert(message);
+        if (message.includes("email")) setErrors({ email: message });
+        else if (message.includes("phone")) setErrors({ phone: message });
+        else if (message.includes("gstin")) setErrors({ gstin: message });
+        else setErrors({ firstName: message });
+      } else {
+        alert("An error occurred while adding the customer. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleEditImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -279,8 +414,8 @@ const Customers = () => {
 
     const file = e.target.files[0];
 
-    if (file.size > 2 * 1024 * 1024) {
-      alert("Image must be less than 2MB");
+    if (file.size > 5 * 1024 * 1024) {
+      console.error("Image must be less than 5MB");
       return;
     }
 
@@ -290,35 +425,222 @@ const Customers = () => {
       ...editCustomer,
       avatar: imageUrl,
     });
+    
+    setEditImageFile(file);
   };
 
-  const cityOptions = [
-    { label: "Select", value: "" },
-    { label: "Los Angles", value: "los-angles" },
-    { label: "New York City", value: "new-york-city" },
-    { label: "Houston", value: "houston" },
-  ];
+  const handleEditSave = async () => {
+    if (!editCustomer || !editCustomer.id) return;
 
-  const stateOptions = [
-    { label: "Select", value: "" },
-    { label: "California", value: "california" },
-    { label: "New York", value: "new-york" },
-    { label: "Texas", value: "texas" },
-  ];
+    try {
+      setLoading(true);
+      const nameParts = editCustomer.customer?.split(" ") || ["", ""];
+      const firstName = nameParts[0] || "";
+      const lastName = nameParts.slice(1).join(" ") || "";
 
-  const countryOptions = [
-    { label: "Select", value: "" },
-    { label: "United States", value: "united-states" },
-    { label: "Canada", value: "canada" },
-    { label: "Germany", value: "germany" },
-  ];
+      const formDataToSend = new FormData();
+      formDataToSend.append('firstName', String(firstName.trim()));
+      formDataToSend.append('lastName', String(lastName.trim()));
+      formDataToSend.append('email', String(editCustomer.email.trim()));
+      formDataToSend.append('phone', String(editCustomer.phone.trim()));
+      formDataToSend.append('address', String(editCustomer.address.trim()));
+      formDataToSend.append('city', String(selectedCity));
+      formDataToSend.append('state', String(selectedState));
+      formDataToSend.append('country', String(selectedCountry));
+      formDataToSend.append('postalCode', String(editCustomer.postalCode.trim()));
+      formDataToSend.append('gstin', String(editCustomer.gstin?.trim() || ''));
+      formDataToSend.append('status', String(editCustomer.status));
+      
+      if (editImageFile) {
+        formDataToSend.append('avatar', editImageFile);
+      }
 
-  useEffect(() => {
-    const stored = CustomerService.getAll();
-    if (!stored || stored.length === 0) {
-      CustomerService.saveAll(customersData.map(normalizeCustomer));
+      await CustomerService.updateCustomer(editCustomer.id as string, formDataToSend)
+      setEditImageFile(null);
+      
+      // Close modal
+      const closeBtn = document.getElementById(
+        "editCustomerModalClose"
+      ) as HTMLButtonElement | null;
+      closeBtn?.click();
+
+      fetchCustomers(); 
+    } catch (error: any) {
+      console.error("Update failed:", error);
+      
+      // Show backend validation errors if available
+      if (error.response?.data?.errors) {
+        setErrors(error.response.data.errors);
+        alert("Please fix the validation errors shown on the form.");
+      } else if (error.response?.data?.message) {
+        const message = error.response.data.message;
+        alert(message);
+        if (message.includes("email")) setErrors({ email: message });
+        else if (message.includes("phone")) setErrors({ phone: message });
+        else if (message.includes("gstin")) setErrors({ gstin: message });
+        else setErrors({ firstName: message });
+      } else {
+        alert("An error occurred while updating the customer. Please try again.");
+      }
+    } finally {
+      setLoading(false);
     }
+  };
+
+  // Export handlers
+  const handleExportExcel = async () => {
+    try {
+      setLoading(true);
+      const blob = await CustomerService.exportCustomers('xlsx');
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `customers-${Date.now()}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Export Excel failed:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleExportPDF = async () => {
+    try {
+      setLoading(true);
+      const blob = await CustomerService.exportCustomers('pdf');
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `customers-${Date.now()}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Export PDF failed:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedProducts.length === 0) {
+      console.warn("Please select customers to delete");
+      return;
+    }
+
+    const confirmMsg = `Are you sure you want to delete ${selectedProducts.length} customer(s)? This action cannot be undone.`;
+    if (!confirm(confirmMsg)) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const ids = selectedProducts.map((p: any) => p.id);
+      await CustomerService.bulkDelete(ids);
+        setSelectedProducts([]);
+      fetchCustomers();
+    } catch (error: any) {
+      console.error("Bulk delete failed:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBulkUpdateStatus = async (newStatus: "Active" | "Inactive") => {
+    if (selectedProducts.length === 0) {
+      console.warn("Please select customers to update");
+      return;
+    }
+
+    const confirmMsg = `Set ${selectedProducts.length} customer(s) to ${newStatus}?`;
+    if (!confirm(confirmMsg)) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const ids = selectedProducts.map((p: any) => p.id);
+      await CustomerService.bulkUpdate(ids, newStatus);
+      setSelectedProducts([]);
+      fetchCustomers();
+    } catch (error: any) {
+      console.error("Bulk update failed:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+  // Fetch countries on component mount
+  useEffect(() => {
+    const fetchCountries = async () => {
+      try {
+        const response = await LocationService.getCountries({ status: "Active" });
+        if (response.status && response.dataFound) {
+          setCountryOptions(response.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch countries:", error);
+      }
+    };
+    fetchCountries();
   }, []);
+
+  // Fetch states when country changes
+  useEffect(() => {
+    const fetchStates = async () => {
+      if (!selectedCountry) {
+        setStateOptions([]);
+        return;
+      }
+
+      try {
+        const response = await LocationService.getStates({
+          countryCode: selectedCountry,
+          status: "Active"
+        });
+        if (response.status && response.dataFound) {
+          setStateOptions(response.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch states:", error);
+        setStateOptions([]);
+      }
+    };
+    fetchStates();
+  }, [selectedCountry]);
+
+  // Fetch cities when state changes
+  useEffect(() => {
+    const fetchCities = async () => {
+      if (!selectedState || !selectedCountry) {
+        setCityOptions([]);
+        return;
+      }
+
+      try {
+        const response = await LocationService.getCities({
+          countryCode: selectedCountry,
+          stateCode: selectedState,
+          status: "Active"
+        });
+        if (response.status && response.dataFound) {
+          setCityOptions(response.data);
+        } else {
+          setCityOptions([]);
+        }
+      } catch (error) {
+        console.error("Failed to fetch cities:", error);
+        setCityOptions([]);
+      }
+    };
+    fetchCities();
+  }, [selectedState, selectedCountry]);
+
 
   return (
     <>
@@ -333,10 +655,50 @@ const Customers = () => {
               </div>
             </div>
             <ul className="table-top-head">
-              <TooltipIcons />
+              <TooltipIcons 
+                onExcelClick={handleExportExcel}
+                onPdfClick={handleExportPDF}
+              />
               <RefreshIcon />
               <CollapesIcon />
             </ul>
+
+            {/* Bulk Actions - Show when customers are selected */}
+            {selectedProducts.length > 0 && (
+              <div className="d-flex align-items-center gap-2 me-2">
+                <span className="badge bg-primary fs-6 py-2 px-3">
+                  {selectedProducts.length} Selected
+                </span>
+                <button
+                  onClick={() => handleBulkUpdateStatus("Active")}
+                  className="btn btn-success btn-sm"
+                  disabled={loading}
+                  title="Set selected customers to Active"
+                >
+                  <i className="ti ti-check me-1" />
+                  Set Active
+                </button>
+                <button
+                  onClick={() => handleBulkUpdateStatus("Inactive")}
+                  className="btn btn-warning btn-sm"
+                  disabled={loading}
+                  title="Set selected customers to Inactive"
+                >
+                  <i className="ti ti-x me-1" />
+                  Set Inactive
+                </button>
+                <button
+                  onClick={handleBulkDelete}
+                  className="btn btn-danger btn-sm"
+                  disabled={loading}
+                  title="Delete selected customers"
+                >
+                  <i className="ti ti-trash me-1" />
+                  Delete ({selectedProducts.length})
+                </button>
+              </div>
+            )}
+
             <div className="page-btn">
               <Link
                 to="#"
@@ -371,7 +733,10 @@ const Customers = () => {
                     <li>
                       <button
                         className="dropdown-item rounded-1"
-                        onClick={() => setStatusFilter("All")}
+                        onClick={() => {
+                          setStatusFilter("All");
+                          setCurrentPage(1);
+                        }}
                       >
                         All
                       </button>
@@ -379,7 +744,10 @@ const Customers = () => {
                     <li>
                       <button
                         className="dropdown-item rounded-1"
-                        onClick={() => setStatusFilter("Active")}
+                        onClick={() => {
+                          setStatusFilter("Active");
+                          setCurrentPage(1);
+                        }}
                       >
                         Active
                       </button>
@@ -387,7 +755,10 @@ const Customers = () => {
                     <li>
                       <button
                         className="dropdown-item rounded-1"
-                        onClick={() => setStatusFilter("Inactive")}
+                        onClick={() => {
+                          setStatusFilter("Inactive");
+                          setCurrentPage(1);
+                        }}
                       >
                         Inactive
                       </button>
@@ -397,21 +768,30 @@ const Customers = () => {
               </div>
             </div>
             <div className="card-body p-0">
-              <div className="table-responsive">
-                <PrimeDataTable
-                  column={columns}
-                  data={filteredListData}
-                  rows={rows}
-                  setRows={setRows}
-                  currentPage={currentPage}
-                  setCurrentPage={setCurrentPage}
-                  totalRecords={filteredListData.length}
-                  searchQuery={searchQuery}
-                  selectionMode="checkbox"
-                  selection={selectedProducts}
-                  onSelectionChange={(e: any) => setSelectedProducts(e.value)}
-                />
-              </div>
+              {loading && (
+                <div className="text-center p-4">
+                  <div className="spinner-border text-primary" role="status">
+                    <span className="visually-hidden">Loading...</span>
+                  </div>
+                </div>
+              )}
+              {!loading && (
+                <div className="table-responsive">
+                  <PrimeDataTable
+                    column={columns}
+                    data={listData}
+                    rows={rows}
+                    setRows={setRows}
+                    currentPage={currentPage}
+                    setCurrentPage={setCurrentPage}
+                    totalRecords={totalRecords}
+                    searchQuery={searchQuery}
+                    selectionMode="checkbox"
+                    selection={selectedProducts}
+                    onSelectionChange={(e: any) => setSelectedProducts(e.value)}
+                  />
+                </div>
+              )}
             </div>
           </div>
           {/* /product list */}
@@ -445,41 +825,51 @@ const Customers = () => {
               onInputChange={handleInputChange}
               onImageChange={handleImageChange}
               onSubmit={handleSubmit}
+              setSelectedCountry={(val) => {
+                setSelectedCountry(val);
+                setSelectedState("");
+                setSelectedCity("");
+              }}
+              setSelectedState={(val) => {
+                setSelectedState(val);
+                setSelectedCity("");
+              }}
               setSelectedCity={setSelectedCity}
-              setSelectedState={setSelectedState}
-              setSelectedCountry={setSelectedCountry}
               setStatus={setStatus}
             />
           </div>
         </div>
       </div>
       <div className="modal fade" id="edit-customer">
-      <div className="modal-dialog modal-dialog-centered">
-        <div className="modal-content">
-          <EditCustomers
-            editCustomer={editCustomer}
-            setEditCustomer={setEditCustomer}
-            selectedCity={selectedCity}
-            selectedState={selectedState}
-            selectedCountry={selectedCountry}
-            cityOptions={cityOptions}
-            stateOptions={stateOptions}
-            countryOptions={countryOptions}
-            onImageChange={handleEditImageChange}
-            onSave={() => {
-              const updated = listData.map((c) =>
-                c.code === editCustomer.code ? editCustomer : c
-              );
-              setListData(updated);
-              CustomerService.saveAll(updated);
-            }}
-            setSelectedCity={setSelectedCity}
-            setSelectedState={setSelectedState}
-            setSelectedCountry={setSelectedCountry}
-          />
+        <div className="modal-dialog modal-dialog-centered">
+          <div className="modal-content">
+            <EditCustomers
+              editCustomer={editCustomer}
+              setEditCustomer={setEditCustomer}
+              errors={errors}
+              validateField={validateField}
+              selectedCity={selectedCity}
+              selectedState={selectedState}
+              selectedCountry={selectedCountry}
+              cityOptions={cityOptions}
+              stateOptions={stateOptions}
+              countryOptions={countryOptions}
+              onImageChange={handleEditImageChange}
+              onSave={handleEditSave}
+              setSelectedCity={setSelectedCity}
+              setSelectedState={(val) => {
+                setSelectedState(val);
+                setSelectedCity("");
+              }}
+              setSelectedCountry={(val) => {
+                setSelectedCountry(val);
+                setSelectedState("");
+                setSelectedCity("");
+              }}
+            />
+          </div>
         </div>
       </div>
-    </div>
       <DeleteModal onConfirm={handleDeleteCustomer} />
     </>
   );

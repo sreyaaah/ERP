@@ -8,9 +8,13 @@ interface TooltipIconsProps {
 }
 
 const TooltipIcons: React.FC<TooltipIconsProps> = ({ onPdfClick, onExcelClick }) => {
+  onExcelClick?: () => void;
+  onPdfClick?: () => void;
+}
+
+const TooltipIcons = ({ onExcelClick, onPdfClick }: TooltipIconsProps) => {
   return (
     <>
-      {/* Global Tooltip Instance */}
       <Tooltip target="[data-pr-tooltip]" />
 
       <li>
@@ -21,6 +25,12 @@ const TooltipIcons: React.FC<TooltipIconsProps> = ({ onPdfClick, onExcelClick })
           onClick={(e) => {
             e.preventDefault();
             onPdfClick?.();
+        <Link to="#" data-pr-tooltip="Pdf" data-pr-position="top"
+          onClick={(e) => {
+            if (onPdfClick) {
+              e.preventDefault();
+              onPdfClick();
+            }
           }}
         >
           <img src={pdf} alt="img" />
@@ -35,6 +45,12 @@ const TooltipIcons: React.FC<TooltipIconsProps> = ({ onPdfClick, onExcelClick })
           onClick={(e) => {
             e.preventDefault();
             onExcelClick?.();
+        <Link to="#" data-pr-tooltip="Excel" data-pr-position="top"
+          onClick={(e) => {
+            if (onExcelClick) {
+              e.preventDefault();
+              onExcelClick();
+            }
           }}
         >
           <img src={excel} alt="img" />
