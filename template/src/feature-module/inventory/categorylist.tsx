@@ -287,3 +287,4 @@ const CategoryList: React.FC = () => {
 };
 
 export default CategoryList;
+
