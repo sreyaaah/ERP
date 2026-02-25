@@ -1,75 +1,150 @@
-import React, { useState} from "react";
-import { useSelector } from "react-redux";
+import React, { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import CommonFooter from "../../components/footer/commonFooter";
 import PrimeDataTable from "../../components/data-table";
-import TableTopHead from "../../components/table-top-head";
-import CommonSelect from "../../components/select/common-select";
 import DeleteModal from "../../components/delete-modal";
-import { Editor } from "primereact/editor";
 import SearchFromApi from "../../components/data-table/search";
-interface WarrantyData {
-  name: string;
-  description: string;
-  duration: string;
-  status: string;
-  actions?: string;
-}
-
-interface RootState {
-  rootReducer: {
-    warranty_data: WarrantyData[];
-  };
-}
+import TooltipIcons from "../../components/tooltip-content/tooltipIcons";
+import RefreshIcon from "../../components/tooltip-content/refresh";
+import CollapesIcon from "../../components/tooltip-content/collapes";
+import { WarrantyService, type Warranty } from "../services/warranty.service";
+import AddWarrantyModal from "../../core/modals/inventory/AddWarrantyModal";
+import EditWarrantyModal from "../../core/modals/inventory/EditWarrantyModal";
 
 const Warranty: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [totalRecords, _setTotalRecords] = useState<any>(5);
   const [rows, setRows] = useState<number>(10);
   const [searchQuery, setSearchQuery] = useState<string | undefined>(undefined);
-  const [selectedProducts, setSelectedProducts] = useState<any[]>([]);
+  const [warranties, setWarranties] = useState<Warranty[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedWarranties, setSelectedWarranties] = useState<Warranty[]>([]);
+  const [selectedWarranty, setSelectedWarranty] = useState<Warranty | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleteType, setDeleteType] = useState<"single" | "bulk">("single");
+  const [statusFilter, setStatusFilter] = useState<"All" | "Active" | "Inactive">("All");
 
-  const handleSearch = (value: any) => {
-    setSearchQuery(value);
+  const fetchWarranties = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await WarrantyService.getWarranties(1, 0, "");
+      if (response.status) {
+        setWarranties(response.data);
+      }
+    } catch (error) {
+      console.error("Error fetching warranties:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchWarranties();
+  }, [fetchWarranties]);
+
+  // Client-side filter
+  const filteredWarranties = warranties.filter((w) => {
+    const statusOk = statusFilter === "All" || w.status === statusFilter;
+    const searchOk =
+      !searchQuery ||
+      w.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (w.description || "").toLowerCase().includes(searchQuery.toLowerCase());
+    return statusOk && searchOk;
+  });
+
+  const handleConfirmDelete = async () => {
+    if (deleteType === "single") {
+      if (!deleteId) return;
+      try {
+        const res = await WarrantyService.deleteWarranty(deleteId);
+        if (res.status) {
+          fetchWarranties();
+          setDeleteId(null);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    } else {
+      if (selectedWarranties.length === 0) return;
+      try {
+        const ids = selectedWarranties.map((w) => w.id);
+        const res = await WarrantyService.bulkDelete(ids);
+        if (res.status) {
+          fetchWarranties();
+          setSelectedWarranties([]);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
   };
 
-  const dataSource: WarrantyData[] = useSelector(
-    (state: RootState) => state.rootReducer.warranty_data
-  );
-  const [selectedPeriod, setSelectedPeriod] = useState(null);
-  const Period = [
-    { label: "Month", value: "1" },
-    { label: "Year", value: "2" },
-  ];
-    const [text, setText] = useState("");
-  
+  const handleBulkStatusUpdate = async (status: string) => {
+    if (selectedWarranties.length === 0) return;
+    try {
+      const ids = selectedWarranties.map((w) => w.id);
+      const res = await WarrantyService.bulkUpdateStatus(ids, status);
+      if (res.status) {
+        fetchWarranties();
+        setSelectedWarranties([]);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  // Strip HTML for table display, keep it wrapping (no scroll)
+  const stripHtml = (html: string) =>
+    html ? html.replace(/<[^>]*>/g, "").trim() : "-";
+
   const columns = [
     {
       field: "name",
       header: "Name",
       key: "name",
       sortable: true,
+      body: (row: Warranty) => (
+        <span className="fw-medium text-dark">{row.name}</span>
+      ),
     },
     {
       field: "description",
       header: "Description",
       key: "description",
       sortable: true,
+      body: (row: Warranty) => (
+        <span
+          style={{
+            display: "block",
+            wordBreak: "break-word",
+            whiteSpace: "normal",
+            maxWidth: "360px",
+            lineHeight: "1.5",
+          }}
+        >
+          {stripHtml(row.description)}
+        </span>
+      ),
     },
     {
       field: "duration",
       header: "Duration",
       key: "duration",
       sortable: true,
+      body: (row: Warranty) => (
+        <span>{row.duration} {row.type}</span>
+      ),
     },
     {
       field: "status",
       header: "Status",
       key: "status",
       sortable: true,
-      body: (rowData: any) => (
-        <span className="badge table-badge bg-success fw-medium fs-10">
-          {rowData.status}
+      body: (row: Warranty) => (
+        <span
+          className={`badge ${row.status === "Active" ? "bg-success" : "bg-danger"} fw-medium fs-10`}
+          style={{ width: "70px", textAlign: "center", display: "inline-block" }}
+        >
+          {row.status}
         </span>
       ),
     },
@@ -78,13 +153,14 @@ const Warranty: React.FC = () => {
       field: "actions",
       key: "actions",
       sortable: false,
-      body: (_row: any) => (
-        <div className="edit-delete-action d-flex align-items-center">
+      body: (row: Warranty) => (
+        <div className="edit-delete-action d-flex align-items-center justify-content-end">
           <Link
             className="me-2 p-2 d-flex align-items-center border rounded"
             to="#"
             data-bs-toggle="modal"
-            data-bs-target="#edit-units"
+            data-bs-target="#edit-warranty"
+            onClick={() => setSelectedWarranty(row)}
           >
             <i className="feather icon-edit"></i>
           </Link>
@@ -93,6 +169,10 @@ const Warranty: React.FC = () => {
             to="#"
             data-bs-toggle="modal"
             data-bs-target="#delete-modal"
+            onClick={() => {
+              setDeleteId(row.id);
+              setDeleteType("single");
+            }}
           >
             <i className="feather icon-trash-2"></i>
           </Link>
@@ -101,365 +181,136 @@ const Warranty: React.FC = () => {
     },
   ];
 
-  // const columns: ColumnType[] = [
-  //   {
-  //     title: (
-  //       <label className="checkboxs">
-  //         <input type="checkbox" id="select-all" />
-  //         <span className="checkmarks" />
-  //       </label>
-  //     ),
-  //     dataIndex: "checkbox",
-  //     key: "checkbox",
-  //     render: () => (
-  //       <label className="checkboxs">
-  //         <input type="checkbox" />
-  //         <span className="checkmarks" />
-  //       </label>
-  //     ),
-  //     sorter: false,
-  //     width: "10px",
-  //   },
-  //   {
-  //     title: "Name",
-  //     dataIndex: "name",
-  //     sorter: (a: WarrantyData, b: WarrantyData) =>
-  //       a.name.length - b.name.length,
-  //     width: "10px",
-  //   },
-  //   {
-  //     title: "Description",
-  //     dataIndex: "description",
-  //     sorter: (a: WarrantyData, b: WarrantyData) =>
-  //       a.description.length - b.description.length,
-  //     width: "10px",
-  //   },
-  //   {
-  //     title: "Duration",
-  //     dataIndex: "duration",
-  //     sorter: (a: WarrantyData, b: WarrantyData) =>
-  //       a.duration.length - b.duration.length,
-  //     width: "10px",
-  //   },
-  //   {
-  //     title: "Status",
-  //     dataIndex: "status",
-  //     render: (text: string): JSX.Element => (
-  //       <span className="badge table-badge bg-success fw-medium fs-10">
-  //         {text}
-  //       </span>
-  //     ),
-  //     sorter: (a: WarrantyData, b: WarrantyData) =>
-  //       a.status.length - b.status.length,
-  //   },
-  //   {
-  //     title: "",
-  //     dataIndex: "actions",
-  //     key: "actions",
-  //     render: (): JSX.Element => (
-  //       <div className="edit-delete-action d-flex align-items-center">
-  //         <Link
-  //           className="me-2 p-2 d-flex align-items-center border rounded"
-  //           to="#"
-  //           data-bs-toggle="modal"
-  //           data-bs-target="#edit-units"
-  //         >
-  //           <i  className="feather icon-edit"></i>
-  //         </Link>
-  //         <Link
-  //           className="p-2 d-flex align-items-center border rounded"
-  //           to="#"
-  //           data-bs-toggle="modal"
-  //           data-bs-target="#delete-modal"
-  //         >
-  //           <i  className="feather icon-trash-2"></i>
-  //         </Link>
-  //       </div>
-  //     ),
-  //   },
-  // ];
-
-
   return (
-    <>
-      <div className="page-wrapper">
-        <div className="content">
-          <div className="page-header">
-            <div className="add-item d-flex">
-              <div className="page-title">
-                <h4 className="fw-bold">Warranties</h4>
-                <h6>Manage your warranties</h6>
-              </div>
+    <div className="page-wrapper">
+      <div className="content">
+        <div className="page-header">
+          <div className="add-item d-flex">
+            <div className="page-title">
+              <h4 className="fw-bold">Warranties</h4>
+              <h6>Manage your warranties</h6>
             </div>
-            <TableTopHead />
+          </div>
+          <div className="d-flex align-items-center">
+            <ul className="table-top-head">
+              <TooltipIcons
+                onPdfClick={() => WarrantyService.exportData("pdf")}
+                onExcelClick={() => WarrantyService.exportData("xlsx")}
+              />
+              <RefreshIcon onClick={fetchWarranties} />
+              <CollapesIcon />
+            </ul>
             <div className="page-btn">
               <Link
                 to="#"
                 className="btn btn-primary"
                 data-bs-toggle="modal"
-                data-bs-target="#add-units"
+                data-bs-target="#add-warranty"
               >
-                <i className="ti ti-circle-plus me-1"></i> Add Warranty
+                <i className="ti ti-circle-plus me-1"></i>
+                Add Warranty
               </Link>
             </div>
           </div>
-          {/* /product list */}
-          <div className="card table-list-card">
-            <div className="card-header d-flex align-items-center justify-content-between flex-wrap row-gap-3">
-              <SearchFromApi
-                callback={handleSearch}
-                rows={rows}
-                setRows={setRows}
-              />
-              <div className="d-flex table-dropdown my-xl-auto right-content align-items-center flex-wrap row-gap-3">
-                <div className="dropdown me-2">
-                  <Link
-                    to="#"
-                    className="dropdown-toggle btn btn-white btn-md d-inline-flex align-items-center"
-                    data-bs-toggle="dropdown"
+        </div>
+
+        <div className="card table-list-card">
+          <div className="card-header d-flex align-items-center justify-content-between flex-wrap row-gap-3">
+            <SearchFromApi
+              callback={(v: any) => {
+                setSearchQuery(v);
+                setCurrentPage(1);
+              }}
+              rows={rows}
+              setRows={setRows}
+            />
+            <div className="d-flex table-dropdown my-xl-auto right-content align-items-center flex-wrap row-gap-3">
+              {selectedWarranties.length > 0 && (
+                <div className="d-flex align-items-center me-2">
+                  <button
+                    className="btn btn-danger btn-sm me-2"
+                    data-bs-toggle="modal"
+                    data-bs-target="#delete-modal"
+                    onClick={() => setDeleteType("bulk")}
                   >
-                    Status
-                  </Link>
-                  <ul className="dropdown-menu  dropdown-menu-end p-3">
-                    <li>
-                      <Link to="#" className="dropdown-item rounded-1">
-                        Active
-                      </Link>
-                    </li>
-                    <li>
-                      <Link to="#" className="dropdown-item rounded-1">
-                        Inactive
-                      </Link>
-                    </li>
-                  </ul>
+                    Bulk Delete ({selectedWarranties.length})
+                  </button>
+                  <div className="dropdown">
+                    <button
+                      className="btn btn-outline-secondary btn-sm dropdown-toggle"
+                      type="button"
+                      data-bs-toggle="dropdown"
+                    >
+                      Change Status
+                    </button>
+                    <ul className="dropdown-menu">
+                      <li>
+                        <button className="dropdown-item" onClick={() => handleBulkStatusUpdate("Active")}>
+                          Active
+                        </button>
+                      </li>
+                      <li>
+                        <button className="dropdown-item" onClick={() => handleBulkStatusUpdate("Inactive")}>
+                          Inactive
+                        </button>
+                      </li>
+                    </ul>
+                  </div>
                 </div>
+              )}
+              <div className="dropdown me-2">
+                <Link
+                  to="#"
+                  className="dropdown-toggle btn btn-white btn-md d-inline-flex align-items-center"
+                  data-bs-toggle="dropdown"
+                >
+                  Status: {statusFilter}
+                </Link>
+                <ul className="dropdown-menu dropdown-menu-end p-3">
+                  {(["All", "Active", "Inactive"] as const).map((s) => (
+                    <li key={s}>
+                      <button className="dropdown-item rounded-1" onClick={() => setStatusFilter(s)}>
+                        {s}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
               </div>
             </div>
-            <div className="card-body">
+          </div>
+
+          <div className="card-body">
+            {loading ? (
+              <div className="text-center py-5">
+                <div className="spinner-border text-primary" role="status" />
+                <p className="mt-2 text-muted small">Loading warranties…</p>
+              </div>
+            ) : (
               <div className="table-responsive">
                 <PrimeDataTable
                   column={columns}
-                  data={dataSource}
+                  data={filteredWarranties}
                   rows={rows}
                   setRows={setRows}
                   currentPage={currentPage}
                   setCurrentPage={setCurrentPage}
-                  totalRecords={totalRecords}
+                  totalRecords={filteredWarranties.length}
                   searchQuery={searchQuery}
                   selectionMode="checkbox"
-                  selection={selectedProducts}
-                  onSelectionChange={(e: any) => setSelectedProducts(e.value)}
+                  selection={selectedWarranties}
+                  onSelectionChange={(e: any) => setSelectedWarranties(e.value)}
                 />
               </div>
-            </div>
+            )}
           </div>
-          {/* /product list */}
         </div>
-        <CommonFooter />
       </div>
+      <CommonFooter />
 
-      {/* Add Warranty */}
-      <div className="modal fade" id="add-units">
-        <div className="modal-dialog modal-dialog-centered">
-          <div className="modal-content">
-            <div className="page-wrapper-new p-0">
-              <div className="content">
-                <div className="modal-header">
-                  <div className="page-title">
-                    <h4>Add Warrranty</h4>
-                  </div>
-                  <button
-                    type="button"
-                    className="close bg-danger text-white fs-16"
-                    data-bs-dismiss="modal"
-                    aria-label="Close"
-                  >
-                    <span aria-hidden="true">×</span>
-                  </button>
-                </div>
-                <div className="modal-body">
-                  <form>
-                    <div className="mb-3">
-                      <label className="form-label">
-                        Warranty<span className="text-danger ms-1">*</span>
-                      </label>
-                      <input type="text" className="form-control" />
-                    </div>
-                    <div className="row">
-                      <div className="col-lg-6">
-                        <div className="mb-3">
-                          <label className="form-label">
-                            Duration<span className="text-danger ms-1">*</span>
-                          </label>
-                          <input type="text" className="form-control" />
-                        </div>
-                      </div>
-                      <div className="col-lg-6">
-                        <div className="mb-3">
-                          <label className="form-label">
-                            Period<span className="text-danger ms-1">*</span>
-                          </label>
-                          <CommonSelect
-                            className="w-100"
-                            options={Period}
-                            value={selectedPeriod}
-                            onChange={(e) => setSelectedPeriod(e.value)}
-                            placeholder="Choose"
-                            filter={false}
-                          />
-                        </div>
-                      </div>
-                      <div className="col-lg-12">
-                        <div className="mb-3">
-                          <label className="form-label">
-                            Description
-                            <span className="text-danger ms-1">*</span>
-                          </label>
-                          <Editor
-                            value={text}
-                            onTextChange={(e: any) => setText(e.htmlValue)}
-                            style={{ height: "200px" }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    <div className="mb-0">
-                      <div className="status-toggle modal-status d-flex justify-content-between align-items-center">
-                        <span className="status-label">Status</span>
-                        <input type="checkbox" id="user2" className="check" />
-                        <label htmlFor="user2" className="checktoggle" />
-                      </div>
-                    </div>
-                  </form>
-                </div>
-                <div className="modal-footer">
-                  <button
-                    type="button"
-                    className="btn me-2 btn-secondary fs-13 fw-medium p-2 px-3 shadow-none"
-                    data-bs-dismiss="modal"
-                  >
-                    Cancel
-                  </button>
-                  <Link
-                    to="#"
-                    className="btn btn-primary fs-13 fw-medium p-2 px-3"
-                    data-bs-dismiss="modal"
-                  >
-                    Add Warranty
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      {/* /Add Warranty */}
-      {/* Edit Warranty */}
-      <div className="modal fade" id="edit-units">
-        <div className="modal-dialog modal-dialog-centered">
-          <div className="modal-content">
-            <div className="page-wrapper-new p-0">
-              <div className="content">
-                <div className="modal-header">
-                  <div className="page-title">
-                    <h4>Edit Warrranty</h4>
-                  </div>
-                  <button
-                    type="button"
-                    className="close bg-danger text-white fs-16"
-                    data-bs-dismiss="modal"
-                    aria-label="Close"
-                  >
-                    <span aria-hidden="true">×</span>
-                  </button>
-                </div>
-                <div className="modal-body">
-                  <form>
-                    <div className="mb-3">
-                      <label className="form-label">
-                        Warranty<span className="text-danger ms-1">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        defaultValue="Replacement Warranty"
-                      />
-                    </div>
-                    <div className="row">
-                      <div className="col-lg-6">
-                        <div className="mb-3">
-                          <label className="form-label">
-                            Duration<span className="text-danger ms-1">*</span>
-                          </label>
-                          <input
-                            type="text"
-                            className="form-control"
-                            defaultValue={2}
-                          />
-                        </div>
-                      </div>
-                      <div className="col-lg-6">
-                        <div className="mb-3">
-                          <label className="form-label">
-                            Period<span className="text-danger ms-1">*</span>
-                          </label>
-                          <CommonSelect
-                            className="w-100"
-                            options={Period}
-                            value={selectedPeriod}
-                            onChange={(e) => setSelectedPeriod(e.value)}
-                            placeholder="Choose"
-                            filter={false}
-                          />
-                        </div>
-                      </div>
-                      <div className="col-lg-12">
-                        <div className="mb-3">
-                          <label className="form-label">
-                            Description
-                            <span className="text-danger ms-1">*</span>
-                          </label>
-                          <Editor
-                            value={text}
-                            onTextChange={(e: any) => setText(e.htmlValue)}
-                            style={{ height: "200px" }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    <div className="mb-0">
-                      <div className="status-toggle modal-status d-flex justify-content-between align-items-center">
-                        <span className="status-label">Status</span>
-                        <input type="checkbox" id="user3" className="check" />
-                        <label htmlFor="user3" className="checktoggle" />
-                      </div>
-                    </div>
-                  </form>
-                </div>
-                <div className="modal-footer">
-                  <button
-                    type="button"
-                    className="btn me-2 btn-secondary fs-13 fw-medium p-2 px-3 shadow-none"
-                    data-bs-dismiss="modal"
-                  >
-                    Cancel
-                  </button>
-                  <Link
-                    to="#"
-                    className="btn btn-primary fs-13 fw-medium p-2 px-3"
-                    data-bs-dismiss="modal"
-                  >
-                    Save Changes
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      {/* /Edit Warranty */}
-      <DeleteModal />
-    </>
+      <AddWarrantyModal onUpdate={fetchWarranties} />
+      <EditWarrantyModal warranty={selectedWarranty} onUpdate={fetchWarranties} />
+      <DeleteModal onConfirm={handleConfirmDelete} />
+    </div>
   );
 };
 
