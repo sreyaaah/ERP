@@ -13,10 +13,10 @@ import type { Country, State, City } from "../services/location.service";
 import AddCustomers from "./components/addCustomers";
 import EditCustomers from "./components/editCustomers";
 
-// API base URL for image display
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
-const IMG_BASE_URL = "http://localhost:5000";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const IMG_BASE_URL = API_URL.replace("/api", "");
+
 
 const Customers = () => {
   const location = useLocation();
@@ -39,6 +39,7 @@ const Customers = () => {
   const [totalRecords, setTotalRecords] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(false);
   const [statusFilter, setStatusFilter] = useState<"All" | "Active" | "Inactive">("All");
+  const [deleteType, setDeleteType] = useState<"single" | "bulk">("single");
 
   const [countryOptions, setCountryOptions] = useState<Country[]>([]);
   const [stateOptions, setStateOptions] = useState<State[]>([]);
@@ -74,7 +75,7 @@ const Customers = () => {
           id: c.id || c._id,
           customer: c.customer || `${c.firstName || ""} ${c.lastName || ""}`.trim(),
           // Display uploaded avatar from backend or fallback to default
-          avatar: c.avatar ? `${API_BASE_URL}${c.avatar}` : user41,
+          avatar: c.avatar ? `${IMG_BASE_URL}${c.avatar}` : user41,
           address: c.address || "",
           postalCode: c.postalCode || "",
           city: c.city || "",
@@ -112,7 +113,7 @@ const Customers = () => {
         <div className="d-flex align-items-center">
           <Link to="#" className="avatar avatar-md me-2">
             <img 
-              src={data.avatar ? `${IMG_BASE_URL}${data.avatar}` : user41} 
+              src={data.avatar || user41} 
               alt="customer" 
             />
           </Link>
@@ -129,10 +130,9 @@ const Customers = () => {
       key: "status",
       body: (data: any) => (
         <span
-          className={`d-inline-flex align-items-center p-1 pe-2 rounded-1 text-white bg-${data.status === "Active" ? "success" : "danger"
-            } fs-10`}
+          className={`badge ${data.status === "Active" ? "bg-success" : "bg-danger"} fw-medium fs-10`}
+          style={{ width: "80px", textAlign: "center", display: "inline-block" }}
         >
-          <i className="ti ti-point-filled me-1 fs-11"></i>
           {data.status}
         </span>
       ),
@@ -194,7 +194,10 @@ const Customers = () => {
             to="#"
             data-bs-toggle="modal"
             data-bs-target="#delete-modal"
-            onClick={() => setDeleteCustomerId(_row.id || _row._id)}
+            onClick={() => {
+              setDeleteCustomerId(_row.id || _row._id);
+              setDeleteType("single");
+            }}
           >
             <i className="feather icon-trash-2"></i>
           </Link>
@@ -279,17 +282,20 @@ const Customers = () => {
     validateField(name, value);
   };
 
-  const handleDeleteCustomer = async () => {
-    if (!deleteCustomerId) return;
-
+  const handleConfirmDelete = async () => {
     try {
       setLoading(true);
-      await CustomerService.deleteCustomer(deleteCustomerId);
+      if (deleteType === "single" && deleteCustomerId) {
+        await CustomerService.deleteCustomer(deleteCustomerId);
+        setDeleteCustomerId(null);
+      } else if (deleteType === "bulk" && selectedProducts.length > 0) {
+        const ids = selectedProducts.map((p: any) => p.id);
+        await CustomerService.bulkDelete(ids);
+        setSelectedProducts([]);
+      }
       fetchCustomers();
-      setDeleteCustomerId(null);
     } catch (error: any) {
       console.error("Delete failed:", error);
-      console.error("Failed to delete customer. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -500,8 +506,9 @@ const Customers = () => {
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Export Excel failed:", error);
+      alert("Failed to export Excel file. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -519,36 +526,14 @@ const Customers = () => {
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error("Export PDF failed:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleBulkDelete = async () => {
-    if (selectedProducts.length === 0) {
-      console.warn("Please select customers to delete");
-      return;
-    }
-
-    const confirmMsg = `Are you sure you want to delete ${selectedProducts.length} customer(s)? This action cannot be undone.`;
-    if (!confirm(confirmMsg)) {
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const ids = selectedProducts.map((p: any) => p.id);
-      await CustomerService.bulkDelete(ids);
-        setSelectedProducts([]);
-      fetchCustomers();
     } catch (error: any) {
-      console.error("Bulk delete failed:", error);
+      console.error("Export PDF failed:", error);
+      alert("Failed to export PDF file. Please try again.");
     } finally {
       setLoading(false);
     }
   };
+
 
   const handleBulkUpdateStatus = async (newStatus: "Active" | "Inactive") => {
     if (selectedProducts.length === 0) {
@@ -556,10 +541,6 @@ const Customers = () => {
       return;
     }
 
-    const confirmMsg = `Set ${selectedProducts.length} customer(s) to ${newStatus}?`;
-    if (!confirm(confirmMsg)) {
-      return;
-    }
 
     try {
       setLoading(true);
@@ -641,6 +622,23 @@ const Customers = () => {
     fetchCities();
   }, [selectedState, selectedCountry]);
 
+  const resetAddForm = () => {
+    setFormData({
+      firstName: "",
+      lastName: "",
+      email: "",
+      phone: "",
+      address: "",
+      postalCode: "",
+      gstin: "",
+    });
+    setSelectedCity("");
+    setSelectedState("");
+    setSelectedCountry("");
+    setCustomerImage(null);
+    setCustomerImageFile(null);
+    setErrors({});
+  };
 
   return (
     <>
@@ -659,45 +657,10 @@ const Customers = () => {
                 onExcelClick={handleExportExcel}
                 onPdfClick={handleExportPDF}
               />
-              <RefreshIcon />
+              <RefreshIcon onClick={fetchCustomers} />
               <CollapesIcon />
             </ul>
 
-            {/* Bulk Actions - Show when customers are selected */}
-            {selectedProducts.length > 0 && (
-              <div className="d-flex align-items-center gap-2 me-2">
-                <span className="badge bg-primary fs-6 py-2 px-3">
-                  {selectedProducts.length} Selected
-                </span>
-                <button
-                  onClick={() => handleBulkUpdateStatus("Active")}
-                  className="btn btn-success btn-sm"
-                  disabled={loading}
-                  title="Set selected customers to Active"
-                >
-                  <i className="ti ti-check me-1" />
-                  Set Active
-                </button>
-                <button
-                  onClick={() => handleBulkUpdateStatus("Inactive")}
-                  className="btn btn-warning btn-sm"
-                  disabled={loading}
-                  title="Set selected customers to Inactive"
-                >
-                  <i className="ti ti-x me-1" />
-                  Set Inactive
-                </button>
-                <button
-                  onClick={handleBulkDelete}
-                  className="btn btn-danger btn-sm"
-                  disabled={loading}
-                  title="Delete selected customers"
-                >
-                  <i className="ti ti-trash me-1" />
-                  Delete ({selectedProducts.length})
-                </button>
-              </div>
-            )}
 
             <div className="page-btn">
               <Link
@@ -706,6 +669,7 @@ const Customers = () => {
                 className="btn btn-primary text-white"
                 data-bs-toggle="modal"
                 data-bs-target="#add-customer"
+                onClick={resetAddForm}
               >
                 <i className="ti ti-circle-plus me-1" />
                 Add Customer
@@ -721,6 +685,41 @@ const Customers = () => {
                 setRows={setRows}
               />
               <div className="d-flex table-dropdown my-xl-auto right-content align-items-center flex-wrap row-gap-3">
+                {selectedProducts.length > 0 && (
+                  <div className="d-flex align-items-center me-2">
+                    <button 
+                      className="btn btn-danger btn-sm me-2" 
+                      data-bs-toggle="modal" 
+                      data-bs-target="#delete-modal"
+                      onClick={() => setDeleteType("bulk")}
+                    >
+                      Bulk Delete ({selectedProducts.length})
+                    </button>
+                    <div className="dropdown">
+                      <button className="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        Change Status
+                      </button>
+                      <ul className="dropdown-menu">
+                        <li>
+                          <button 
+                            className="dropdown-item" 
+                            onClick={() => handleBulkUpdateStatus("Active")}
+                          >
+                            Active
+                          </button>
+                        </li>
+                        <li>
+                          <button 
+                            className="dropdown-item" 
+                            onClick={() => handleBulkUpdateStatus("Inactive")}
+                          >
+                            Inactive
+                          </button>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                )}
                 <div className="dropdown">
                   <Link
                     to="#"
@@ -870,7 +869,7 @@ const Customers = () => {
           </div>
         </div>
       </div>
-      <DeleteModal onConfirm={handleDeleteCustomer} />
+      <DeleteModal onConfirm={handleConfirmDelete} />
     </>
   );
 };

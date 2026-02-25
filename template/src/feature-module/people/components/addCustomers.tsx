@@ -51,13 +51,13 @@ const AddCustomers: React.FC<AddCustomersProps> = ({
   return (
     <div className="page-wrapper-new p-0">
       <div className="content">
-        <div className="modal-header">
+        <div className="modal-header border-0 custom-modal-header">
           <div className="page-title">
-            <h4>Add Customer</h4>
+            <h4>Add New Customer</h4>
           </div>
           <button
             type="button"
-            className="close"
+            className="close bg-danger text-white fs-16"
             data-bs-dismiss="modal"
             aria-label="Close"
           >
@@ -284,7 +284,7 @@ const AddCustomers: React.FC<AddCustomersProps> = ({
             </button>
             <button
               type="submit"
-              className="btn btn-primary fs-13 fw-medium p-2 px-3"
+              className="btn btn-submit fs-13 fw-medium p-2 px-3"
             >
               Add Customer
             </button>

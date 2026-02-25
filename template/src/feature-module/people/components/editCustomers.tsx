@@ -40,13 +40,13 @@ const EditCustomers: React.FC<EditCustomersProps> = ({
   return (
     <div className="page-wrapper-new p-0">
       <div className="content">
-        <div className="modal-header">
+        <div className="modal-header border-0 custom-modal-header">
           <div className="page-title">
-            <h4>Edit Customer</h4>
+            <h4>Edit Customer Details</h4>
           </div>
           <button
             type="button"
-            className="close"
+            className="close bg-danger text-white fs-16"
             data-bs-dismiss="modal"
             aria-label="Close"
           >
@@ -59,13 +59,10 @@ const EditCustomers: React.FC<EditCustomersProps> = ({
               <div className="profile-pic-upload image-field">
                 <div className="profile-pic p-2">
                   <img
-                    src={editCustomer?.avatar ? (editCustomer.avatar.startsWith('blob:') ? editCustomer.avatar : `http://localhost:5000${editCustomer.avatar}`) : user41}
+                    src={editCustomer?.avatar || user41}
                     className="object-fit-cover h-100 rounded-1"
                     alt="customer"
                   />
-                  <button type="button" className="close rounded-1">
-                    <span aria-hidden="true">×</span>
-                  </button>
                 </div>
                 <div className="mb-3">
                   <div className="image-upload mb-0">
@@ -179,7 +176,7 @@ const EditCustomers: React.FC<EditCustomersProps> = ({
                   value={selectedCountry}
                   onChange={(e) => setSelectedCountry(e.value)}
                   placeholder="Select Country"
-                  filter={false}
+                  filter={true}
                   editable={true}
                 />
                 {errors.country && <small className="text-danger">{errors.country}</small>}
@@ -194,7 +191,7 @@ const EditCustomers: React.FC<EditCustomersProps> = ({
                   value={selectedState}
                   onChange={(e) => setSelectedState(e.value)}
                   placeholder="Select State"
-                  filter={false}
+                  filter={true}
                   editable={true}
                 />
                 {errors.state && <small className="text-danger">{errors.state}</small>}
@@ -209,7 +206,7 @@ const EditCustomers: React.FC<EditCustomersProps> = ({
                   value={selectedCity}
                   onChange={(e) => setSelectedCity(e.value)}
                   placeholder="Select City"
-                  filter={false}
+                  filter={true}
                   editable={true}
                 />
                 {errors.city && <small className="text-danger">{errors.city}</small>}
@@ -281,7 +278,7 @@ const EditCustomers: React.FC<EditCustomersProps> = ({
             </button>
             <button
               type="button"
-              className="btn btn-primary"
+              className="btn btn-submit fs-13 fw-medium p-2 px-3"
               onClick={onSave}
             >
               Save Changes
