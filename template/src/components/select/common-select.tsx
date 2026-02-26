@@ -22,7 +22,8 @@ const CommonSelect: React.FC<CommonSelectProps> = ({
   filter = true,
   editable = false,
 }) => {
-  console.log("values", value);
+  console.log("CommonSelect options:", options);
+  console.log("CommonSelect value:", value);
   return (
     <Dropdown
       value={value}

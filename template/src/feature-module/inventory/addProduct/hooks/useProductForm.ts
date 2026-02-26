@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import type { ProductFormData, VariantRow, ImageFile } from "../types";
+import { ProductService } from "../../../services/product.service";
 
 export const useProductForm = () => {
   const [formData, setFormData] = useState<ProductFormData>({
@@ -8,20 +9,20 @@ export const useProductForm = () => {
     productName: "",
     slug: "",
     sku: "",
-    sellingType: null,
+    sellingType: "Transactional",
     category: null,
     subCategory: null,
     brand: null,
     unit: null,
-    barcodeSymbol: null,
+    barcodeSymbol: "",
     itemCode: "",
     description: "",
-    quantity: "",
+    quantity: "0",
     taxMode: "exclusive",
-    taxRate: "",
-    priceBeforeTax: "",
-    taxAmount: "",
-    priceAfterTax: "",
+    taxRate: "0",
+    priceBeforeTax: "0",
+    taxAmount: "0",
+    priceAfterTax: "0",
     discountType: null,
     discountValue: "",
     quantityAlert: "",
@@ -35,27 +36,10 @@ export const useProductForm = () => {
     hasExpiry: false,
   });
 
-  const [variants, setVariants] = useState<VariantRow[]>([
-    {
-      id: "1",
-      variation: "color",
-      variantValue: "red",
-      sku: "1234",
-      quantity: 0,
-      price: 50000,
-      isActive: true,
-    },
-    {
-      id: "2",
-      variation: "color",
-      variantValue: "black",
-      sku: "2345",
-      quantity: 0,
-      price: 50000,
-      isActive: true,
-    },
-  ]);
+  const [variants, setVariants] = useState<VariantRow[]>([]);
   const [isSlugManuallyEdited, setIsSlugManuallyEdited] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
   const generateSlugFromName = (name: string) =>
     name
       .toLowerCase()
@@ -78,8 +62,6 @@ export const useProductForm = () => {
     setIsSlugManuallyEdited(true);
     updateField("slug", value);
   };
-
-
 
   const [images, setImages] = useState<ImageFile[]>([]);
 
@@ -112,157 +94,139 @@ export const useProductForm = () => {
     setImages((prev) => prev.filter((img) => img.id !== id));
   };
 
-  const generateSKU = () => {
-    const sku = `SKU - ${Date.now()} `;
-    updateField("sku", sku);
+  const generateSKU = async () => {
+    try {
+      const sku = await ProductService.generateSku();
+      updateField("sku", sku);
+    } catch (error) {
+      const fallback = `SKU-${Date.now()}`;
+      updateField("sku", fallback);
+    }
   };
 
-  const generateItemCode = () => {
-    const code = `ITEM - ${Date.now()} `;
-    updateField("itemCode", code);
+  const generateItemCode = async () => {
+    try {
+      const code = await ProductService.generateItemCode();
+      updateField("itemCode", code);
+    } catch (error) {
+      const fallback = `ITEM-${Date.now()}`;
+      updateField("itemCode", fallback);
+    }
   };
+
+  // Auto-generate codes on mount
+  useEffect(() => {
+    generateSKU();
+    generateItemCode();
+  }, []);
 
   const validateProduct = () => {
-    if (!formData.productName.trim()) {
-      return "Product name is required";
-    }
-
-    if (!formData.sku.trim()) {
-      return "SKU is required";
-    }
-
-    if (!formData.store) {
-      return "Store is required";
-    }
-
-    if (!formData.warehouse) {
-      return "Warehouse is required";
-    }
-
-    if (!formData.sellingType) {
-      return "Selling type is required";
-    }
-
-    if (!formData.category) {
-      return "Category is required";
-    }
-
-    if (!formData.unit) {
-      return "Unit is required";
-    }
-
-    if (!formData.itemCode?.trim()) {
-      return "Item code is required";
-    }
-
-    if (!formData.priceBeforeTax || Number(formData.priceBeforeTax) <= 0) {
-      return "Price must be greater than zero";
-    }
-
-    if (!formData.taxRate || Number(formData.taxRate) < 0) {
-      return "Tax rate must be valid";
-    }
-
+    if (!formData.productName.trim()) return "Product name is required";
+    if (!formData.sku.trim()) return "SKU is required";
+    if (!formData.category) return "Category is required";
+    if (!formData.priceBeforeTax || Number(formData.priceBeforeTax) < 0) return "Price must be valid";
     return null;
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    if (e) e.preventDefault();
 
     const error = validateProduct();
-    if (error) {
-      return { success: false, error };
-    }
+    if (error) return { success: false, error };
 
+    setIsLoading(true);
     try {
-      const newProduct = {
-        id: crypto.randomUUID(),
-        ...formData,
-        images: images.map((img) => ({
-          id: img.id,
-          url: img.url,
-        })),
-        imageCount: images.length,
-        createdAt: new Date().toISOString(),
+      const payload = {
+        storeId: formData.store,
+        warehouseId: formData.warehouse,
+        product: formData.productName,
+        slug: formData.slug,
+        sku: formData.sku,
+        itemCode: formData.itemCode,
+        sellingType: formData.sellingType || "Transactional",
+        categoryId: formData.category,
+        subCategoryId: formData.subCategory,
+        brandId: formData.brand,
+        unitId: formData.unit,
+        barcodeSymbology: formData.barcodeSymbol || "CODE128",
+        description: formData.description,
+        taxType: formData.taxMode === "exclusive" ? "Exclusive" : formData.taxMode === "no-tax" ? "None" : "Inclusive",
+        taxRate: Number(formData.taxRate),
+        priceBeforeTax: Number(formData.priceBeforeTax),
+        taxAmount: Number(formData.taxAmount),
+        priceAfterTax: Number(formData.priceAfterTax),
+        quantity: Number(formData.quantity) || 0,
+        status: "Available",
+        customFields: {
+          discountType: formData.discountType,
+          discountValue: formData.discountValue,
+          quantityAlert: formData.quantityAlert,
+          manufacturer: formData.manufacturer,
+          manufacturedDate: formData.manufacturedDate,
+          expiryDate: formData.expiryDate,
+        }
       };
 
-      const existingProducts = JSON.parse(
-        localStorage.getItem("products") || "[]"
-      );
+      const product = await ProductService.create(payload);
 
-      localStorage.setItem(
-        "products",
-        JSON.stringify([...existingProducts, newProduct])
-      );
+      if (images.length > 0) {
+        for (const img of images) {
+          if (img.file) {
+            try {
+              await ProductService.uploadImage(product.id, img.file);
+            } catch (imgErr) {
+              console.error("Image upload failed for one image", imgErr);
+            }
+          }
+        }
+      }
 
       return { success: true };
 
-    } catch (err) {
+    } catch (err: any) {
       console.error("Add product failed:", err);
-      return { success: false, error: "Something went wrong" };
+      return { success: false, error: err.message || "Something went wrong" };
+    } finally {
+      setIsLoading(false);
     }
   };
 
-
-
   useEffect(() => {
     const inputPrice = Number(formData.priceBeforeTax);
-
     if (!inputPrice) {
-      setFormData((prev) => ({
-        ...prev,
-        taxAmount: "",
-        priceAfterTax: "",
-      }));
+      setFormData((prev) => ({ ...prev, taxAmount: "0.00", priceAfterTax: "0.00" }));
       return;
     }
 
     if (formData.taxMode === "no-tax") {
-      setFormData((prev) => ({
-        ...prev,
-        taxAmount: "0.00",
-        priceAfterTax: inputPrice.toFixed(2),
-      }));
+      setFormData((prev) => ({ ...prev, taxAmount: "0.00", priceAfterTax: inputPrice.toFixed(2) }));
       return;
     }
 
     const rate = Number(formData.taxRate);
     if (!rate) {
-      setFormData((prev) => ({
-        ...prev,
-        taxAmount: "0.00",
-        priceAfterTax: inputPrice.toFixed(2),
-      }));
+      setFormData((prev) => ({ ...prev, taxAmount: "0.00", priceAfterTax: inputPrice.toFixed(2) }));
       return;
     }
 
     if (formData.taxMode === "exclusive") {
       const tax = (inputPrice * rate) / 100;
       const finalPrice = inputPrice + tax;
-
-      setFormData((prev) => ({
-        ...prev,
-        taxAmount: tax.toFixed(2),
-        priceAfterTax: finalPrice.toFixed(2),
-      }));
+      setFormData((prev) => ({ ...prev, taxAmount: tax.toFixed(2), priceAfterTax: finalPrice.toFixed(2) }));
     } else {
       const basePrice = inputPrice / (1 + rate / 100);
       const tax = inputPrice - basePrice;
-
-      setFormData((prev) => ({
-        ...prev,
-        taxAmount: tax.toFixed(2),
-        priceAfterTax: basePrice.toFixed(2),
-      }));
+      setFormData((prev) => ({ ...prev, taxAmount: tax.toFixed(2), priceAfterTax: inputPrice.toFixed(2) }));
+      // Note: Inclusive tax usually means priceAfterTax IS the inputPrice, and priceBeforeTax should be lower. 
+      // But the UI seems to treat priceBeforeTax as the core input.
     }
   }, [formData.taxMode, formData.taxRate, formData.priceBeforeTax]);
-
-
 
   return {
     formData,
     variants,
     images,
+    isLoading,
     updateField,
     addVariant,
     removeVariant,

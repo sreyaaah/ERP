@@ -1,15 +1,6 @@
 import { Link } from "react-router-dom";
 import { Editor } from "primereact/editor";
 import CommonSelect from "../../../../components/select/common-select";
-import {
-  STORE_OPTIONS,
-  WAREHOUSE_OPTIONS,
-  SUBCATEGORY_OPTIONS,
-  BRAND_OPTIONS,
-  UNIT_OPTIONS,
-  SELLING_TYPE_OPTIONS,
-  BARCODE_SYMBOL_OPTIONS,
-} from "../constants";
 import type { ProductFormData } from "../types";
 
 interface Props {
@@ -22,6 +13,13 @@ interface Props {
   generateItemCode: () => void;
   updateSlugManually: (value: string) => void;
   categoryOptions: any[];
+  brandOptions: any[];
+  unitOptions: any[];
+  subcategoryOptions: any[];
+  storeOptions: any[];
+  warehouseOptions: any[];
+  sellingTypeOptions: any[];
+  barcodeOptions: any[];
 }
 
 const ProductInfoSection = ({
@@ -30,7 +28,14 @@ const ProductInfoSection = ({
   generateSKU,
   generateItemCode,
   updateSlugManually,
-  categoryOptions
+  categoryOptions,
+  brandOptions,
+  unitOptions,
+  subcategoryOptions,
+  storeOptions,
+  warehouseOptions,
+  sellingTypeOptions,
+  barcodeOptions,
 }: Props) => {
   return (
     <div className="accordion-item border mb-4">
@@ -64,7 +69,7 @@ const ProductInfoSection = ({
                 </label>
                 <CommonSelect
                   className="w-100"
-                  options={STORE_OPTIONS}
+                  options={storeOptions}
                   value={formData.store}
                   onChange={(e) => updateField("store", e.value)}
                   placeholder="Choose"
@@ -80,7 +85,7 @@ const ProductInfoSection = ({
                 </label>
                 <CommonSelect
                   className="w-100"
-                  options={WAREHOUSE_OPTIONS}
+                  options={warehouseOptions}
                   value={formData.warehouse}
                   onChange={(e) => updateField("warehouse", e.value)}
                   placeholder="Choose"
@@ -148,7 +153,7 @@ const ProductInfoSection = ({
                 </label>
                 <CommonSelect
                   className="w-100"
-                  options={SELLING_TYPE_OPTIONS}
+                  options={sellingTypeOptions}
                   value={formData.sellingType}
                   onChange={(e) => updateField("sellingType", e.value)}
                   placeholder="Choose"
@@ -171,7 +176,7 @@ const ProductInfoSection = ({
                       to="#"
                       className="text-primary fw-medium"
                       data-bs-toggle="modal"
-                      data-bs-target="#add-units-category"
+                      data-bs-target="#add-category"
                     >
                       <i className="feather icon-plus-circle me-1" />
                       Add New
@@ -196,7 +201,7 @@ const ProductInfoSection = ({
                       to="#"
                       className="text-primary fw-medium"
                       data-bs-toggle="modal"
-                      data-bs-target="#add-units-subcategory"
+                      data-bs-target="#add-subcategory"
                     >
                       <i className="feather icon-plus-circle me-1" />
                       Add New
@@ -204,7 +209,7 @@ const ProductInfoSection = ({
                   </div>
                   <CommonSelect
                     className="w-100"
-                    options={SUBCATEGORY_OPTIONS}
+                    options={subcategoryOptions}
                     value={formData.subCategory}
                     onChange={(e) => updateField("subCategory", e.value)}
                     placeholder="Choose"
@@ -222,19 +227,10 @@ const ProductInfoSection = ({
                 <div className="mb-3">
                   <div className="d-flex align-items-center justify-content-between">
                     <label className="form-label">Brand</label>
-                    <Link
-                      to="#"
-                      className="text-primary fw-medium"
-                      data-bs-toggle="modal"
-                      data-bs-target="#add-brand"
-                    >
-                      <i className="feather icon-plus-circle me-1" />
-                      Add New
-                    </Link>
                   </div>
                   <CommonSelect
                     className="w-100"
-                    options={BRAND_OPTIONS}
+                    options={brandOptions}
                     value={formData.brand}
                     onChange={(e) => updateField("brand", e.value)}
                     placeholder="Choose"
@@ -249,19 +245,10 @@ const ProductInfoSection = ({
                     <label className="form-label">
                       Unit<span className="text-danger ms-1">*</span>
                     </label>
-                    <Link
-                      to="#"
-                      className="text-primary fw-medium"
-                      data-bs-toggle="modal"
-                      data-bs-target="#add-unit"
-                    >
-                      <i className="feather icon-plus-circle me-1" />
-                      Add New
-                    </Link>
                   </div>
                   <CommonSelect
                     className="w-100"
-                    options={UNIT_OPTIONS}
+                    options={unitOptions}
                     value={formData.unit}
                     onChange={(e) => updateField("unit", e.value)}
                     placeholder="Choose"
@@ -281,7 +268,7 @@ const ProductInfoSection = ({
                 </label>
                 <CommonSelect
                   className="w-100"
-                  options={BARCODE_SYMBOL_OPTIONS}
+                  options={barcodeOptions}
                   value={formData.barcodeSymbol}
                   onChange={(e) => updateField("barcodeSymbol", e.value)}
                   placeholder="Choose"

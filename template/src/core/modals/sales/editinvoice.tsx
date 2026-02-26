@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import CommonSelect from "../../../components/select/common-select";
 import CommonDatePicker from "../../../components/date-picker/common-date-picker";
-import { CustomerService } from "../../../feature-module/services/customer.service";
-import { productlistdata } from "../../../feature-module/inventory/productlist";
+
+
 import { InvoiceService } from "../../../feature-module/services/invoice.service";
 import { customersData } from "../../json/customers-data";
 import { INITIAL_TAX_RATES } from "../../../feature-module/settings/financialsettings/taxrates";
@@ -33,7 +33,7 @@ const EditInvoice = ({ invoice, onUpdate }: EditInvoiceProps) => {
 
   // Load customers
   useEffect(() => {
-    const storedCustomers = CustomerService.getAll();
+    const storedCustomers: any[] = [];
     const mergedCustomers = [...customersData, ...storedCustomers];
     const formatted = mergedCustomers.map((c: any) => ({
       label: c.customer,
@@ -47,13 +47,7 @@ const EditInvoice = ({ invoice, onUpdate }: EditInvoiceProps) => {
 
   useEffect(() => {
     const storedProducts = JSON.parse(localStorage.getItem("products") || "[]");
-    const staticProducts = productlistdata.map((p: any) => ({
-      label: p.product,
-      value: p.sku,
-      rate: Number(p.price.replace(/[^0-9.]/g, '')),
-      tax: 0,
-      ...p
-    }));
+    const staticProducts: any[] = [];
 
     const dynamicProducts = storedProducts.map((p: any) => ({
       label: p.productName || p.name,

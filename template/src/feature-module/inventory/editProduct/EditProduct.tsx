@@ -6,8 +6,6 @@ import CollapesIcon from "../../../components/tooltip-content/collapes";
 import AddCategory from "../../../core/modals/inventory/addcategory";
 import AddVariant from "../../../core/modals/inventory/addvariant";
 import AddVarientNew from "../../../core/modals/inventory/addVarientNew";
-import AddBrand from "../../../core/modals/inventory/addbrand";
-import AddUnits from "../../../core/modals/inventory/addunits";
 import AddSubCategory from "../../../core/modals/inventory/addsubcategory";
 
 import { useEditProduct } from "./hooks/useEditProduct";
@@ -15,6 +13,12 @@ import ProductInformation from "./components/productInformation";
 import PriceCalculation from "./components/priceCalculation";
 import ProductImages from "./components/ProductImages";
 import CustomFields from "./components/CustomFields";
+import { CategoryService } from "../../services/category.service";
+import { BrandService } from "../../services/brand.service";
+import { UnitService } from "../../services/unit.service";
+import { SubcategoryService } from "../../services/subcategory.service";
+import { DropdownService } from "../../services/dropdown.service";
+import { useEffect } from "react";
 
 const EditProduct = () => {
   const { id } = useParams<{ id: string }>();
@@ -27,6 +31,7 @@ const EditProduct = () => {
     formData,
     images,
     loading,
+    isUpdating,
     updateField,
     addImage,
     removeImage,
@@ -36,8 +41,65 @@ const EditProduct = () => {
     updateSlugManually,
   } = useEditProduct(id || "");
 
-  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    const result = handleSubmit(e);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [categoryOptions, setCategoryOptions] = useState<any[]>([]);
+  const [brandOptions, setBrandOptions] = useState<any[]>([]);
+  const [unitOptions, setUnitOptions] = useState<any[]>([]);
+  const [subcategoryOptions, setSubcategoryOptions] = useState<any[]>([]);
+  const [allSubcategories, setAllSubcategories] = useState<any[]>([]);
+  const [storeOptions, setStoreOptions] = useState<any[]>([]);
+  const [warehouseOptions, setWarehouseOptions] = useState<any[]>([]);
+  const [sellingTypeOptions, setSellingTypeOptions] = useState<any[]>([]);
+  const [barcodeOptions, setBarcodeOptions] = useState<any[]>([]);
+  const [warrantyOptions, setWarrantyOptions] = useState<any[]>([]);
+
+  const fetchOptions = async () => {
+    try {
+      const categoriesData = await CategoryService.getAll();
+      setCategories(categoriesData);
+      setCategoryOptions(categoriesData.map((c: any) => ({ label: c.name, value: c.id })));
+
+      const brandsRes = await BrandService.getBrands(1, 1000);
+      setBrandOptions((brandsRes.data || []).map((b: any) => ({ label: b.name, value: b.id })));
+
+      const unitsRes = await UnitService.getUnits(1, 1000);
+      setUnitOptions((unitsRes.data || []).map((u: any) => ({ label: u.name, value: u.id })));
+
+      const subcatsRes = await SubcategoryService.getAll({ limit: 1000 });
+      const rawSubcats = subcatsRes.data || [];
+      setAllSubcategories(rawSubcats);
+      setSubcategoryOptions(rawSubcats.map((s: any) => ({ label: s.name, value: s.id })));
+
+      const stores = await DropdownService.getStores();
+      setStoreOptions(stores.map((s: any) => ({ label: s.name, value: s.id })));
+
+      const warehouses = await DropdownService.getWarehouses();
+      setWarehouseOptions(warehouses.map((w: any) => ({ label: w.name, value: w.id })));
+
+      const sellingTypes = await DropdownService.getSellingTypes();
+      setSellingTypeOptions(sellingTypes.map((t: any) => ({ label: t.name, value: t.id })));
+
+      const barcodes = await DropdownService.getBarcodeSymbologies();
+      setBarcodeOptions(barcodes.map((b: any) => ({ label: b.name, value: b.id })));
+
+      const warranties = await DropdownService.getWarranties();
+      setWarrantyOptions(warranties.map((w: any) => ({ label: w.name, value: w.id })));
+
+    } catch (error) {
+      console.error("Failed to fetch options", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchOptions();
+  }, []);
+
+  const onUpdate = () => {
+    fetchOptions();
+  };
+
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    const result = await handleSubmit(e);
 
     if (!result.success) {
       setError(result.error ?? "Unable to update product");
@@ -49,9 +111,27 @@ const EditProduct = () => {
     setSuccessMessage("Product updated successfully!");
     
     setTimeout(() => {
-      navigate("/product-list");
+      navigate(route.productlist);
     }, 1500);
   };
+
+  useEffect(() => {
+    if (formData.category && allSubcategories.length > 0) {
+      const filtered = allSubcategories
+        .filter((s: any) => String(s.categoryId) === String(formData.category))
+        .map((s: any) => ({ label: s.name, value: s.id }));
+      
+      setSubcategoryOptions(filtered);
+
+      // Only auto-clear if the current subCategory value is not in the new filtered list
+      // and we are NOT in the initial loading state (where allSubcategories might have just arrived)
+      if (formData.subCategory && filtered.length > 0 && !filtered.find(opt => opt.value === formData.subCategory)) {
+         updateField("subCategory", null);
+      }
+    } else if (!formData.category) {
+      setSubcategoryOptions([]);
+    }
+  }, [formData.category, allSubcategories]);
 
   if (loading) {
     return (
@@ -129,6 +209,14 @@ const EditProduct = () => {
                   generateSKU={generateSKU}
                   generateItemCode={generateItemCode}
                   updateSlugManually={updateSlugManually}
+                  categoryOptions={categoryOptions}
+                  brandOptions={brandOptions}
+                  unitOptions={unitOptions}
+                  subcategoryOptions={subcategoryOptions}
+                  storeOptions={storeOptions}
+                  warehouseOptions={warehouseOptions}
+                  sellingTypeOptions={sellingTypeOptions}
+                  barcodeOptions={barcodeOptions}
                 />
 
                 <PriceCalculation
@@ -145,6 +233,7 @@ const EditProduct = () => {
                 <CustomFields
                   formData={formData}
                   updateField={updateField}
+                  warrantyOptions={warrantyOptions}
                 />
               </div>
             </div>
@@ -158,9 +247,18 @@ const EditProduct = () => {
                 >
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary">
-                  <i className="feather icon-check me-2" />
-                  Update Product
+                <button type="submit" className="btn btn-primary" disabled={isUpdating}>
+                  {isUpdating ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                      Updating...
+                    </>
+                  ) : (
+                    <>
+                      <i className="feather icon-check me-2" />
+                      Update Product
+                    </>
+                  )}
                 </button>
               </div>
             </div>
@@ -181,46 +279,10 @@ const EditProduct = () => {
       </div>
 
       {/* Modals */}
-      <AddCategory />
+      <AddCategory onUpdate={onUpdate} />
       <AddVariant />
       <AddVarientNew />
-      <AddBrand />
-      <AddUnits />
-      <AddSubCategory />
-
-      {/* Delete Modal */}
-      <div className="modal fade" id="delete-modal">
-        <div className="modal-dialog modal-dialog-centered">
-          <div className="modal-content">
-            <div className="page-wrapper-new p-0">
-              <div className="content p-5 px-3 text-center">
-                <span className="rounded-circle d-inline-flex p-2 bg-danger-transparent mb-2">
-                  <i className="ti ti-trash fs-24 text-danger" />
-                </span>
-                <h4 className="fs-20 fw-bold mb-2 mt-1">Delete Attribute</h4>
-                <p className="mb-0 fs-16">
-                  Are you sure you want to delete Attribute?
-                </p>
-                <div className="modal-footer-btn mt-3 d-flex justify-content-center">
-                  <button
-                    type="button"
-                    className="btn me-2 btn-secondary fs-13 fw-medium p-2 px-3 shadow-none"
-                    data-bs-dismiss="modal"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="btn btn-primary fs-13 fw-medium p-2 px-3"
-                  >
-                    Yes Delete
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <AddSubCategory categories={categories} onUpdate={onUpdate} />
     </>
   );
 };
