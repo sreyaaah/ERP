@@ -4,8 +4,8 @@ import { Editor } from "primereact/editor";
 import { plus1 } from "../../../utils/imagepath";
 import CommonSelect from "../../../components/select/common-select";
 import CommonDatePicker from "../../../components/date-picker/common-date-picker";
-import { CustomerService } from "../../../feature-module/services/customer.service";
-import { productlistdata } from "../../../feature-module/inventory/productlist";
+
+
 import { all_routes } from "../../../routes/all_routes";
 import { ALL_SELECTED_CURRENCIES } from "../../../feature-module/settings/financialsettings/currencies";
 import { INITIAL_TAX_RATES } from "../../../feature-module/settings/financialsettings/taxrates";
@@ -47,7 +47,7 @@ const EditQuotation = ({ quotation }: EditQuotationProps) => {
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
 
   useEffect(() => {
-    const storedCustomers = CustomerService.getAll();
+    const storedCustomers: any[] = [];
     const formatted = storedCustomers.map((c: any) => ({
       label: c.customer,
       value: c.code,
@@ -83,13 +83,7 @@ const EditQuotation = ({ quotation }: EditQuotationProps) => {
 
   useEffect(() => {
     const storedProducts = JSON.parse(localStorage.getItem("products") || "[]");
-    const staticProducts = productlistdata.map((p: any) => ({
-      label: p.product,
-      value: p.sku,
-      rate: Number(p.price.replace(/[^0-9.]/g, '')),
-      tax: 0,
-      ...p
-    }));
+    const staticProducts: any[] = [];
 
     const dynamicProducts = storedProducts.map((p: any) => ({
       label: p.productName || p.name,

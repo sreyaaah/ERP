@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import type { ProductFormData, VariantRow, ImageFile, Product } from "../types";
+import type { ProductFormData, VariantRow, ImageFile } from "../types";
+import { ProductService } from "../../../services/product.service";
 
 export const useEditProduct = (productId: string) => {
   const [formData, setFormData] = useState<ProductFormData>({
@@ -8,20 +9,20 @@ export const useEditProduct = (productId: string) => {
     productName: "",
     slug: "",
     sku: "",
-    sellingType: null,
+    sellingType: "Transactional",
     category: null,
     subCategory: null,
     brand: null,
     unit: null,
-    barcodeSymbol: null,
+    barcodeSymbol: "CODE128",
     itemCode: "",
     description: "",
-    quantity: "",
+    quantity: "0",
     taxMode: "exclusive",
-    taxRate: "",
-    priceBeforeTax: "",
-    taxAmount: "",
-    priceAfterTax: "",
+    taxRate: "0",
+    priceBeforeTax: "0",
+    taxAmount: "0",
+    priceAfterTax: "0",
     discountType: null,
     discountValue: "",
     quantityAlert: "",
@@ -37,64 +38,62 @@ export const useEditProduct = (productId: string) => {
 
   const [variants, setVariants] = useState<VariantRow[]>([]);
   const [images, setImages] = useState<ImageFile[]>([]);
+  const [deletedImages, setDeletedImages] = useState<string[]>([]);
   const [isSlugManuallyEdited, setIsSlugManuallyEdited] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
-    const loadProduct = () => {
+    const loadProduct = async () => {
+      if (!productId) return;
+      setLoading(true);
       try {
-        const existingProducts = JSON.parse(
-          localStorage.getItem("products") || "[]"
-        );
-
-        const product = existingProducts.find((p: Product) => p.id === productId);
+        const product = await ProductService.getById(productId);
 
         if (product) {
           setFormData({
-            store: product.store,
-            warehouse: product.warehouse,
-            productName: product.productName,
-            slug: product.slug,
-            sku: product.sku,
-            sellingType: product.sellingType,
-            category: product.category,
-            subCategory: product.subCategory,
-            brand: product.brand,
-            unit: product.unit,
-            barcodeSymbol: product.barcodeSymbol,
-            itemCode: product.itemCode,
-            description: product.description,
-            quantity: product.quantity,
-            taxMode: product.taxMode,
-            taxRate: product.taxRate,
-            priceBeforeTax: product.priceBeforeTax,
-            taxAmount: product.taxAmount,
-            priceAfterTax: product.priceAfterTax,
-            discountType: product.discountType,
-            discountValue: product.discountValue,
-            quantityAlert: product.quantityAlert,
-            variantAttribute: product.variantAttribute,
-            warranty: product.warranty,
-            manufacturer: product.manufacturer,
-            manufacturedDate: product.manufacturedDate ? new Date(product.manufacturedDate) : new Date(),
-            expiryDate: product.expiryDate ? new Date(product.expiryDate) : new Date(),
-            hasWarranty: product.hasWarranty,
-            hasManufacturer: product.hasManufacturer,
-            hasExpiry: product.hasExpiry,
+            store: product.storeId || null,
+            warehouse: product.warehouseId || null,
+            productName: product.product || "",
+            slug: product.slug || "",
+            sku: product.sku || "",
+            sellingType: product.sellingType || "Transactional",
+            category: product.categoryId?._id || product.categoryId || null,
+            subCategory: product.subCategoryId?._id || product.subCategoryId || null,
+            brand: product.brandId?._id || product.brandId || null,
+            unit: product.unitId?._id || product.unitId || null,
+            barcodeSymbol: product.barcodeSymbology || "CODE128",
+            itemCode: product.itemCode || "",
+            description: product.description || "",
+            quantity: String(product.quantity || 0),
+            taxMode: product.taxType?.toLowerCase() === "exclusive" ? "exclusive" : "inclusive",
+            taxRate: String(product.taxRate || 0),
+            priceBeforeTax: String(product.priceBeforeTax || 0),
+            taxAmount: String(product.taxAmount || 0),
+            priceAfterTax: String(product.priceAfterTax || 0),
+            discountType: product.customFields?.discountType || null,
+            discountValue: product.customFields?.discountValue || "",
+            quantityAlert: product.customFields?.quantityAlert || "",
+            variantAttribute: null,
+            warranty: null,
+            manufacturer: product.customFields?.manufacturer || "",
+            manufacturedDate: product.customFields?.manufacturedDate ? new Date(product.customFields.manufacturedDate) : new Date(),
+            expiryDate: product.customFields?.expiryDate ? new Date(product.customFields.expiryDate) : new Date(),
+            hasWarranty: !!product.customFields?.hasWarranty,
+            hasManufacturer: !!product.customFields?.manufacturer,
+            hasExpiry: !!product.customFields?.expiryDate,
           });
 
-          // Load existing images
           if (product.images && product.images.length > 0) {
             setImages(product.images.map((img: any) => ({
-              id: img.id,
+              id: img._id || img.id || Math.random().toString(),
               url: img.url,
             })));
           }
         }
-
-        setLoading(false);
       } catch (err) {
         console.error("Failed to load product:", err);
+      } finally {
         setLoading(false);
       }
     };
@@ -151,151 +150,143 @@ export const useEditProduct = (productId: string) => {
   };
 
   const removeImage = (id: string) => {
+    // If it's an existing image from DB, queue it for deletion
+    const img = images.find((i) => i.id === id);
+    if (img && !img.file) {
+      setDeletedImages((prev) => [...prev, id]);
+    }
     setImages((prev) => prev.filter((img) => img.id !== id));
   };
 
-  const generateSKU = () => {
-    const sku = `SKU-${Date.now()}`;
-    updateField("sku", sku);
+  const generateSKU = async () => {
+    try {
+      const sku = await ProductService.generateSku();
+      updateField("sku", sku);
+    } catch (error) {
+      const fallback = `SKU-${Date.now()}`;
+      updateField("sku", fallback);
+    }
   };
 
-  const generateItemCode = () => {
-    const code = `ITEM-${Date.now()}`;
-    updateField("itemCode", code);
+  const generateItemCode = async () => {
+    try {
+      const code = await ProductService.generateItemCode();
+      updateField("itemCode", code);
+    } catch (error) {
+      const fallback = `ITEM-${Date.now()}`;
+      updateField("itemCode", fallback);
+    }
   };
 
   const validateProduct = () => {
-    if (!formData.productName.trim()) {
-      return "Product name is required";
-    }
-
-    if (!formData.sku.trim()) {
-      return "SKU is required";
-    }
-
-    if (!formData.store) {
-      return "Store is required";
-    }
-
-    if (!formData.warehouse) {
-      return "Warehouse is required";
-    }
-
-    if (!formData.sellingType) {
-      return "Selling type is required";
-    }
-
-    if (!formData.category) {
-      return "Category is required";
-    }
-
-    if (!formData.unit) {
-      return "Unit is required";
-    }
-
-    if (!formData.itemCode?.trim()) {
-      return "Item code is required";
-    }
-
-    if (!formData.priceBeforeTax || Number(formData.priceBeforeTax) <= 0) {
-      return "Price must be greater than zero";
-    }
-
-    if (!formData.taxRate || Number(formData.taxRate) < 0) {
-      return "Tax rate must be valid";
-    }
-
+    if (!formData.productName.trim()) return "Product name is required";
+    if (!formData.sku.trim()) return "SKU is required";
+    if (!formData.category) return "Category is required";
+    if (!formData.priceBeforeTax || Number(formData.priceBeforeTax) < 0) return "Price must be valid";
     return null;
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    if (e) e.preventDefault();
 
     const error = validateProduct();
-    if (error) {
-      return { success: false, error };
-    }
+    if (error) return { success: false, error };
 
+    setIsUpdating(true);
     try {
-      const existingProducts = JSON.parse(
-        localStorage.getItem("products") || "[]"
-      );
-
-      const updatedProduct = {
-        id: productId,
-        ...formData,
-        images: images.map((img) => ({
-          id: img.id,
-          url: img.url,
-        })),
-        imageCount: images.length,
-        createdAt: existingProducts.find((p: Product) => p.id === productId)?.createdAt || new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+      const payload = {
+        storeId: formData.store,
+        warehouseId: formData.warehouse,
+        product: formData.productName,
+        slug: formData.slug,
+        sku: formData.sku,
+        itemCode: formData.itemCode,
+        sellingType: formData.sellingType || "Transactional",
+        categoryId: formData.category,
+        subCategoryId: formData.subCategory,
+        brandId: formData.brand,
+        unitId: formData.unit,
+        barcodeSymbology: formData.barcodeSymbol || "CODE128",
+        description: formData.description,
+        taxType: formData.taxMode === "exclusive" ? "Exclusive" : formData.taxMode === "no-tax" ? "None" : "Inclusive",
+        taxRate: Number(formData.taxRate),
+        priceBeforeTax: Number(formData.priceBeforeTax),
+        taxAmount: Number(formData.taxAmount),
+        priceAfterTax: Number(formData.priceAfterTax),
+        quantity: Number(formData.quantity) || 0,
+        customFields: {
+          discountType: formData.discountType,
+          discountValue: formData.discountValue,
+          quantityAlert: formData.quantityAlert,
+          manufacturer: formData.manufacturer,
+          manufacturedDate: formData.manufacturedDate,
+          expiryDate: formData.expiryDate,
+        }
       };
 
-      const updatedProducts = existingProducts.map((p: Product) =>
-        p.id === productId ? updatedProduct : p
-      );
+      await ProductService.update(productId, payload);
 
-      localStorage.setItem("products", JSON.stringify(updatedProducts));
+      // Handle image deletions
+      if (deletedImages.length > 0) {
+        for (const imgId of deletedImages) {
+          try {
+            await ProductService.deleteImage(productId, imgId);
+          } catch (e) {
+            console.error("Failed to delete image:", e);
+          }
+        }
+      }
+
+      // Handle new image uploads (ones with a file attached)
+      const newImages = images.filter((img) => img.file);
+      if (newImages.length > 0) {
+        for (const img of newImages) {
+          if (img.file) {
+            try {
+              await ProductService.uploadImage(productId, img.file);
+            } catch (imgErr) {
+              console.error("Image upload failed for one image", imgErr);
+            }
+          }
+        }
+      }
 
       return { success: true };
-    } catch (err) {
+    } catch (err: any) {
       console.error("Update product failed:", err);
-      return { success: false, error: "Something went wrong" };
+      return { success: false, error: err.message || "Something went wrong" };
+    } finally {
+      setIsUpdating(false);
     }
   };
 
   // Tax calculation effect
   useEffect(() => {
     const inputPrice = Number(formData.priceBeforeTax);
-
     if (!inputPrice) {
-      setFormData((prev) => ({
-        ...prev,
-        taxAmount: "",
-        priceAfterTax: "",
-      }));
+      setFormData((prev) => ({ ...prev, taxAmount: "0.00", priceAfterTax: "0.00" }));
       return;
     }
 
     if (formData.taxMode === "no-tax") {
-      setFormData((prev) => ({
-        ...prev,
-        taxAmount: "0.00",
-        priceAfterTax: inputPrice.toFixed(2),
-      }));
+      setFormData((prev) => ({ ...prev, taxAmount: "0.00", priceAfterTax: inputPrice.toFixed(2) }));
       return;
     }
 
     const rate = Number(formData.taxRate);
     if (!rate) {
-      setFormData((prev) => ({
-        ...prev,
-        taxAmount: "0.00",
-        priceAfterTax: inputPrice.toFixed(2),
-      }));
+      setFormData((prev) => ({ ...prev, taxAmount: "0.00", priceAfterTax: inputPrice.toFixed(2) }));
       return;
     }
 
     if (formData.taxMode === "exclusive") {
       const tax = (inputPrice * rate) / 100;
       const finalPrice = inputPrice + tax;
-
-      setFormData((prev) => ({
-        ...prev,
-        taxAmount: tax.toFixed(2),
-        priceAfterTax: finalPrice.toFixed(2),
-      }));
+      setFormData((prev) => ({ ...prev, taxAmount: tax.toFixed(2), priceAfterTax: finalPrice.toFixed(2) }));
     } else {
       const basePrice = inputPrice / (1 + rate / 100);
       const tax = inputPrice - basePrice;
-
-      setFormData((prev) => ({
-        ...prev,
-        taxAmount: tax.toFixed(2),
-        priceAfterTax: basePrice.toFixed(2),
-      }));
+      setFormData((prev) => ({ ...prev, taxAmount: tax.toFixed(2), priceAfterTax: inputPrice.toFixed(2) }));
     }
   }, [formData.taxMode, formData.taxRate, formData.priceBeforeTax]);
 
@@ -304,6 +295,7 @@ export const useEditProduct = (productId: string) => {
     variants,
     images,
     loading,
+    isUpdating,
     updateField,
     addVariant,
     removeVariant,

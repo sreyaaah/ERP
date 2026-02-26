@@ -1,6 +1,5 @@
 import CommonSelect from "../../../../components/select/common-select";
 import CommonDatePicker from "../../../../components/date-picker/common-date-picker";
-import { WARRANTY_OPTIONS } from "../constants";
 import type { ProductFormData } from "../types";
 
 interface Props {
@@ -9,9 +8,10 @@ interface Props {
     key: K,
     value: ProductFormData[K]
   ) => void;
+  warrantyOptions: any[];
 }
 
-const CustomFieldsSection = ({ formData, updateField }: Props) => {
+const CustomFieldsSection = ({ formData, updateField, warrantyOptions }: Props) => {
   return (
     <div className="accordion-item border mb-4">
       <h2 className="accordion-header" id="headingSpacingFour">
@@ -91,7 +91,7 @@ const CustomFieldsSection = ({ formData, updateField }: Props) => {
                     </label>
                     <CommonSelect
                       className="w-100"
-                      options={WARRANTY_OPTIONS}
+                      options={warrantyOptions}
                       value={formData.warranty}
                       onChange={(e) => updateField("warranty", e.value)}
                       placeholder="Choose"

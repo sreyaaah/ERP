@@ -1254,7 +1254,7 @@ export const authRoutes = [
   },
   {
     id: 113,
-    path: routes.productdetails,
+    path: `${routes.productdetails}/:id`,
     name: "productdetails",
     element: <ProductDetail />,
     route: Route,

@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { InvoiceService, type Invoice, type InvoiceItem } from "../services/invoice.service";
 import { all_routes } from "../../routes/all_routes";
 import CommonFooter from "../../components/footer/commonFooter";
-import { productlistdata } from "../inventory/productlist";
+
 import CommonSelect from "../../components/select/common-select";
 import { ALL_SELECTED_CURRENCIES } from "../settings/financialsettings/currencies";
 import { INITIAL_TAX_RATES } from "../settings/financialsettings/taxrates";
@@ -163,16 +163,7 @@ useEffect(() => {
       JSON.parse(localStorage.getItem("productList") || "[]") ||
       [];
 
-    const staticProducts: Product[] = productlistdata.map((p: any) => ({
-      id: p.sku || p.id,
-      name: p.product,
-      rate: Number(
-        typeof p.price === "string"
-          ? p.price.replace(/[^0-9.]/g, "")
-          : p.price || 0
-      ),
-      tax: Number(p.tax || 0),
-    }));
+    const staticProducts: Product[] = [];
 
     const dynamicProducts: Product[] = storedProducts.map((p: any) => ({
       id: p.id || p.sku || `LS-${Math.random()}`,
