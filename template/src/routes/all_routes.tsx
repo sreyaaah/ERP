@@ -142,6 +142,7 @@ export const all_routes = {
   addinvoice: "/sales/add-invoice",
   salesreturn: "/sales-returns",
   quotationlist: "/quotation-list",
+  quotationdetails: "/sales/quotation-details/:id",
   pos2: "/pos-2",
   attendanceadmin: "attendance-admin",
   payslip: "/payslip",

@@ -218,6 +218,9 @@ const SalesReturn = lazy(() => import("../feature-module/sales/salesreturn"));
 const QuotationList = lazy(
   () => import("../feature-module/sales/quotationlist")
 );
+const QuotationDetails = lazy(
+  () => import("../feature-module/sales/quotationdetails")
+);
 const InvoiceList = lazy(
   () => import("../feature-module/sales/invoicelist")
 );
@@ -1138,6 +1141,13 @@ export const authRoutes = [
     path: routes.quotationlist,
     name: "quotationlist",
     element: <QuotationList />,
+    route: Route,
+  },
+  {
+    id: 103.5,
+    path: routes.quotationdetails,
+    name: "quotationdetails",
+    element: <QuotationDetails />,
     route: Route,
   },
   {

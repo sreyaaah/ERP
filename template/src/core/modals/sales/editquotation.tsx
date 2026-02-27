@@ -4,8 +4,9 @@ import { Editor } from "primereact/editor";
 import { plus1 } from "../../../utils/imagepath";
 import CommonSelect from "../../../components/select/common-select";
 import CommonDatePicker from "../../../components/date-picker/common-date-picker";
-
-
+import { QuotationService } from "../../../feature-module/services/quotation.service";
+import { CustomerService } from "../../../feature-module/services/customer.service";
+import { ProductService } from "../../../feature-module/services/product.service";
 import { all_routes } from "../../../routes/all_routes";
 import { ALL_SELECTED_CURRENCIES } from "../../../feature-module/settings/financialsettings/currencies";
 import { INITIAL_TAX_RATES } from "../../../feature-module/settings/financialsettings/taxrates";
@@ -18,9 +19,10 @@ const FALLBACK_TAX_RATES = INITIAL_TAX_RATES.map(t => ({
 
 interface EditQuotationProps {
   quotation: any;
+  onSuccess?: () => void;
 }
 
-const EditQuotation = ({ quotation }: EditQuotationProps) => {
+const EditQuotation = ({ quotation, onSuccess }: EditQuotationProps) => {
   const [date, setDate] = useState<Date | null>(new Date());
   const [validityDate, setValidityDate] = useState<Date | null>(new Date());
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
@@ -47,13 +49,18 @@ const EditQuotation = ({ quotation }: EditQuotationProps) => {
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
 
   useEffect(() => {
-    const storedCustomers: any[] = [];
-    const formatted = storedCustomers.map((c: any) => ({
-      label: c.customer,
-      value: c.code,
-      ...c
-    }));
-    setCustomers(formatted);
+    CustomerService.getCustomers({ limit: 200, page: 1 })
+      .then((res) => {
+        const formatted = (res.data || []).map((c: any) => ({
+          label: c.customer || `${c.firstName} ${c.lastName || ""}`.trim(),
+          value: c.id,
+          id: c.id,
+          avatar: c.avatar,
+          customer: c.customer || `${c.firstName} ${c.lastName || ""}`.trim(),
+        }));
+        setCustomers(formatted);
+      })
+      .catch(() => setCustomers([]));
   }, []);
 
   useEffect(() => {
@@ -82,18 +89,18 @@ const EditQuotation = ({ quotation }: EditQuotationProps) => {
   }, []);
 
   useEffect(() => {
-    const storedProducts = JSON.parse(localStorage.getItem("products") || "[]");
-    const staticProducts: any[] = [];
-
-    const dynamicProducts = storedProducts.map((p: any) => ({
-      label: p.productName || p.name,
-      value: p.sku || p.id,
-      rate: Number(p.price || p.priceBeforeTax || p.priceAfterTax || 0),
-      tax: Number(p.taxRate || 0),
-      ...p,
-    }));
-
-    setProductOptions([...staticProducts, ...dynamicProducts]);
+    ProductService.getAll({ limit: 500, page: 1 })
+      .then((res) => {
+        const opts = (res.data || []).map((p: any) => ({
+          label: p.product || p.productName || "",
+          value: p.id,
+          id: p.id,
+          rate: Number(p.priceBeforeTax || p.price || 0),
+          tax: Number(p.taxRate || 0),
+        }));
+        setProductOptions(opts);
+      })
+      .catch(() => setProductOptions([]));
   }, []);
 
   // Load quotation data when quotation prop changes
@@ -132,48 +139,54 @@ const EditQuotation = ({ quotation }: EditQuotationProps) => {
       return new Date(dateStr);
     };
 
-    // Set basic fields
-    setQuotationNumber(quotation.Quotation_No || "");
-    setReferenceNo(quotation.Reference || "");
-    setDate(parseDate(quotation.Quotation_Date));
-    setValidityDate(parseDate(quotation.Validity));
-    setText(quotation.Description || "");
-    setQuotationType(quotation.quotationType || "intrastate");
+    // Set basic fields — use API field names (quotationNo, customerName, items, etc.)
+    setQuotationNumber(quotation.quotationNo || quotation.Quotation_No || "");
+    setReferenceNo(quotation.reference || quotation.Reference || "");
+    setDate(parseDate(quotation.date || quotation.Quotation_Date));
+    setValidityDate(parseDate(quotation.validity || quotation.Validity));
+    setText(quotation.description || quotation.Description || "");
+
+    // quotationType from API is "Interstate" | "Intrastate" | "International" (capitalised)
+    const rawType = (quotation.quotationType || "Intrastate").toLowerCase() as "international" | "interstate" | "intrastate";
+    setQuotationType(rawType);
     setSelectedCurrency(quotation.Currency || null);
 
-    // Set customer
-    const customerName = quotation.Custmer_Name;
-    if (customerName) {
-      setCustomerSearch(customerName);
-      setSelectedCustomer({ label: customerName, value: customerName, customer: customerName });
+    // Set customer — API returns customerName + customerId
+    const cName = quotation.customerName || quotation.Custmer_Name || "";
+    const cId   = quotation.customerId   || "";
+    if (cName) {
+      setCustomerSearch(cName);
+      setSelectedCustomer({ label: cName, value: cId || cName, customer: cName });
     }
 
-    // Set status
-    const statusValue = quotation.Status === 'Sent' ? '1' : 
-                       quotation.Status === 'Completed' ? '2' : '3';
-    setSelectedStatus(statusValue);
+    // Set status — API returns plain string e.g. "Pending" / "Sent" / "Ordered" / "Converted"
+    const apiStatus = quotation.status || quotation.Status || "Pending";
+    setSelectedStatus(apiStatus);
 
-    // Load product rows
-    if (quotation.details && quotation.details.length > 0) {
-      const loadedRows = quotation.details.map((item: any) => ({
-        product: item.product || null,
-        productSearch: item.product?.label || item.product?.product || item.productSearch || "",
-        showProductDropdown: false,
-        qty: Number(item.qty) || 1,
-        rate: Number(item.rate) || 0,
-        discount: Number(item.discount) || 0,
-        tax: Number(item.tax) || 0,
-        isTaxFromProduct: item.isTaxFromProduct || false,
-        taxAmount: Number(item.taxAmount) || 0,
-        unitCost: Number(item.unitCost) || 0,
-        total: Number(item.total) || 0,
-      }));
+    // Load product rows — API uses `items` array
+    const itemsArray = quotation.items || quotation.details || [];
+    if (itemsArray.length > 0) {
+      const loadedRows = itemsArray.map((item: any) => {
+        // productName comes from formatted API response
+        const pName = item.productName || item.product?.label || item.productSearch || "";
+        const pId   = item.productId   || item.product?.value || item.product?.id || null;
+        return {
+          product: pId ? { label: pName, value: pId, id: pId } : null,
+          productSearch: pName,
+          showProductDropdown: false,
+          qty:           Number(item.qty)              || 1,
+          rate:          Number(item.rate)             || 0,
+          discount:      Number(item.discountPercent ?? item.discount) || 0,
+          tax:           Number(item.taxPercent       ?? item.tax)     || 0,
+          isTaxFromProduct: item.isTaxFromProduct || false,
+          taxAmount:     Number(item.taxAmount)        || 0,
+          unitCost:      Number(item.unitCost)         || 0,
+          total:         Number(item.totalCost ?? item.total) || 0,
+        };
+      });
       setRows(loadedRows);
-      
-      // Recalculate summary immediately
       calculateSummary(loadedRows);
     } else {
-      // Set empty row if no details
       setRows([{
         product: null,
         productSearch: "",
@@ -181,7 +194,7 @@ const EditQuotation = ({ quotation }: EditQuotationProps) => {
         qty: 1,
         rate: 0,
         discount: 0,
-        tax: getDefaultTaxByQuotationType("intrastate"),
+        tax: getDefaultTaxByQuotationType(rawType),
         isTaxFromProduct: false,
         taxAmount: 0,
         unitCost: 0,
@@ -191,9 +204,10 @@ const EditQuotation = ({ quotation }: EditQuotationProps) => {
   }, [quotation]);
 
   const Status = [
-    { label: 'Sent', value: '1' },
-    { label: 'Completed', value: '2' },
-    { label: 'In Progress', value: '3' },
+    { label: 'Pending',   value: 'Pending'   },
+    { label: 'Sent',      value: 'Sent'      },
+    { label: 'Ordered',   value: 'Ordered'   },
+    { label: 'Converted', value: 'Converted' },
   ];
 
   const requiredFields = {
@@ -210,23 +224,6 @@ const EditQuotation = ({ quotation }: EditQuotationProps) => {
     return 18;
   };
 
-  const getFilteredTaxRates = () => {
-    if (quotationType === "intrastate") {
-      return taxRates.filter(t => ["GST", "CGST", "SGST"].includes(t.type));
-    }
-    if (quotationType === "interstate") {
-      return taxRates
-        .filter(t => t.type === "GST" || t.type === "IGST")
-        .map(t => ({
-          ...t,
-          label: (t.label || t.name || "").includes("GST") ? (t.label || t.name || "").replace("GST", "IGST") : (t.label || t.name || "")
-        }));
-    }
-    if (quotationType === "international") {
-      return taxRates.filter(t => t.type === "VAT");
-    }
-    return taxRates;
-  };
 
   const filteredCustomers = customers.filter(customer =>
     customer.label.toLowerCase().includes(customerSearch.toLowerCase())
@@ -287,8 +284,8 @@ const EditQuotation = ({ quotation }: EditQuotationProps) => {
  const onProductChange = (index: number, product: any) => {
   if (!product) return;
 
-  const productTax =
-    product.tax && product.tax > 0
+  const hasProductTax = product.tax !== undefined && product.tax !== null;
+  const productTax = hasProductTax
       ? Number(product.tax)
       : getDefaultTaxByQuotationType(quotationType);
 
@@ -301,7 +298,7 @@ const EditQuotation = ({ quotation }: EditQuotationProps) => {
     showProductDropdown: false,
     rate: Number(product.rate || 0),
     tax: productTax,              
-    isTaxFromProduct: !!product.tax, 
+    isTaxFromProduct: hasProductTax, 
     qty: updated[index].qty || 1,
     discount: updated[index].discount || 0,
   };
@@ -441,38 +438,32 @@ const EditQuotation = ({ quotation }: EditQuotationProps) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleUpdate = () => {
+  const handleUpdate = async () => {
     if (!validateForm()) return;
-
-    const updatedQuotation = {
-      ...quotation,
-      Quotation_Date: date?.toLocaleDateString('en-GB'),
-      Custmer_Name: selectedCustomer?.customer || selectedCustomer?.label || "Unknown",
-      Custmer_Image: selectedCustomer?.avatar || quotation.Custmer_Image || "user-01.jpg",
-      Reference: referenceNo,
-      Status: selectedStatus === '1' ? 'Sent' : selectedStatus === '2' ? 'Completed' : 'In Progress',
-      GrandTotal: grandTotal,
-      Product_Name: rows[0]?.product?.product || rows[0]?.product?.label || "Multiple Items",
-      Product_image: rows[0]?.product?.img || rows[0]?.product?.image || quotation.Product_image || "product-01.jpg",
-      details: rows,
-      Quotation_No: quotationNumber,
-      quotationType: quotationType,
-      Currency: quotationType === "international" ? selectedCurrency : null,
-      Validity: validityDate?.toLocaleDateString('en-GB'),
-      Description: text,
-      Amount_In_Words: amountInWords
-    };
-
-    const existingQuotations = JSON.parse(localStorage.getItem("quotationList") || "[]");
-    const updatedQuotations = existingQuotations.map((q: any) =>
-      q.id === quotation.id ? updatedQuotation : q
-    );
-    localStorage.setItem("quotationList", JSON.stringify(updatedQuotations));
-
-    window.dispatchEvent(new Event("storage"));
-
-    const closeBtn = document.querySelector('#edit-units .close') as HTMLElement;
-    closeBtn?.click();
+    try {
+      const payload = {
+        customerId: selectedCustomer?.id || selectedCustomer?.value,
+        date: date ? date.toISOString().slice(0, 10) : undefined,
+        validity: validityDate ? validityDate.toISOString().slice(0, 10) : undefined,
+        reference: referenceNo || "",
+        quotationType: (quotationType.charAt(0).toUpperCase() + quotationType.slice(1)) as any,
+        description: text || "",
+        status: selectedStatus || "Pending",
+        items: rows.map((row: any) => ({
+          productId: row.product?.id || row.product?.value,
+          qty: Number(row.qty),
+          rate: Number(row.rate),
+          discountPercent: Number(row.discount || 0),
+          taxPercent: Number(row.tax || 0),
+        })),
+      };
+      await QuotationService.update(quotation.id, payload);
+      onSuccess?.();
+      const closeBtn = document.querySelector('#edit-units .close') as HTMLElement;
+      closeBtn?.click();
+    } catch (err: any) {
+      alert(err.message || "Failed to update quotation");
+    }
   };
 
   return (
@@ -744,36 +735,58 @@ const EditQuotation = ({ quotation }: EditQuotationProps) => {
                                         }
                                         setRows(updated);
                                       }}
-                                      onFocus={() => {
+                                      onFocus={(e) => {
                                         const updated = [...rows];
                                         updated[index].showProductDropdown = true;
+                                        updated[index]._inputRect = e.currentTarget.getBoundingClientRect();
                                         setRows(updated);
+                                      }}
+                                      onBlur={() => {
+                                        setTimeout(() => {
+                                          const updated = [...rows];
+                                          if (updated[index]) {
+                                            updated[index].showProductDropdown = false;
+                                            setRows(updated);
+                                          }
+                                        }, 200);
                                       }}
                                     />
                                     
-                                    {row.showProductDropdown && row.productSearch && (
+                                    {row.showProductDropdown && (
                                       <div
-                                        className="position-absolute w-100 mt-1 bg-white border rounded shadow-lg"
-                                        style={{ maxHeight: "200px", overflowY: "auto", zIndex: 1050 }}
+                                        style={{
+                                          position: "fixed",
+                                          top: row._inputRect ? row._inputRect.bottom + 2 : 0,
+                                          left: row._inputRect ? row._inputRect.left : 0,
+                                          width: row._inputRect ? row._inputRect.width : 220,
+                                          maxHeight: "220px",
+                                          overflowY: "auto",
+                                          zIndex: 9999,
+                                          background: "white",
+                                          border: "1px solid #dee2e6",
+                                          borderRadius: "0.375rem",
+                                          boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
+                                        }}
                                       >
                                         {getFilteredProducts(index).length > 0 ? (
                                           getFilteredProducts(index).map((product) => (
                                             <div
                                               key={product.value}
-                                              className="px-2 py-2 cursor-pointer"
-                                              style={{ cursor: "pointer" }}
+                                              className="px-2 py-2"
+                                              style={{ cursor: "pointer", borderBottom: "1px solid #f0f0f0" }}
+                                              onMouseDown={(e) => e.preventDefault()}
                                               onClick={() => onProductChange(index, product)}
-                                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f8f9fa"}
-                                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "white"}
+                                              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f8f9fa")}
+                                              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "white")}
                                             >
-                                              <div className="fw-bold">{product.label}</div>
+                                              <div className="fw-semibold" style={{ fontSize: 13 }}>{product.label}</div>
                                               <small className="text-muted">
-                                                Rate: ₹{product.rate} | Tax: {product.tax}%
+                                                Rate: ₹{product.rate.toFixed(2)} &nbsp;|&nbsp; Tax: {product.tax}%
                                               </small>
                                             </div>
                                           ))
                                         ) : (
-                                          <div className="px-2 py-2 text-muted">No products found</div>
+                                          <div className="px-2 py-2 text-muted" style={{ fontSize: 13 }}>No products found</div>
                                         )}
                                       </div>
                                     )}
@@ -818,10 +831,15 @@ const EditQuotation = ({ quotation }: EditQuotationProps) => {
                                       onInputChange(index, "tax", Number(e.target.value))
                                     }
                                   >
-                                    <option value={0}>0%</option>
-                                    {getFilteredTaxRates().map((rate: { label: string; value: number }) => (
-                                      <option key={rate.label} value={rate.value}>
-                                        {rate.label}
+                                    <option value={0}>No Tax (0%)</option>
+                                    {row.tax > 0 && !taxRates.some((r: any) => r.value === row.tax) && (
+                                      <option value={row.tax}>
+                                        Product Tax ({row.tax}%)
+                                      </option>
+                                    )}
+                                    {taxRates.map((rate: { label: string; value: number; type: string }) => (
+                                      <option key={`${rate.label}-${rate.value}`} value={rate.value}>
+                                        {rate.label} ({rate.type} — {rate.value}%)
                                       </option>
                                     ))}
                                   </select>

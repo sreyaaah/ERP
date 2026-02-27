@@ -4,9 +4,9 @@ import { Editor } from "primereact/editor";
 import { plus1 } from "../../../utils/imagepath";
 import CommonSelect from "../../../components/select/common-select";
 import CommonDatePicker from "../../../components/date-picker/common-date-picker";
-
-
-import { customersData } from "../../json/customers-data";
+import { QuotationService } from "../../../feature-module/services/quotation.service";
+import { CustomerService } from "../../../feature-module/services/customer.service";
+import { ProductService } from "../../../feature-module/services/product.service";
 import { all_routes } from "../../../routes/all_routes";
 import { ALL_SELECTED_CURRENCIES } from "../../../feature-module/settings/financialsettings/currencies";
 import { INITIAL_TAX_RATES } from "../../../feature-module/settings/financialsettings/taxrates";
@@ -17,7 +17,11 @@ const FALLBACK_TAX_RATES = INITIAL_TAX_RATES.map(t => ({
   type: t.type
 }));
 
-const AddQuotation = () => {
+interface AddQuotationProps {
+  onSuccess?: () => void;
+}
+
+const AddQuotation = ({ onSuccess }: AddQuotationProps) => {
   const [date, setDate] = useState<Date | null>(new Date());
   const [validityDate, setValidityDate] = useState<Date | null>(new Date());
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
@@ -27,18 +31,27 @@ const AddQuotation = () => {
   const [quotationNumber, setQuotationNumber] = useState<string>("");
   const [referenceNo, setReferenceNo] = useState("");
   const [errors, setErrors] = useState<any>({});
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState<{ msg: string; type: string } | null>(null);
 
-  
   const [customers, setCustomers] = useState<any[]>([]);
   const navigate = useNavigate();
 
   const [taxRates, setTaxRates] = useState<any[]>([]);
 
+  const showToast = (msg: string, type = "success") => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
   useEffect(() => {
-    const today = new Date();
-    const dateStr = today.toISOString().slice(0, 10).replace(/-/g, "");
-    const randomNum = Math.floor(1000 + Math.random() * 9000);
-    setQuotationNumber(`QT-${dateStr}-${randomNum}`);
+    QuotationService.generateNumber()
+      .then(setQuotationNumber)
+      .catch(() => {
+        const today = new Date();
+        const dateStr = today.toISOString().slice(0, 10).replace(/-/g, "");
+        setQuotationNumber(`QT-${dateStr}-${Math.floor(1000 + Math.random() * 9000)}`);
+      });
   }, []);
 
   useEffect(() => {
@@ -55,17 +68,18 @@ const AddQuotation = () => {
   }, []);
 
   useEffect(() => {
-    const storedCustomers: any[] = [];
-    const mergedCustomers = [...customersData, ...storedCustomers];
-
-    const formatted = mergedCustomers.map((c: any) => ({
-      label: c.customer,
-      value: c.code,
-      ...c
-    }));
-    
-    const uniqueCustomers = Array.from(new Map(formatted.map(item => [item.value, item])).values());
-    setCustomers(uniqueCustomers);
+    CustomerService.getCustomers({ limit: 200, page: 1 })
+      .then((res) => {
+        const formatted = (res.data || []).map((c: any) => ({
+          label: c.customer || `${c.firstName} ${c.lastName || ""}`.trim(),
+          value: c.id,
+          id: c.id,
+          avatar: c.avatar,
+          customer: c.customer || `${c.firstName} ${c.lastName || ""}`.trim(),
+        }));
+        setCustomers(formatted);
+      })
+      .catch(() => setCustomers([]));
   }, []);
 
   useEffect(() => {
@@ -95,30 +109,39 @@ const AddQuotation = () => {
   }, []);
 
   const Status  = [
-    { label: 'Sent', value: '1' },
-    { label: 'Completed', value: '2' },
-    { label: 'In Progress', value: '3' },
+    { label: 'Pending',   value: 'Pending'   },
+    { label: 'Sent',      value: 'Sent'      },
+    { label: 'Ordered',   value: 'Ordered'   },
+    { label: 'Converted', value: 'Converted' },
   ];
 
     const [quotationType, setQuotationType] = useState<
       "international" | "interstate" | "intrastate"
     >("intrastate");
 
+  const getDefaultTaxByQuotationType = (
+    type: "international" | "interstate" | "intrastate"
+  ) => {
+    if (type === "international") return 5;
+    if (type === "interstate") return 18;
+    return 18;
+  };
+
 const [productOptions, setProductOptions] = useState<any[]>([]);
 
 useEffect(() => {
-  const storedProducts = JSON.parse(localStorage.getItem("products") || "[]");
-  const staticProducts: any[] = [];
-
-  const dynamicProducts = storedProducts.map((p: any) => ({
-    label: p.productName || p.name,
-    value: p.sku || p.id,
-    rate: Number(p.price || p.priceBeforeTax || p.priceAfterTax || 0),
-    tax: Number(p.taxRate || 0),
-    ...p,
-  }));
-
-  setProductOptions([...staticProducts, ...dynamicProducts]);
+  ProductService.getAll({ limit: 500, page: 1 })
+    .then((res) => {
+      const opts = (res.data || []).map((p: any) => ({
+        label: p.product || p.productName || "",
+        value: p.id,
+        id: p.id,
+        rate: Number(p.priceBeforeTax || p.price || 0),
+        tax: Number(p.taxRate || 0),
+      }));
+      setProductOptions(opts);
+    })
+    .catch(() => setProductOptions([]));
 }, []);
 
 
@@ -180,8 +203,8 @@ useEffect(() => {
  const onProductChange = (index: number, product: any) => {
   if (!product) return;
 
-  const productTax =
-    product.tax && product.tax > 0
+  const hasProductTax = product.tax !== undefined && product.tax !== null;
+  const productTax = hasProductTax
       ? Number(product.tax)
       : getDefaultTaxByQuotationType(quotationType);
 
@@ -194,7 +217,7 @@ useEffect(() => {
     showProductDropdown: false,
     rate: Number(product.rate || 0),
     tax: productTax,              
-    isTaxFromProduct: !!product.tax, 
+    isTaxFromProduct: hasProductTax, 
     qty: updated[index].qty || 1,
     discount: updated[index].discount || 0,
   };
@@ -376,40 +399,49 @@ useEffect(() => {
       },
     ]);
 
-    const today = new Date();
-    const dateStr = today.toISOString().slice(0, 10).replace(/-/g, "");
-    const randomNum = Math.floor(1000 + Math.random() * 9000);
-    setQuotationNumber(`QT-${dateStr}-${randomNum}`);
+    // Refresh quotation number from API for next use
+    QuotationService.generateNumber()
+      .then(setQuotationNumber)
+      .catch(() => {
+        const today = new Date();
+        const dateStr = today.toISOString().slice(0, 10).replace(/-/g, "");
+        setQuotationNumber(`QT-${dateStr}-${Math.floor(1000 + Math.random() * 9000)}`);
+      });
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!validateForm()) return;
+    setSaving(true);
+    try {
+      const payload = {
+        customerId: selectedCustomer.id || selectedCustomer.value,
+        date: date ? date.toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
+        validity: validityDate ? validityDate.toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
+        reference: referenceNo || "",
+        quotationType: quotationType.charAt(0).toUpperCase() + quotationType.slice(1) as any,
+        description: text || "",
+        status: selectedStatus || "Pending",
+        items: rows.map((row: any) => ({
+          productId: row.product?.id || row.product?.value,
+          qty: Number(row.qty),
+          rate: Number(row.rate),
+          discountPercent: Number(row.discount || 0),
+          taxPercent: Number(row.tax || 0),
+        })),
+      };
 
-    const newQuotation = {
-      id: Math.floor(Math.random() * 10000), 
-      Quotation_Date: date?.toLocaleDateString('en-GB'),
-      Custmer_Name: selectedCustomer.customer || selectedCustomer.label || "Unknown",
-      Custmer_Image: selectedCustomer.avatar || "user-01.jpg", 
-      Reference: referenceNo,
-      Status: selectedStatus === '1' ? 'Sent' : selectedStatus === '2' ? 'Completed' : 'In Progress',
-      GrandTotal: grandTotal,
-      Product_Name: rows[0]?.product?.product || rows[0]?.product?.label || "Multiple Items",
-      Product_image: rows[0]?.product?.img || rows[0]?.product?.image || "product-01.jpg",
-      details: rows,
-      Quotation_No: quotationNumber,
-      quotationType: quotationType,
-      Validity: validityDate?.toLocaleDateString('en-GB'),
-      Description: text,
-      Amount_In_Words: amountInWords
-    };
+      await QuotationService.create(payload);
+      showToast("Quotation Created Successfully");
+      resetForm();
+      onSuccess?.();
 
-    const existingQuotations = JSON.parse(localStorage.getItem("quotationList") || "[]");
-    localStorage.setItem("quotationList", JSON.stringify([newQuotation, ...existingQuotations]));
-
-    window.dispatchEvent(new Event("storage"));
-    
-    const closeBtn = document.querySelector('#add-units .close') as HTMLElement;
-    closeBtn?.click();
+      const closeBtn = document.querySelector('#add-units .close') as HTMLElement;
+      closeBtn?.click();
+    } catch (err: any) {
+      showToast(err.message || "Failed to create quotation", "danger");
+    } finally {
+      setSaving(false);
+    }
   };
 
 const onInputChange = (index: number, field: string, value: number) => {
@@ -438,36 +470,20 @@ const filteredCustomers = customers.filter(customer =>
   customer.label.toLowerCase().includes(customerSearch.toLowerCase())
 );
 
-const getDefaultTaxByQuotationType = (
-  type: "international" | "interstate" | "intrastate"
-) => {
-  if (type === "international") return 5;
-  if (type === "interstate") return 18;  
-  return 18;                       
-};
 
-
-const getFilteredTaxRates = () => {
-  if (quotationType === "intrastate") {
-    return taxRates.filter(t => ["GST", "CGST", "SGST"].includes(t.type));
-  }
-  if (quotationType === "interstate") {
-    return taxRates
-      .filter(t => t.type === "GST" || t.type === "IGST")
-      .map(t => ({
-        ...t,
-        label: t.label.includes("GST") ? t.label.replace("GST", "IGST") : t.label
-      }));
-  }
-  if (quotationType === "international") {
-    return taxRates.filter(t => t.type === "VAT");
-  }
-  return taxRates;
-};
 
 
   return (
     <div>
+        {/* Toast */}
+        {toast && (
+          <div
+            className={`alert alert-${toast.type} alert-dismissible position-fixed`}
+            style={{ top: 80, right: 20, zIndex: 9999, minWidth: 280 }}
+          >
+            {toast.msg}
+          </div>
+        )}
         {/*Add Quotation */}
         <div className="modal fade" id="add-units">
           <div className="modal-dialog purchase modal-dialog-centered stock-adjust-modal modal-xl modal-fullscreen-sm-down" style={{ maxWidth: "85%" }}>
@@ -755,36 +771,59 @@ const getFilteredTaxRates = () => {
                                           }
                                           setRows(updated);
                                         }}
-                                        onFocus={() => {
+                                        onFocus={(e) => {
                                           const updated = [...rows];
                                           updated[index].showProductDropdown = true;
+                                          updated[index]._inputRect = e.currentTarget.getBoundingClientRect();
                                           setRows(updated);
+                                        }}
+                                        onBlur={() => {
+                                          // Delay close so click on item registers first
+                                          setTimeout(() => {
+                                            const updated = [...rows];
+                                            if (updated[index]) {
+                                              updated[index].showProductDropdown = false;
+                                              setRows(updated);
+                                            }
+                                          }, 200);
                                         }}
                                       />
                                       
-                                      {row.showProductDropdown && row.productSearch && (
+                                      {row.showProductDropdown && (
                                         <div 
-                                          className="position-absolute w-100 mt-1 bg-white border rounded shadow-lg"
-                                          style={{ maxHeight: "200px", overflowY: "auto", zIndex: 1050 }}
+                                          style={{
+                                            position: "fixed",
+                                            top: row._inputRect ? row._inputRect.bottom + 2 : 0,
+                                            left: row._inputRect ? row._inputRect.left : 0,
+                                            width: row._inputRect ? row._inputRect.width : 220,
+                                            maxHeight: "220px",
+                                            overflowY: "auto",
+                                            zIndex: 9999,
+                                            background: "white",
+                                            border: "1px solid #dee2e6",
+                                            borderRadius: "0.375rem",
+                                            boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
+                                          }}
                                         >
                                           {getFilteredProducts(index).length > 0 ? (
                                             getFilteredProducts(index).map((product) => (
                                               <div
                                                 key={product.value}
-                                                className="px-2 py-2 cursor-pointer"
-                                                style={{ cursor: "pointer" }}
+                                                className="px-2 py-2"
+                                                style={{ cursor: "pointer", borderBottom: "1px solid #f0f0f0" }}
+                                                onMouseDown={(e) => e.preventDefault()}
                                                 onClick={() => onProductChange(index, product)}
-                                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f8f9fa"}
-                                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "white"}
+                                                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f8f9fa")}
+                                                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "white")}
                                               >
-                                                <div className="fw-bold">{product.label}</div>
+                                                <div className="fw-semibold" style={{ fontSize: 13 }}>{product.label}</div>
                                                 <small className="text-muted">
-                                                  Rate: ₹{product.rate} | Tax: {product.tax}%
+                                                  Rate: ₹{product.rate.toFixed(2)} &nbsp;|&nbsp; Tax: {product.tax}%
                                                 </small>
                                               </div>
                                             ))
                                           ) : (
-                                            <div className="px-2 py-2 text-muted">No products found</div>
+                                            <div className="px-2 py-2 text-muted" style={{ fontSize: 13 }}>No products found</div>
                                           )}
                                         </div>
                                       )}
@@ -835,10 +874,15 @@ const getFilteredTaxRates = () => {
                                           )
                                         }
                                       >
-                                        <option value={0}>0%</option>
-                                        {getFilteredTaxRates().map((rate: { label: string; value: number }) => (
-                                          <option key={rate.label} value={rate.value}>
-                                            {rate.label}
+                                        <option value={0}>No Tax (0%)</option>
+                                        {row.tax > 0 && !taxRates.some((r) => r.value === row.tax) && (
+                                          <option value={row.tax}>
+                                            Product Tax ({row.tax}%)
+                                          </option>
+                                        )}
+                                        {taxRates.map((rate: { label: string; value: number; type: string }) => (
+                                          <option key={`${rate.label}-${rate.value}`} value={rate.value}>
+                                            {rate.label} ({rate.type} — {rate.value}%)
                                           </option>
                                         ))}
                                       </select>
@@ -978,7 +1022,9 @@ const getFilteredTaxRates = () => {
                       type="button"
                       className="btn btn-primary"
                       onClick={handleSave}
+                      disabled={saving}
                     >
+                      {saving ? <span className="spinner-border spinner-border-sm me-1" /> : null}
                       Submit
                     </button>
                   </div>
