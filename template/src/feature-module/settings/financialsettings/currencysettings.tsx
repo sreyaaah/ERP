@@ -1,6 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-
 import AddCurrency from "../../../core/modals/settings/addcurrency";
 import EditCurrency from "../../../core/modals/editcurrency";
 import SettingsSideBar from "../settingssidebar";
@@ -8,82 +7,75 @@ import RefreshIcon from "../../../components/tooltip-content/refresh";
 import CollapesIcon from "../../../components/tooltip-content/collapes";
 import CommonFooter from "../../../components/footer/commonFooter";
 import DeleteModal from "../../../components/delete-modal";
+import { CurrencyService, type Currency } from "../../services/currency.service";
+import Swal from "sweetalert2";
 
-import { ALL_SELECTED_CURRENCIES } from "./currencies";
-
-/* ---------- TYPES ---------- */
-interface Currency {
-  id: number;
-  name: string;
-  code: string;
-  symbol: string;
-  rate: string;
-  createdOn: string;
-}
-
-interface CurrencyForm {
-  name: string;
-  code: string;
-  symbol: string;
-  rate: string;
-}
 
 const CurrencySettings = () => {
   /* ---------- STATE ---------- */
-  const [currencies, setCurrencies] = useState<Currency[]>(
-    ALL_SELECTED_CURRENCIES.map((c, index) => ({
-      id: index + 1,
-      name: c.name,
-      code: c.code,
-      symbol: c.symbol,
-      rate: "Default",
-      createdOn: new Date().toLocaleDateString("en-GB", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      }),
-    }))
-  );
+  const [currencies, setCurrencies] = useState<Currency[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedCurrency, setSelectedCurrency] = useState<Currency | null>(null);
+  const [currencyToDelete, setCurrencyToDelete] = useState<Currency | null>(null);
 
-  const [selectedCurrency, setSelectedCurrency] =
-    useState<Currency | null>(null);
+  useEffect(() => {
+    fetchCurrencies();
+  }, []);
 
-  const [currencyToDelete, setCurrencyToDelete] =
-    useState<Currency | null>(null);
-
-  /* ---------- ADD ---------- */
-  const handleAddCurrency = (data: CurrencyForm): void => {
-    setCurrencies((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        ...data,
-        createdOn: new Date().toLocaleDateString("en-GB", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-        }),
-      },
-    ]);
+  const fetchCurrencies = async () => {
+    try {
+      setLoading(true);
+      const res = await CurrencyService.getAllCurrencies();
+      if (res.status) {
+        setCurrencies(res.data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch currencies", error);
+      Swal.fire("Error", "Failed to load currencies", "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  /* ---------- UPDATE ---------- */
-  const handleUpdateCurrency = (updated: Currency): void => {
-    setCurrencies((prev) =>
-      prev.map((c) => (c.id === updated.id ? updated : c))
-    );
-    setSelectedCurrency(null);
+  /* ---------- OPERATIONS ---------- */
+  const handleAddCurrency = async (data: Partial<Currency>) => {
+    try {
+      const res = await CurrencyService.createCurrency(data);
+      if (res.status) {
+        Swal.fire("Success", "Currency added successfully", "success");
+        fetchCurrencies();
+      }
+    } catch (error) {
+      Swal.fire("Error", "Failed to add currency", "error");
+    }
   };
 
-  /* ---------- DELETE ---------- */
-  const handleDeleteCurrency = (): void => {
-    if (!currencyToDelete) return;
+  const handleUpdateCurrency = async (updated: Currency) => {
+    try {
+      if (!updated._id) return;
+      const res = await CurrencyService.updateCurrency(updated._id, updated);
+      if (res.status) {
+        Swal.fire("Success", "Currency updated successfully", "success");
+        fetchCurrencies();
+      }
+    } catch (error) {
+      Swal.fire("Error", "Failed to update currency", "error");
+    }
+  };
 
-    setCurrencies((prev) =>
-      prev.filter((c) => c.id !== currencyToDelete.id)
-    );
-
-    setCurrencyToDelete(null);
+  const handleDeleteCurrency = async () => {
+    if (currencyToDelete && currencyToDelete._id) {
+      try {
+        const res = await CurrencyService.deleteCurrency(currencyToDelete._id);
+        if (res.status) {
+          Swal.fire("Deleted!", "Currency deleted successfully", "success");
+          fetchCurrencies();
+          setCurrencyToDelete(null);
+        }
+      } catch (error) {
+        Swal.fire("Error", "Failed to delete currency", "error");
+      }
+    }
   };
 
   return (
@@ -132,39 +124,53 @@ const CurrencySettings = () => {
                   </thead>
 
                   <tbody>
-                    {currencies.map((c) => (
-                      <tr key={c.id}>
-                        <td>{c.name}</td>
-                        <td>{c.code}</td>
-                        <td>{c.symbol}</td>
-                        <td>{c.rate}</td>
-                        <td>{c.createdOn}</td>
-                        <td className="text-end">
-                          {/* EDIT */}
-                          <Link
-                            to="#"
-                            className="me-2"
-                            data-bs-toggle="modal"
-                            data-bs-target="#edit-currency"
-                            onClick={() => setSelectedCurrency(c)}
-                          >
-                            <i className="feather icon-edit" />
-                          </Link>
-
-                          {/* DELETE */}
-                          <Link
-                            to="#"
-                            data-bs-toggle="modal"
-                            data-bs-target="#delete-modal"
-                            onClick={() => setCurrencyToDelete(c)}
-                          >
-                            <i className="feather icon-trash-2" />
-                          </Link>
+                    {loading ? (
+                      <tr>
+                        <td colSpan={6} className="text-center py-5">
+                          <div className="spinner-border text-primary" role="status">
+                            <span className="visually-hidden">Loading...</span>
+                          </div>
                         </td>
                       </tr>
-                    ))}
+                    ) : (
+                      currencies.map((c) => (
+                        <tr key={c._id}>
+                          <td>{c.name}</td>
+                          <td>{c.code}</td>
+                          <td>{c.symbol}</td>
+                          <td>{c.rate}</td>
+                          <td>{c.createdAt ? new Date(c.createdAt).toLocaleDateString("en-GB", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          }) : "-"}</td>
+                          <td className="text-end">
+                            {/* EDIT */}
+                            <Link
+                              to="#"
+                              className="me-2"
+                              data-bs-toggle="modal"
+                              data-bs-target="#edit-currency"
+                              onClick={() => setSelectedCurrency(c)}
+                            >
+                              <i className="feather icon-edit" />
+                            </Link>
 
-                    {currencies.length === 0 && (
+                            {/* DELETE */}
+                            <Link
+                              to="#"
+                              data-bs-toggle="modal"
+                              data-bs-target="#delete-modal"
+                              onClick={() => setCurrencyToDelete(c)}
+                            >
+                              <i className="feather icon-trash-2" />
+                            </Link>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+
+                    {!loading && currencies.length === 0 && (
                       <tr>
                         <td colSpan={6} className="text-center">
                           No currencies found

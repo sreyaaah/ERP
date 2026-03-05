@@ -1,11 +1,13 @@
 import React, { useState } from "react";
 
+import { type TaxRate } from "../../../feature-module/services/tax.service";
+
 interface AddTaxRatesProps {
-  onAdd: (data: { name: string; type: any; rate: number }) => void;
+  onAdd: (data: Partial<TaxRate>) => void;
 }
 
 const AddTaxRates: React.FC<AddTaxRatesProps> = ({ onAdd }) => {
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<Partial<TaxRate>>({
     name: "",
     type: "GST",
     rate: 0,
@@ -21,7 +23,7 @@ const AddTaxRates: React.FC<AddTaxRatesProps> = ({ onAdd }) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name || form.rate < 0) return;
+    if (!form.name || form.rate === undefined || form.rate < 0) return;
     onAdd(form);
     setForm({ name: "", type: "GST", rate: 0 });
     // Close modal

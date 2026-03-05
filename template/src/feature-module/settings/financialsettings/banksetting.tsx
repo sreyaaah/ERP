@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import BankSettingList from "../../../core/modals/settings/banksettinglist";
 import EditBankSettingList from "../../../core/modals/settings/editbanksettinglist";
@@ -8,6 +8,9 @@ import CollapesIcon from "../../../components/tooltip-content/collapes";
 import RefreshIcon from "../../../components/tooltip-content/refresh";
 import CommonSelect from "../../../components/select/common-select";
 import { closes } from "../../../utils/imagepath";
+import { BankService, type BankAccount } from "../../services/bank.service";
+import Swal from "sweetalert2";
+import DeleteModal from "../../../components/delete-modal";
 
 const BankSetting = () => {
   const route = all_routes;
@@ -15,6 +18,70 @@ const BankSetting = () => {
   const [selectedSort, setSelectedSort] = useState<string | null>(null);
   const [selectedName, setSelectedName] = useState<string | null>(null);
   const [selectedBank, setSelectedBank] = useState<string | null>(null);
+
+  const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedAccount, setSelectedAccount] = useState<BankAccount | null>(null);
+  const [accountToDelete, setAccountToDelete] = useState<BankAccount | null>(null);
+
+  useEffect(() => {
+    fetchBankAccounts();
+  }, []);
+
+  const fetchBankAccounts = async () => {
+    try {
+      setLoading(true);
+      const res = await BankService.getAllBankAccounts();
+      if (res.status) {
+        setBankAccounts(res.data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch bank accounts", error);
+      Swal.fire("Error", "Failed to load bank accounts", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddAccount = async (data: Partial<BankAccount>) => {
+    try {
+      const res = await BankService.createBankAccount(data);
+      if (res.status) {
+        Swal.fire("Success", "Bank account added successfully", "success");
+        fetchBankAccounts();
+      }
+    } catch (error) {
+      Swal.fire("Error", "Failed to add bank account", "error");
+    }
+  };
+
+  const handleUpdateAccount = async (updated: BankAccount) => {
+    try {
+      if (!updated._id) return;
+      const res = await BankService.updateBankAccount(updated._id, updated);
+      if (res.status) {
+        Swal.fire("Success", "Bank account updated successfully", "success");
+        fetchBankAccounts();
+      }
+    } catch (error) {
+      Swal.fire("Error", "Failed to update bank account", "error");
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (accountToDelete && accountToDelete._id) {
+      try {
+        const res = await BankService.deleteBankAccount(accountToDelete._id);
+        if (res.status) {
+          Swal.fire("Deleted!", "Bank account deleted successfully", "success");
+          fetchBankAccounts();
+          setAccountToDelete(null);
+        }
+      } catch (error) {
+        Swal.fire("Error", "Failed to delete bank account", "error");
+      }
+    }
+  };
 
   const toggleFilterVisibility = () => {
     setIsFilterVisible((prevVisibility) => !prevVisibility);
@@ -211,166 +278,66 @@ const BankSetting = () => {
                                 </tr>
                               </thead>
                               <tbody>
-                                <tr>
-                                  <td>
-                                    <label className="checkboxs">
-                                      <input type="checkbox" />
-                                      <span className="checkmarks" />
-                                    </label>
-                                  </td>
-                                  <td>Mathew</td>
-                                  <td>HDFC</td>
-                                  <td>Bringham</td>
-                                  <td>**** **** 1832</td>
-                                  <td>124547</td>
-                                  <td>12 Jul 2023</td>
-                                  <td className="action-table-data">
-                                    <div className="edit-delete-action">
-                                      <Link
-                                        className="me-2 p-2"
-                                        to="#"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#edit-account"
-                                      >
-                                        <i className="ti ti-edit" />
-                                      </Link>
-                                      <Link
-                                        className="confirm-text p-2"
-                                        to="#"
-                                      >
-                                        <i className="ti ti-trash" />
-                                      </Link>
-                                    </div>
-                                  </td>
-                                </tr>
-                                <tr>
-                                  <td>
-                                    <label className="checkboxs">
-                                      <input type="checkbox" />
-                                      <span className="checkmarks" />
-                                    </label>
-                                  </td>
-                                  <td>Toby Lando</td>
-                                  <td>SBI</td>
-                                  <td>Leicester</td>
-                                  <td>**** **** 1596</td>
-                                  <td>156723</td>
-                                  <td>17 Aug 2023</td>
-                                  <td className="action-table-data">
-                                    <div className="edit-delete-action">
-                                      <Link
-                                        className="me-2 p-2"
-                                        to="#"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#edit-account"
-                                      >
-                                        <i className="ti ti-edit" />
-                                      </Link>
-                                      <Link
-                                        className="confirm-text p-2"
-                                        to="#"
-                                      >
-                                        <i className="ti ti-trash" />
-                                      </Link>
-                                    </div>
-                                  </td>
-                                </tr>
-                                <tr>
-                                  <td>
-                                    <label className="checkboxs">
-                                      <input type="checkbox" />
-                                      <span className="checkmarks" />
-                                    </label>
-                                  </td>
-                                  <td>John Smith</td>
-                                  <td>KVB</td>
-                                  <td>Bristol</td>
-                                  <td>**** **** 1982</td>
-                                  <td>198367</td>
-                                  <td>08 Sep 2023</td>
-                                  <td className="action-table-data">
-                                    <div className="edit-delete-action">
-                                      <Link
-                                        className="me-2 p-2"
-                                        to="#"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#edit-account"
-                                      >
-                                        <i className="ti ti-edit" />
-                                      </Link>
-                                      <Link
-                                        className="confirm-text p-2"
-                                        to="#"
-                                      >
-                                        <i className="ti ti-trash" />
-                                      </Link>
-                                    </div>
-                                  </td>
-                                </tr>
-                                <tr>
-                                  <td>
-                                    <label className="checkboxs">
-                                      <input type="checkbox" />
-                                      <span className="checkmarks" />
-                                    </label>
-                                  </td>
-                                  <td>Andrew</td>
-                                  <td>Swiss Bank</td>
-                                  <td>Nottingham</td>
-                                  <td>**** **** 1796</td>
-                                  <td>186730</td>
-                                  <td>21 Oct 2023</td>
-                                  <td className="action-table-data">
-                                    <div className="edit-delete-action">
-                                      <Link
-                                        className="me-2 p-2"
-                                        to="#"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#edit-account"
-                                      >
-                                        <i className="ti ti-edit" />
-                                      </Link>
-                                      <Link
-                                        className="confirm-text p-2"
-                                        to="#"
-                                      >
-                                        <i className="ti ti-trash" />
-                                      </Link>
-                                    </div>
-                                  </td>
-                                </tr>
-                                <tr>
-                                  <td>
-                                    <label className="checkboxs">
-                                      <input type="checkbox" />
-                                      <span className="checkmarks" />
-                                    </label>
-                                  </td>
-                                  <td>Robert</td>
-                                  <td>Canara Bank</td>
-                                  <td>Norwich</td>
-                                  <td>**** **** 1645</td>
-                                  <td>146026</td>
-                                  <td>03 Nov 2023</td>
-                                  <td className="action-table-data">
-                                    <div className="edit-delete-action">
-                                      <Link
-                                        className="me-2 p-2"
-                                        to="#"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#edit-account"
-                                      >
-                                        <i className="ti ti-edit" />
-                                      </Link>
-                                      <Link
-                                        className="confirm-text p-2"
-                                        to="#"
-                                      >
-                                        <i className="ti ti-trash" />
-                                      </Link>
-                                    </div>
-                                  </td>
-                                </tr>
+                                {loading ? (
+                                  <tr>
+                                    <td colSpan={8} className="text-center py-5">
+                                      <div className="spinner-border text-primary" role="status">
+                                        <span className="visually-hidden">Loading...</span>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                ) : (
+                                  bankAccounts.map((account) => (
+                                    <tr key={account._id}>
+                                      <td>
+                                        <label className="checkboxs">
+                                          <input type="checkbox" />
+                                          <span className="checkmarks" />
+                                        </label>
+                                      </td>
+                                      <td>{account.accountName}</td>
+                                      <td>{account.bankName}</td>
+                                      <td>{account.branch}</td>
+                                      <td>{account.accountNumber}</td>
+                                      <td>{account.ifsc}</td>
+                                      <td>{account.createdAt ? new Date(account.createdAt).toLocaleDateString("en-GB", {
+                                        day: "2-digit",
+                                        month: "short",
+                                        year: "numeric",
+                                      }) : "-"}</td>
+                                      <td className="action-table-data">
+                                        <div className="edit-delete-action">
+                                          <Link
+                                            className="me-2 p-2"
+                                            to="#"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#edit-account"
+                                            onClick={() => setSelectedAccount(account)}
+                                          >
+                                            <i className="ti ti-edit" />
+                                          </Link>
+                                          <Link
+                                            className="confirm-text p-2"
+                                            to="#"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#delete-modal"
+                                            onClick={() => setAccountToDelete(account)}
+                                          >
+                                            <i className="ti ti-trash" />
+                                          </Link>
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  ))
+                                )}
+
+                                {!loading && bankAccounts.length === 0 && (
+                                  <tr>
+                                    <td colSpan={8} className="text-center">
+                                      No bank accounts found
+                                    </td>
+                                  </tr>
+                                )}
                               </tbody>
                             </table>
                           </div>
@@ -384,8 +351,12 @@ const BankSetting = () => {
           </div>
         </div>
       </div>
-      <BankSettingList />
-      <EditBankSettingList />
+      <BankSettingList onAddAccount={handleAddAccount} />
+      <EditBankSettingList 
+        account={selectedAccount} 
+        onSaveAccount={handleUpdateAccount} 
+      />
+      <DeleteModal onConfirm={handleDeleteAccount} />
     </div>
   );
 };

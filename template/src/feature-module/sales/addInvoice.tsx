@@ -8,7 +8,7 @@ import CommonFooter from "../../components/footer/commonFooter";
 
 import CommonSelect from "../../components/select/common-select";
 import { ALL_SELECTED_CURRENCIES } from "../settings/financialsettings/currencies";
-import { INITIAL_TAX_RATES } from "../settings/financialsettings/taxrates";
+import { TaxService } from "../services/tax.service";
 import Swal from "sweetalert2";
 interface Customer {
   id: string;
@@ -104,21 +104,24 @@ const AddInvoice = () => {
   };
 
   const getFilteredTaxRates = () => {
-    if (invoiceType === "intrastate") {
-      return taxRates.filter((t: any) => ["GST", "CGST", "SGST"].includes(t.type));
-    }
-    if (invoiceType === "interstate") {
-      return taxRates
-        .filter((t: any) => t.type === "GST" || t.type === "IGST")
-        .map((t: any) => ({
-          ...t,
-          label: t.name.includes("GST") ? t.name.replace("GST", "IGST") : t.name
-        }));
-    }
-    if (invoiceType === "international") {
-      return taxRates.filter((t: any) => t.type === "VAT");
-    }
-    return taxRates;
+    const type = (invoiceType || "intrastate").toLowerCase();
+    return taxRates.filter(r => {
+      const taxType = (r.type || "").toUpperCase().trim();
+      const label = (r.label || "").toUpperCase().trim();
+      
+      if (type === "interstate") {
+        // Show IGST OR GST (since GST records often serve as IGST in this setup)
+        return taxType === "IGST" || taxType === "GST" || label.includes("IGST");
+      }
+      if (type === "intrastate") {
+        return ["GST", "CGST", "SGST"].includes(taxType) || 
+               (label.includes("GST") && !label.includes("IGST"));
+      }
+      if (type === "international") {
+        return taxType === "VAT" || label.includes("VAT");
+      }
+      return true;
+    });
   };
 
   useEffect(() => {
@@ -140,22 +143,32 @@ const AddInvoice = () => {
   }, [invoiceType]);
 
   useEffect(() => {
-    const savedTaxRates = localStorage.getItem('taxRates');
-    if (savedTaxRates) {
-      setTaxRates(JSON.parse(savedTaxRates));
-    } else {
-      setTaxRates(INITIAL_TAX_RATES);
-    }
+    const loadTaxRates = async () => {
+      try {
+        const response = await TaxService.getAllTaxes();
+        let rawData: any[] = [];
+        
+        if (Array.isArray(response)) {
+          rawData = response;
+        } else if (response && Array.isArray(response.data)) {
+          rawData = response.data;
+        }
 
-    const handleStorageChange = () => {
-      const updatedTaxRates = localStorage.getItem('taxRates');
-      if (updatedTaxRates) {
-        setTaxRates(JSON.parse(updatedTaxRates));
+        if (rawData.length > 0) {
+          setTaxRates(rawData.map((t: any) => ({
+            label: t.name || "",
+            value: Number(t.rate || 0),
+            type: t.type || ""
+          })));
+        } else {
+          setTaxRates([]);
+        }
+      } catch (e) {
+        console.error("Failed to load taxes:", e);
+        setTaxRates([]);
       }
     };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    loadTaxRates();
   }, []);
 
   useEffect(() => {
@@ -783,11 +796,17 @@ const AddInvoice = () => {
                               }
                             >
                               <option value={0}>No Tax (0%)</option>
-                              {getFilteredTaxRates().map((rate: any) => (
-                                <option key={rate.id || rate.label} value={rate.rate || rate.value}>
-                                  {rate.label || rate.name} ({rate.rate || rate.value}%)
-                                </option>
-                              ))}
+                              {getFilteredTaxRates().map((rate: any) => {
+                                let displayLabel = rate.label;
+                                if (invoiceType === "interstate" && rate.type === "GST") {
+                                  displayLabel = rate.label.replace(/GST/i, "IGST");
+                                }
+                                return (
+                                  <option key={rate.label + rate.value} value={rate.value}>
+                                    {displayLabel} ({rate.type} — {rate.value}%)
+                                  </option>
+                                );
+                              })}
                             </select>
                           </td>
                           <td style={{ textAlign: "right" }}>{row.taxAmount || 0}</td>

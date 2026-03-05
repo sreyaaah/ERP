@@ -1,7 +1,34 @@
+import { useState } from "react";
+import { type BankAccount } from "../../../feature-module/services/bank.service";
 
-import { Link } from "react-router-dom";
+interface BankSettingListProps {
+  onAddAccount: (data: Partial<BankAccount>) => void;
+}
 
-const BankSettingList = () => {
+const BankSettingList: React.FC<BankSettingListProps> = ({ onAddAccount }) => {
+  const [form, setForm] = useState<Partial<BankAccount>>({
+    bankName: "",
+    accountNumber: "",
+    accountName: "",
+    branch: "",
+    ifsc: "",
+    status: true,
+    isDefault: false,
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type, checked } = e.target;
+    setForm((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  const handleSave = () => {
+    onAddAccount(form);
+    // Modal will be closed via data-bs-dismiss on the button or manually if needed
+  };
+
   return (
     <div>
       {/* Add Bank Account */}
@@ -17,11 +44,13 @@ const BankSettingList = () => {
                   <div className="status-toggle modal-status d-flex justify-content-between align-items-center ms-auto me-2">
                     <input
                       type="checkbox"
-                      id="user1"
+                      id="status_add"
+                      name="status"
                       className="check"
-                      defaultChecked={true}
+                      checked={form.status}
+                      onChange={handleChange}
                     />
-                    <label htmlFor="user1" className="checktoggle">
+                    <label htmlFor="status_add" className="checktoggle">
                       {" "}
                     </label>
                   </div>
@@ -42,7 +71,13 @@ const BankSettingList = () => {
                           <label className="form-label">
                             Bank Name <span> *</span>
                           </label>
-                          <input type="text" className="form-control" />
+                          <input
+                            type="text"
+                            name="bankName"
+                            className="form-control"
+                            value={form.bankName}
+                            onChange={handleChange}
+                          />
                         </div>
                       </div>
                       <div className="col-lg-12">
@@ -50,7 +85,13 @@ const BankSettingList = () => {
                           <label className="form-label">
                             Account Number <span> *</span>
                           </label>
-                          <input type="text" className="form-control" />
+                          <input
+                            type="text"
+                            name="accountNumber"
+                            className="form-control"
+                            value={form.accountNumber}
+                            onChange={handleChange}
+                          />
                         </div>
                       </div>
                       <div className="col-lg-12">
@@ -58,7 +99,13 @@ const BankSettingList = () => {
                           <label className="form-label">
                             Account Name <span> *</span>
                           </label>
-                          <input type="text" className="form-control" />
+                          <input
+                            type="text"
+                            name="accountName"
+                            className="form-control"
+                            value={form.accountName}
+                            onChange={handleChange}
+                          />
                         </div>
                       </div>
                       <div className="col-lg-12">
@@ -66,7 +113,13 @@ const BankSettingList = () => {
                           <label className="form-label">
                             Branch <span> *</span>
                           </label>
-                          <input type="text" className="form-control" />
+                          <input
+                            type="text"
+                            name="branch"
+                            className="form-control"
+                            value={form.branch}
+                            onChange={handleChange}
+                          />
                         </div>
                       </div>
                       <div className="col-lg-12">
@@ -74,7 +127,13 @@ const BankSettingList = () => {
                           <label className="form-label">
                             IFSC <span> *</span>
                           </label>
-                          <input type="text" className="form-control" />
+                          <input
+                            type="text"
+                            name="ifsc"
+                            className="form-control"
+                            value={form.ifsc}
+                            onChange={handleChange}
+                          />
                         </div>
                       </div>
                       <div className="col-lg-12">
@@ -82,11 +141,13 @@ const BankSettingList = () => {
                           <span className="status-label">Status</span>
                           <input
                             type="checkbox"
-                            id="user2"
+                            id="status_toggle"
+                            name="status"
                             className="check"
-                            defaultChecked={true}
+                            checked={form.status}
+                            onChange={handleChange}
                           />
-                          <label htmlFor="user2" className="checktoggle" />
+                          <label htmlFor="status_toggle" className="checktoggle" />
                         </div>
                       </div>
                       <div className="col-lg-12">
@@ -94,21 +155,32 @@ const BankSettingList = () => {
                           <span className="status-label">Make as default</span>
                           <input
                             type="checkbox"
-                            id="user3"
+                            id="default_toggle"
+                            name="isDefault"
                             className="check"
-                            defaultChecked={true}
+                            checked={form.isDefault}
+                            onChange={handleChange}
                           />
-                          <label htmlFor="user3" className="checktoggle" />
+                          <label htmlFor="default_toggle" className="checktoggle" />
                         </div>
                       </div>
                     </div>
                     <div className="modal-footer-btn">
-                      <button type="button" className="btn btn-cancel me-2">
+                      <button
+                        type="button"
+                        className="btn btn-cancel me-2"
+                        data-bs-dismiss="modal"
+                      >
                         Cancel
                       </button>
-                      <Link to="#" className="btn btn-submit">
+                      <button
+                        type="button"
+                        className="btn btn-submit"
+                        data-bs-dismiss="modal"
+                        onClick={handleSave}
+                      >
                         Submit
-                      </Link>
+                      </button>
                     </div>
                   </form>
                 </div>

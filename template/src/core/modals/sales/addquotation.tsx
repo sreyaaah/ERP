@@ -9,13 +9,8 @@ import { CustomerService } from "../../../feature-module/services/customer.servi
 import { ProductService } from "../../../feature-module/services/product.service";
 import { all_routes } from "../../../routes/all_routes";
 import { ALL_SELECTED_CURRENCIES } from "../../../feature-module/settings/financialsettings/currencies";
-import { INITIAL_TAX_RATES } from "../../../feature-module/settings/financialsettings/taxrates";
+import { TaxService } from "../../../feature-module/services/tax.service";
 
-const FALLBACK_TAX_RATES = INITIAL_TAX_RATES.map(t => ({
-  label: t.name,
-  value: t.rate,
-  type: t.type
-}));
 
 interface AddQuotationProps {
   onSuccess?: () => void;
@@ -85,29 +80,34 @@ const AddQuotation = ({ onSuccess }: AddQuotationProps) => {
   }, []);
 
   useEffect(() => {
-    const loadTaxRates = () => {
+    const loadTaxRates = async () => {
       try {
-        const storedStr = localStorage.getItem("taxRates");
-        const storedTaxRates = JSON.parse(storedStr || "[]");
+        const response = await TaxService.getAllTaxes();
+        let rawData: any[] = [];
         
-        const isValid = storedTaxRates.length > 0 && storedTaxRates.every((t: any) => t.type);
+        if (Array.isArray(response)) {
+          rawData = response;
+        } else if (response && response.data && Array.isArray(response.data)) {
+          rawData = response.data;
+        } else if (response && Array.isArray(response)) {
+          rawData = response;
+        }
 
-        if (isValid) {
-          setTaxRates(storedTaxRates.map((t: any) => ({ 
-            label: t.name, 
-            value: t.rate, 
-            type: t.type 
+        if (rawData.length > 0) {
+          setTaxRates(rawData.map((t: any) => ({
+            label: t.name || "",
+            value: Number(t.rate || 0),
+            type: t.type || ""
           })));
         } else {
-          setTaxRates(FALLBACK_TAX_RATES);
+          setTaxRates([]);
         }
       } catch (e) {
-        setTaxRates(FALLBACK_TAX_RATES);
+        console.error("Failed to load taxes:", e);
+        setTaxRates([]);
       }
     };
     loadTaxRates();
-    window.addEventListener("storage", loadTaxRates);
-    return () => window.removeEventListener("storage", loadTaxRates);
   }, []);
 
   const Status  = [
@@ -127,6 +127,27 @@ const AddQuotation = ({ onSuccess }: AddQuotationProps) => {
     if (type === "international") return 5;
     if (type === "interstate") return 18;
     return 18;
+  };
+
+  const getFilteredTaxRates = () => {
+    const type = (quotationType || "intrastate").toLowerCase();
+    return taxRates.filter(r => {
+      const taxType = (r.type || "").toUpperCase().trim();
+      const label = (r.label || "").toUpperCase().trim();
+      
+      if (type === "interstate") {
+        // Show IGST OR GST (since GST records often serve as IGST in this setup)
+        return taxType === "IGST" || taxType === "GST" || label.includes("IGST");
+      }
+      if (type === "intrastate") {
+        return ["GST", "CGST", "SGST"].includes(taxType) || 
+               (label.includes("GST") && !label.includes("IGST"));
+      }
+      if (type === "international") {
+        return taxType === "VAT" || label.includes("VAT");
+      }
+      return true;
+    });
   };
 
 const [productOptions, setProductOptions] = useState<any[]>([]);
@@ -887,16 +908,22 @@ const filteredCustomers = customers.filter(customer =>
                                         }
                                       >
                                         <option value={0}>No Tax (0%)</option>
-                                        {row.tax > 0 && !taxRates.some((r) => r.value === row.tax) && (
+                                        {row.tax > 0 && !getFilteredTaxRates().some((r) => r.value === row.tax) && (
                                           <option value={row.tax}>
                                             Product Tax ({row.tax}%)
                                           </option>
                                         )}
-                                        {taxRates.map((rate: { label: string; value: number; type: string }) => (
-                                          <option key={`${rate.label}-${rate.value}`} value={rate.value}>
-                                            {rate.label} ({rate.type} — {rate.value}%)
-                                          </option>
-                                        ))}
+                                        {getFilteredTaxRates().map((rate: { label: string; value: number; type: string }) => {
+                                          let displayLabel = rate.label;
+                                          if (quotationType === "interstate" && rate.type === "GST") {
+                                            displayLabel = rate.label.replace(/GST/i, "IGST");
+                                          }
+                                          return (
+                                            <option key={`${rate.label}-${rate.value}`} value={rate.value}>
+                                              {displayLabel} ({rate.type} — {rate.value}%)
+                                            </option>
+                                          );
+                                        })}
                                       </select>
                                   </td>
                                   <td style={{ textAlign: "right" }}>{row.taxAmount || 0}</td>

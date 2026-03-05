@@ -1,12 +1,6 @@
 import React, { useState, useEffect } from "react";
 
-interface TaxRate {
-  id: number;
-  name: string;
-  type: "GST" | "VAT" | "CGST" | "SGST" | "IGST";
-  rate: number;
-  createdOn: string;
-}
+import { type TaxRate } from "../../../feature-module/services/tax.service";
 
 interface EditTaxRatesProps {
   tax: TaxRate | null;
@@ -17,10 +11,10 @@ const EditTaxRates: React.FC<EditTaxRatesProps> = ({ tax, onSave }) => {
   const [form, setForm] = useState<TaxRate | null>(null);
 
   useEffect(() => {
-    setForm(tax);
+    if (tax) {
+      setForm(tax);
+    }
   }, [tax]);
-
-  if (!form) return null;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -61,7 +55,7 @@ const EditTaxRates: React.FC<EditTaxRatesProps> = ({ tax, onSave }) => {
                       name="name"
                       type="text"
                       className="form-control"
-                      value={form.name}
+                      value={form?.name || ""}
                       onChange={handleChange}
                       required
                     />
@@ -73,7 +67,7 @@ const EditTaxRates: React.FC<EditTaxRatesProps> = ({ tax, onSave }) => {
                     <select
                       name="type"
                       className="form-select"
-                      value={form.type}
+                      value={form?.type || "GST"}
                       onChange={handleChange}
                     >
                       <option value="GST">GST</option>
@@ -91,7 +85,7 @@ const EditTaxRates: React.FC<EditTaxRatesProps> = ({ tax, onSave }) => {
                       name="rate"
                       type="number"
                       className="form-control"
-                      value={form.rate}
+                      value={form?.rate || 0}
                       onChange={handleChange}
                       required
                     />

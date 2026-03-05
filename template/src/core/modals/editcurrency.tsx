@@ -1,13 +1,6 @@
 import { useEffect, useState } from "react";
 
-interface Currency {
-  id: number;
-  name: string;
-  code: string;
-  symbol: string;
-  rate: string;
-  createdOn: string;
-}
+import { type Currency } from "../../feature-module/services/currency.service";
 
 interface EditCurrencyProps {
   currency: Currency | null;
@@ -18,18 +11,19 @@ const EditCurrency: React.FC<EditCurrencyProps> = ({ currency, onSave }) => {
   const [form, setForm] = useState<Currency | null>(null);
 
   useEffect(() => {
-    setForm(currency);
+    if (currency) {
+      setForm(currency);
+    }
   }, [currency]);
 
-  if (!form) return null;
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!form) return;
     const { name, value } = e.target;
     setForm({ ...form, [name]: value });
   };
 
   const handleSave = () => {
-    onSave(form);
+    if (form) onSave(form);
   };
 
   return (
@@ -46,7 +40,7 @@ const EditCurrency: React.FC<EditCurrencyProps> = ({ currency, onSave }) => {
             <input
               name="name"
               className="form-control mb-2"
-              value={form.name}
+              value={form?.name || ""}
               onChange={handleChange}
             />
 
@@ -54,7 +48,7 @@ const EditCurrency: React.FC<EditCurrencyProps> = ({ currency, onSave }) => {
             <input
               name="code"
               className="form-control mb-2"
-              value={form.code}
+              value={form?.code || ""}
               onChange={handleChange}
             />
 
@@ -62,7 +56,7 @@ const EditCurrency: React.FC<EditCurrencyProps> = ({ currency, onSave }) => {
             <input
               name="symbol"
               className="form-control mb-2"
-              value={form.symbol}
+              value={form?.symbol || ""}
               onChange={handleChange}
             />
 
@@ -70,7 +64,8 @@ const EditCurrency: React.FC<EditCurrencyProps> = ({ currency, onSave }) => {
             <input
               name="rate"
               className="form-control"
-              value={form.rate}
+              decimal-places="2"
+              value={form?.rate || ""}
               onChange={handleChange}
             />
           </div>

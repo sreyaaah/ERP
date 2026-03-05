@@ -1,21 +1,13 @@
 import React, { useState } from "react";
 
-interface BankAccountForm {
-  bankName: string;
-  accountNumber: string;
-  accountName: string;
-  branch: string;
-  ifsc: string;
-  status: boolean;
-  isDefault: boolean;
-}
+import { type BankAccount } from "../../../feature-module/services/bank.service";
 
 interface AddBankAccountProps {
-  onAdd: (data: BankAccountForm) => void;
+  onAdd: (data: Partial<BankAccount>) => void;
 }
 
 const AddBankAccount: React.FC<AddBankAccountProps> = ({ onAdd }) => {
-  const [form, setForm] = useState<BankAccountForm>({
+  const [form, setForm] = useState<Partial<BankAccount>>({
     bankName: "",
     accountNumber: "",
     accountName: "",
@@ -27,7 +19,7 @@ const AddBankAccount: React.FC<AddBankAccountProps> = ({ onAdd }) => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
-    setForm((prev) => ({
+    setForm((prev: Partial<BankAccount>) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
