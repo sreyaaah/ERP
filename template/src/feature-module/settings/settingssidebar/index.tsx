@@ -5,7 +5,7 @@ import { SettingsSidebarData } from "../../../core/json/settings_sidebar_data";
 import type { SettingsMenuItem } from "../../../core/json/settings_sidebar_data";
 import { all_routes } from "../../../routes/all_routes";
 
-const SettingsSideBar = (props: any) => {
+const SettingsSideBar = () => {
   const location = useLocation();
   const [openMenus, setOpenMenus] = useState<string[]>([]);
   const [openSubMenus, setOpenSubMenus] = useState<string[]>([]);
@@ -129,10 +129,6 @@ const SettingsSideBar = (props: any) => {
         <div className="sidebar-inner slimscroll">
           <Scrollbar
             style={{ marginRight: -5, height: 800 }}
-            autoHide
-            autoHeight
-            autoHeightMin={400}
-            {...props}
           >
             <div id="sidebar-menu5" className="sidebar-menu">
               <h4 className="fw-bold fs-18 mb-2 pb-2">Settings</h4>

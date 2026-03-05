@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import AddBankAccount from "../../../core/modals/settings/addbankaccount";
 import EditBankAccount from "../../../core/modals/settings/editbankaccount";
@@ -7,56 +7,36 @@ import RefreshIcon from "../../../components/tooltip-content/refresh";
 import CollapesIcon from "../../../components/tooltip-content/collapes";
 import CommonFooter from "../../../components/footer/commonFooter";
 import DeleteModal from "../../../components/delete-modal";
+import { BankService, type BankAccount } from "../../services/bank.service";
+import Swal from "sweetalert2";
 
-/* ---------- TYPES ---------- */
-interface BankAccount {
-  id: number;
-  bankName: string;
-  accountNumber: string;
-  accountName: string;
-  branch: string;
-  ifsc: string;
-  status: boolean;
-  isDefault: boolean;
-}
 
 const BankSettingGrid = () => {
   /* ---------- STATE ---------- */
-  const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([
-    {
-      id: 1,
-      bankName: "Karur vysya bank",
-      accountNumber: "98765432101982",
-      accountName: "John Smith",
-      branch: "Main Branch",
-      ifsc: "KVB0001234",
-      status: true,
-      isDefault: true,
-    },
-    {
-      id: 2,
-      bankName: "Swiss Bank",
-      accountNumber: "12345678901796",
-      accountName: "Andrew",
-      branch: "Zurich",
-      ifsc: "SWIS0009876",
-      status: true,
-      isDefault: false,
-    },
-    {
-      id: 3,
-      bankName: "HDFC",
-      accountNumber: "55667788991832",
-      accountName: "Mathew",
-      branch: "Mumbai Central",
-      ifsc: "HDFC0004567",
-      status: true,
-      isDefault: false,
-    },
-  ]);
-
+  const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedBank, setSelectedBank] = useState<BankAccount | null>(null);
   const [bankToDelete, setBankToDelete] = useState<BankAccount | null>(null);
+
+  /* ---------- FETCH DATA ---------- */
+  useEffect(() => {
+    fetchBankAccounts();
+  }, []);
+
+  const fetchBankAccounts = async () => {
+    try {
+      setLoading(true);
+      const response = await BankService.getAllBankAccounts();
+      if (response.status) {
+        setBankAccounts(response.data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch bank accounts", error);
+      Swal.fire("Error", "Failed to load bank accounts", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   /* ---------- HELPERS ---------- */
   const maskAccountNumber = (num: string) => {
@@ -65,36 +45,54 @@ const BankSettingGrid = () => {
 
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
-    // You could add a toast notification here
+    Swal.fire({
+      title: "Copied!",
+      text: "Account number copied to clipboard",
+      icon: "success",
+      timer: 2000,
+      showConfirmButton: false
+    });
   };
 
   /* ---------- OPERATIONS ---------- */
-  const handleAddAccount = (data: any) => {
-    const newAccount: BankAccount = {
-      ...data,
-      id: Date.now(),
-      status: data.status ?? true,
-      isDefault: data.isDefault ?? false,
-    };
-    if (newAccount.isDefault) {
-      setBankAccounts(prev => prev.map(b => ({ ...b, isDefault: false })));
+  const handleAddAccount = async (data: any) => {
+    try {
+      const response = await BankService.createBankAccount(data);
+      if (response.status) {
+        Swal.fire("Success", "Bank account added successfully", "success");
+        fetchBankAccounts();
+      }
+    } catch (error) {
+      Swal.fire("Error", "Failed to add bank account", "error");
     }
-    setBankAccounts(prev => [...prev, newAccount]);
   };
 
-  const handleUpdateAccount = (updated: BankAccount) => {
-    let newList = bankAccounts.map(b => (b.id === updated.id ? updated : b));
-    if (updated.isDefault) {
-      newList = newList.map(b => (b.id === updated.id ? b : { ...b, isDefault: false }));
+  const handleUpdateAccount = async (updated: BankAccount) => {
+    try {
+      if (!updated._id) return;
+      const response = await BankService.updateBankAccount(updated._id, updated);
+      if (response.status) {
+        Swal.fire("Success", "Bank account updated successfully", "success");
+        fetchBankAccounts();
+        setSelectedBank(null);
+      }
+    } catch (error) {
+      Swal.fire("Error", "Failed to update bank account", "error");
     }
-    setBankAccounts(newList);
-    setSelectedBank(null);
   };
 
-  const handleDeleteAccount = () => {
-    if (bankToDelete) {
-      setBankAccounts(prev => prev.filter(b => b.id !== bankToDelete.id));
-      setBankToDelete(null);
+  const handleDeleteAccount = async () => {
+    if (bankToDelete && bankToDelete._id) {
+      try {
+        const response = await BankService.deleteBankAccount(bankToDelete._id);
+        if (response.status) {
+          Swal.fire("Deleted!", "Bank account deleted successfully", "success");
+          fetchBankAccounts();
+          setBankToDelete(null);
+        }
+      } catch (error) {
+        Swal.fire("Error", "Failed to delete bank account", "error");
+      }
     }
   };
 
@@ -131,8 +129,15 @@ const BankSettingGrid = () => {
 
             <div className="card-body pb-0">
               <div className="row">
-                {bankAccounts.map((bank) => (
-                  <div key={bank.id} className="col-xxl-4 col-xl-6 col-lg-12 col-sm-6">
+                {loading ? (
+                  <div className="col-12 text-center py-5">
+                    <div className="spinner-border text-primary" role="status">
+                      <span className="visually-hidden">Loading...</span>
+                    </div>
+                  </div>
+                ) : (
+                  bankAccounts.map((bank) => (
+                    <div key={bank._id} className="col-xxl-4 col-xl-6 col-lg-12 col-sm-6">
                     <div className={`card bank-box ${bank.isDefault ? "active" : ""}`} 
                          style={{ border: bank.isDefault ? '2px solid #ffc107' : '1px solid #e8ebf3', borderRadius: '12px' }}>
                       <div className="card-body">
@@ -206,10 +211,11 @@ const BankSettingGrid = () => {
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                    </div>
+                  ))
+                )}
                 
-                {bankAccounts.length === 0 && (
+                {!loading && bankAccounts.length === 0 && (
                   <div className="col-12 text-center py-5">
                     <img src="/assets/img/no-data.png" alt="No data" style={{ width: '120px' }} className="mb-3" />
                     <h5>No Bank Accounts Found</h5>

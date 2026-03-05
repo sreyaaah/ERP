@@ -1,29 +1,24 @@
 import { useState } from "react";
 
-/* ---------- TYPES ---------- */
-interface CurrencyForm {
-  name: string;
-  code: string;
-  symbol: string;
-  rate: string;
-}
+import { type Currency } from "../../../feature-module/services/currency.service";
 
 interface AddCurrencyProps {
-  onAddCurrency: (data: CurrencyForm) => void;
+  onAddCurrency: (data: Partial<Currency>) => void;
 }
 
 const AddCurrency: React.FC<AddCurrencyProps> = ({ onAddCurrency }) => {
-  const [form, setForm] = useState<CurrencyForm>({
+  const [form, setForm] = useState<Partial<Currency>>({
     name: "",
     code: "",
     symbol: "",
     rate: "",
+    status: true,
   });
 
   /* ---------- FIX event any ---------- */
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    setForm((prev: Partial<Currency>) => ({ ...prev, [name]: value }));
   };
 
   const handleSave = (): void => {

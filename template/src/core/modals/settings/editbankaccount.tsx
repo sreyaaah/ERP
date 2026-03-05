@@ -1,15 +1,6 @@
 import React, { useState, useEffect } from "react";
 
-interface BankAccount {
-  id: number;
-  bankName: string;
-  accountNumber: string;
-  accountName: string;
-  branch: string;
-  ifsc: string;
-  status: boolean;
-  isDefault: boolean;
-}
+import { type BankAccount } from "../../../feature-module/services/bank.service";
 
 interface EditBankAccountProps {
   bank: BankAccount | null;
@@ -27,7 +18,7 @@ const EditBankAccount: React.FC<EditBankAccountProps> = ({ bank, onSave }) => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
-    setForm((prev) => prev ? ({
+    setForm((prev: BankAccount | null) => prev ? ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }) : null);

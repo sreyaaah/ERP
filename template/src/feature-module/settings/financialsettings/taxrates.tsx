@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-
 import AddTaxRates from "../../../core/modals/settings/addtaxrates";
 import EditTaxRates from "../../../core/modals/settings/edittaxrates";
 import SettingsSideBar from "../settingssidebar";
@@ -8,52 +7,36 @@ import RefreshIcon from "../../../components/tooltip-content/refresh";
 import CollapesIcon from "../../../components/tooltip-content/collapes";
 import CommonFooter from "../../../components/footer/commonFooter";
 import DeleteModal from "../../../components/delete-modal";
+import { TaxService, type TaxRate } from "../../services/tax.service";
+import Swal from "sweetalert2";
 
 
-type TaxType = "GST" | "VAT" | "CGST" | "SGST" | "IGST";
-
-interface TaxRate {
-  id: number;
-  name: string;
-  type: TaxType;
-  rate: number;
-  createdOn: string;
-}
-
-interface TaxForm {
-  name: string;
-  type: TaxType;
-  rate: number;
-}
-const currentDate = new Date().toLocaleDateString("en-GB", {
-  day: "2-digit",
-  month: "short",
-  year: "numeric",
-});
-
-export const INITIAL_TAX_RATES: TaxRate[] = [
-  { id: 1, name: "GST 5%", type: "GST", rate: 5, createdOn: currentDate },
-  { id: 2, name: "GST 12%", type: "GST", rate: 12, createdOn: currentDate },
-  { id: 3, name: "GST 18%", type: "GST", rate: 18, createdOn: currentDate },
-  { id: 4, name: "GST 28%", type: "GST", rate: 28, createdOn: currentDate },
-  { id: 5, name: "VAT 5%", type: "VAT", rate: 5, createdOn: currentDate },
-  { id: 6, name: "VAT 10%", type: "VAT", rate: 10, createdOn: currentDate },
-  { id: 7, name: "VAT 20%", type: "VAT", rate: 20, createdOn: currentDate },
-];
+// TaxType and TaxRate are now imported from tax.service, so local definitions are removed.
 
 const TaxRates = () => {
-  const [taxRates, setTaxRates] = useState<TaxRate[]>(() => {
-    const saved = localStorage.getItem("taxRates");
-    return saved ? JSON.parse(saved) : INITIAL_TAX_RATES;
-  });
-
+  const [taxRates, setTaxRates] = useState<TaxRate[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedTax, setSelectedTax] = useState<TaxRate | null>(null);
   const [taxToDelete, setTaxToDelete] = useState<TaxRate | null>(null);
 
   useEffect(() => {
-    localStorage.setItem("taxRates", JSON.stringify(taxRates));
-    window.dispatchEvent(new Event("storage"));
-  }, [taxRates]);
+    fetchTaxes();
+  }, []);
+
+  const fetchTaxes = async () => {
+    try {
+      setLoading(true);
+      const res = await TaxService.getAllTaxes();
+      if (res.status) {
+        setTaxRates(res.data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch tax rates", error);
+      Swal.fire("Error", "Failed to load tax rates", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const renderRate = (tax: TaxRate): string => {
     if (tax.type === "GST") {
@@ -63,31 +46,45 @@ const TaxRates = () => {
     return `${tax.rate}%`;
   };
 
-  const handleAddTax = (data: TaxForm) => {
-    if (data.type !== "GST" && data.type !== "VAT") return;
-
-    setTaxRates((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        ...data,
-        createdOn: currentDate,
-      },
-    ]);
+  /* ---------- OPERATIONS ---------- */
+  const handleAddTax = async (data: any) => {
+    try {
+      const res = await TaxService.createTax(data);
+      if (res.status) {
+        Swal.fire("Success", "Tax rate added successfully", "success");
+        fetchTaxes();
+      }
+    } catch (error) {
+      Swal.fire("Error", "Failed to add tax rate", "error");
+    }
   };
 
-  const handleUpdateTax = (updated: TaxRate) => {
-    setTaxRates((prev) =>
-      prev.map((t) => (t.id === updated.id ? updated : t))
-    );
-    setSelectedTax(null);
+  const handleUpdateTax = async (updated: TaxRate) => {
+    try {
+      if (!updated._id) return;
+      const res = await TaxService.updateTax(updated._id, updated);
+      if (res.status) {
+        Swal.fire("Success", "Tax rate updated successfully", "success");
+        fetchTaxes();
+      }
+    } catch (error) {
+      Swal.fire("Error", "Failed to update tax rate", "error");
+    }
   };
-  const handleDeleteTax = () => {
-    if (!taxToDelete) return;
-    setTaxRates((prev) =>
-      prev.filter((t) => t.id !== taxToDelete.id)
-    );
-    setTaxToDelete(null);
+
+  const handleDeleteTax = async () => {
+    if (taxToDelete && taxToDelete._id) {
+      try {
+        const res = await TaxService.deleteTax(taxToDelete._id);
+        if (res.status) {
+          Swal.fire("Deleted!", "Tax rate deleted successfully", "success");
+          fetchTaxes();
+          setTaxToDelete(null);
+        }
+      } catch (error) {
+        Swal.fire("Error", "Failed to delete tax rate", "error");
+      }
+    }
   };
 
   return (
@@ -135,38 +132,52 @@ const TaxRates = () => {
                   </thead>
 
                   <tbody>
-                    {taxRates.map((t) => (
-                      <tr key={t.id}>
-                        <td>{t.name}</td>
-                        <td>
-                          <span className="badge bg-info">{t.type}</span>
-                        </td>
-                        <td>{renderRate(t)}</td>
-                        <td>{t.createdOn}</td>
-                        <td className="text-end">
-                          <Link
-                            to="#"
-                            className="me-2"
-                            data-bs-toggle="modal"
-                            data-bs-target="#edit-tax"
-                            onClick={() => setSelectedTax(t)}
-                          >
-                            <i className="ti ti-edit" />
-                          </Link>
-
-                          <Link
-                            to="#"
-                            data-bs-toggle="modal"
-                            data-bs-target="#delete-modal"
-                            onClick={() => setTaxToDelete(t)}
-                          >
-                            <i className="ti ti-trash" />
-                          </Link>
+                    {loading ? (
+                      <tr>
+                        <td colSpan={5} className="text-center py-5">
+                          <div className="spinner-border text-primary" role="status">
+                            <span className="visually-hidden">Loading...</span>
+                          </div>
                         </td>
                       </tr>
-                    ))}
+                    ) : (
+                      taxRates.map((t) => (
+                        <tr key={t._id}>
+                          <td>{t.name}</td>
+                          <td>
+                            <span className="badge bg-info">{t.type}</span>
+                          </td>
+                          <td>{renderRate(t)}</td>
+                          <td>{t.createdAt ? new Date(t.createdAt).toLocaleDateString("en-GB", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          }) : "-"}</td>
+                          <td className="text-end">
+                            <Link
+                              to="#"
+                              className="me-2"
+                              data-bs-toggle="modal"
+                              data-bs-target="#edit-tax"
+                              onClick={() => setSelectedTax(t)}
+                            >
+                              <i className="ti ti-edit" />
+                            </Link>
 
-                    {taxRates.length === 0 && (
+                            <Link
+                              to="#"
+                              data-bs-toggle="modal"
+                              data-bs-target="#delete-modal"
+                              onClick={() => setTaxToDelete(t)}
+                            >
+                              <i className="ti ti-trash" />
+                            </Link>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+
+                    {!loading && taxRates.length === 0 && (
                       <tr>
                         <td colSpan={5} className="text-center">
                           No tax rates found
