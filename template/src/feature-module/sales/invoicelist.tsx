@@ -5,81 +5,94 @@ import SearchFromApi from "../../components/data-table/search";
 import { useState, useEffect } from "react";
 import PrimeDataTable from "../../components/data-table";
 import { InvoiceService, type Invoice } from "../services/invoice.service";
+import { CustomerService, type Customer } from "../services/customer.service";
 import { all_routes } from "../../routes/all_routes";
 import EditInvoice from "../../core/modals/sales/editinvoice";
+import DeleteModal from "../../components/delete-modal";
+import Swal from "sweetalert2";
 
 const InvoiceList = () => {
   const route = all_routes;
   const [dataSource, setDataSource] = useState<Invoice[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [selectedPaymentStatus, setSelectedPaymentStatus] = useState<string | null>(null);
-  const [selectedCustomer, setSelectedCustomer] = useState<string | null>(null);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
+  const [customerList, setCustomerList] = useState<Customer[]>([]);
   const [sortBy, setSortBy] = useState<string | null>(null);
   const [filteredData, setFilteredData] = useState<Invoice[]>([]);
   const [rows, setRows] = useState<number>(10);
   const [searchQuery, setSearchQuery] = useState<string | undefined>(undefined);
   const [selectedInvoices, setSelectedInvoices] = useState<any[]>([]);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
+  const [totalRecords, setTotalRecords] = useState<number>(0);
+  const [loading, setLoading] = useState<boolean>(false);
 
-  // Load invoices from localStorage
-  const loadData = () => {
-    const invoices = InvoiceService.getAllInvoices();
-    // Update overdue status
-    const updatedInvoices = invoices.map(inv => InvoiceService.updatePaymentStatus(inv));
-    setDataSource(updatedInvoices);
-    setFilteredData(updatedInvoices);
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const response = await InvoiceService.getAllInvoices({
+        page: currentPage,
+        limit: rows,
+        search: searchQuery,
+        status: selectedPaymentStatus || undefined,
+        customerId: selectedCustomerId || undefined,
+        sortBy: sortBy || undefined
+      });
+      
+      if (response.status) {
+        setDataSource(response.data);
+        setFilteredData(response.data);
+        setTotalRecords(response.totalRecords);
+      } else {
+        setDataSource([]);
+        setFilteredData([]);
+        setTotalRecords(0);
+      }
+    } catch (error) {
+      console.error('Error loading invoices:', error);
+      setDataSource([]);
+      setFilteredData([]);
+      setTotalRecords(0);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     loadData();
+  }, [currentPage, rows, searchQuery, selectedPaymentStatus, selectedCustomerId, sortBy]);
 
-    window.addEventListener("storage", loadData);
-    return () => window.removeEventListener("storage", loadData);
-  }, []);
+  const loadCustomers = async () => {
+    try {
+      const res = await CustomerService.getCustomers({ limit: 1000 });
+      if (res.status && res.data) {
+        setCustomerList(res.data);
+      }
+    } catch (error) {
+      console.error("Failed to load customers", error);
+    }
+  };
 
-  // Apply filters
   useEffect(() => {
-    let temp = [...dataSource];
-
-    if (selectedPaymentStatus) {
-      temp = temp.filter(inv => inv.paymentStatus === selectedPaymentStatus);
+    loadCustomers();
+  }, []);
+  useEffect(() => {
+    const modalEl = document.getElementById('edit-invoice');
+    if (modalEl) {
+      const handleHidden = () => {
+        setEditingInvoice(null);
+      };
+      modalEl.addEventListener('hidden.bs.modal', handleHidden);
+      return () => {
+        modalEl.removeEventListener('hidden.bs.modal', handleHidden);
+      };
     }
-
-    if (selectedCustomer) {
-      temp = temp.filter(inv => inv.customerName === selectedCustomer);
-    }
-
-    if (sortBy === "recent" || sortBy === "desc") {
-      temp = [...temp].sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
-    }
-
-    if (sortBy === "asc") {
-      temp = [...temp].sort(
-        (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-      );
-    }
-
-    if (sortBy === "last7") {
-      const last7 = new Date();
-      last7.setDate(last7.getDate() - 7);
-      temp = temp.filter(inv => new Date(inv.createdAt) >= last7);
-    }
-
-    if (sortBy === "lastMonth") {
-      const lastMonth = new Date();
-      lastMonth.setMonth(lastMonth.getMonth() - 1);
-      temp = temp.filter(inv => new Date(inv.createdAt) >= lastMonth);
-    }
-
-    setFilteredData(temp);
-  }, [dataSource, selectedPaymentStatus, selectedCustomer, sortBy]);
+  }, []);
 
   const handleSearch = (value: any) => {
     setSearchQuery(value);
+    setCurrentPage(1);
   };
 
   const columns = [
@@ -89,7 +102,7 @@ const InvoiceList = () => {
       sortable: true,
       key: "invoiceNumber",
       body: (rowData: Invoice) => (
-        <Link to={`/sales/invoice-details/${rowData.id}`} className="text-primary fw-medium">
+        <Link to={`/sales/invoice-details/${rowData.invoiceId}`} className="text-primary fw-medium">
           {rowData.invoiceNumber}
         </Link>
       ),
@@ -100,12 +113,7 @@ const InvoiceList = () => {
       sortable: true,
       key: "customerName",
       body: (rowData: Invoice) => (
-        <div className="d-flex align-items-center me-2">
-          <Link to="#" className="avatar avatar-md me-2">
-            <img src={`/assets/img/users/${rowData.customerImage}`} alt="customer" />
-          </Link>
-          <Link to="#">{rowData.customerName}</Link>
-        </div>
+        <Link to="#" className="text-dark fw-medium">{rowData.customerName}</Link>
       ),
     },
     {
@@ -121,8 +129,8 @@ const InvoiceList = () => {
       key: "grandTotal",
       body: (rowData: Invoice) => (
         <span className="fw-medium">
-          {rowData.invoiceType === 'international' ? '$' : '₹'}
-          {rowData.grandTotal.toFixed(2)}
+          {rowData.invoiceType === 'International' ? '$' : '₹'}
+          {(rowData.grandTotal || 0).toFixed(2)}
         </span>
       ),
     },
@@ -133,8 +141,8 @@ const InvoiceList = () => {
       key: "paidAmount",
       body: (rowData: Invoice) => (
         <span className="fw-medium">
-          {rowData.invoiceType === 'international' ? '$' : '₹'}
-          {rowData.paidAmount.toFixed(2)}
+          {rowData.invoiceType === 'International' ? '$' : '₹'}
+          {(rowData.paidAmount || 0).toFixed(2)}
         </span>
       ),
     },
@@ -143,16 +151,12 @@ const InvoiceList = () => {
       field: "amountDue",
       sortable: true,
       key: "amountDue",
-      body: (rowData: Invoice) => {
-        const amountDue = rowData.grandTotal - rowData.paidAmount;
-        
-        return (
+      body: (rowData: Invoice) => (
           <span className="fw-medium text-danger">
-            {rowData.invoiceType === 'international' ? '$' : '₹'}
-            {amountDue.toFixed(2)}
+            {rowData.invoiceType === 'International' ? '$' : '₹'}
+            {(rowData.amountDue || 0).toFixed(2)}
           </span>
-        );
-      },
+        )
     },
     {
       header: "Status",
@@ -206,7 +210,7 @@ const InvoiceList = () => {
           </Link>
           <Link 
             className="me-2 p-2 d-flex align-items-center justify-content-between border rounded" 
-            to={`/sales/invoice-details/${rowData.id}`}
+            to={`/sales/invoice-details/${rowData.invoiceId}`}
             title="View Invoice"
           >
             <i className="feather icon-eye feather-eye" />
@@ -215,10 +219,11 @@ const InvoiceList = () => {
           <Link
             className="p-2 d-flex align-items-center justify-content-between border rounded"
             to="#"
+            data-bs-toggle="modal"
+            data-bs-target="#delete-modal"
             onClick={(e) => {
               e.preventDefault();
-              setDeleteId(rowData.id);
-              setShowDeleteModal(true);
+              setDeleteId(rowData.invoiceId as any);
             }}
             title="Delete Invoice"
           >
@@ -229,14 +234,38 @@ const InvoiceList = () => {
     },
   ];
 
-  const handleDeleteInvoice = () => {
-    if (!deleteId) return;
+  const handleDeleteInvoice = async () => {
+    try {
+      if (deleteId) {
+        await InvoiceService.deleteInvoice(String(deleteId));
+        setDeleteId(null);
+        Swal.fire("Deleted!", "Invoice has been deleted.", "success");
+      } else if (selectedInvoices.length > 0) {
+        const ids = selectedInvoices.map((inv) => inv.invoiceId);
+        await InvoiceService.bulkDelete(ids);
+        setSelectedInvoices([]);
+        Swal.fire("Deleted!", `${ids.length} invoices have been deleted.`, "success");
+      }
+      loadData();
+    } catch (err) {
+      console.error("Delete failed:", err);
+      Swal.fire("Error", "Check console for details.", "error");
+    }
+  };
 
-    InvoiceService.deleteInvoice(deleteId);
-    setDataSource((prev) => prev.filter((inv) => inv.id !== deleteId));
+  const handleBulkStatusChange = async (status: string) => {
+    if (selectedInvoices.length === 0) return;
 
-    setDeleteId(null);
-    setShowDeleteModal(false);
+    try {
+      const ids = selectedInvoices.map((inv) => inv.invoiceId);
+      await InvoiceService.bulkUpdate(ids, status);
+      setSelectedInvoices([]);
+      loadData();
+      Swal.fire("Updated!", `Statuses updated to ${status}.`, "success");
+    } catch (error) {
+      console.error("Bulk update failed:", error);
+      Swal.fire("Error", "Failed to update statuses.", "error");
+    }
   };
 
   return (
@@ -250,7 +279,22 @@ const InvoiceList = () => {
                 <h6>Manage Your Invoices</h6>
               </div>
             </div>
-            <TableTopHead />
+            <TableTopHead
+              onPdfExport={async () => {
+                try {
+                  await InvoiceService.exportBulk("pdf");
+                } catch (error) {
+                  console.error("Export PDF failed:", error);
+                }
+              }}
+              onExcelExport={async () => {
+                try {
+                  await InvoiceService.exportBulk("xlsx");
+                } catch (error) {
+                  console.error("Export Excel failed:", error);
+                }
+              }}
+            />
             <div className="page-btn">
               <Link
                 to={route.quotationlist}
@@ -270,11 +314,48 @@ const InvoiceList = () => {
           </div>
           <div className="card table-list-card">
             <div className="card-header d-flex align-items-center justify-content-between flex-wrap row-gap-3">
-              <SearchFromApi
-                callback={handleSearch}
-                rows={rows}
-                setRows={setRows}
-              />
+              <div className="d-flex align-items-center">
+                <SearchFromApi
+                  callback={handleSearch}
+                  rows={rows}
+                  setRows={setRows}
+                />
+                {selectedInvoices.length > 0 && (
+                  <div className="d-flex align-items-center ms-3">
+                    <div className="dropdown me-2">
+                      <button
+                        className="btn btn-white btn-sm dropdown-toggle d-inline-flex align-items-center"
+                        data-bs-toggle="dropdown"
+                      >
+                        Bulk Update
+                      </button>
+                      <ul className="dropdown-menu dropdown-menu-end p-2">
+                        <li>
+                          <Link to="#" className="dropdown-item rounded-1" onClick={() => handleBulkStatusChange("Paid")}>Paid</Link>
+                        </li>
+                        <li>
+                          <Link to="#" className="dropdown-item rounded-1" onClick={() => handleBulkStatusChange("Unpaid")}>Unpaid</Link>
+                        </li>
+                        <li>
+                          <Link to="#" className="dropdown-item rounded-1" onClick={() => handleBulkStatusChange("Partially Paid")}>Partially Paid</Link>
+                        </li>
+                        <li>
+                          <Link to="#" className="dropdown-item rounded-1" onClick={() => handleBulkStatusChange("Overdue")}>Overdue</Link>
+                        </li>
+                      </ul>
+                    </div>
+                    <button
+                      className="btn btn-danger btn-sm"
+                      data-bs-toggle="modal"
+                      data-bs-target="#delete-modal"
+                      onClick={() => setDeleteId(null)}
+                    >
+                      <i className="ti ti-trash me-1"></i> Bulk Delete
+                    </button>
+                    <span className="ms-2 text-muted small">({selectedInvoices.length} selected)</span>
+                  </div>
+                )}
+              </div>
               <div className="d-flex table-dropdown my-xl-auto right-content align-items-center flex-wrap row-gap-3">
                 <div className="dropdown me-2">
                   <Link
@@ -282,17 +363,35 @@ const InvoiceList = () => {
                     className="dropdown-toggle btn btn-white btn-md d-inline-flex align-items-center"
                     data-bs-toggle="dropdown"
                   >
-                    Customer
+                    {selectedCustomerId 
+                      ? customerList.find(c => (c._id || c.id) === selectedCustomerId)?.firstName + ' ' + (customerList.find(c => (c._id || c.id) === selectedCustomerId)?.lastName || '')
+                      : "Customer"
+                    }
                   </Link>
-                  <ul className="dropdown-menu dropdown-menu-end p-3">
-                    {[...new Set(dataSource.map(inv => inv.customerName))].map(name => (
-                      <li key={name}>
+                  <ul className="dropdown-menu dropdown-menu-end p-3" style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                    <li>
+                      <Link
+                        to="#"
+                        className="dropdown-item rounded-1"
+                        onClick={() => {
+                          setSelectedCustomerId(null);
+                          setCurrentPage(1);
+                        }}
+                      >
+                        All Customers
+                      </Link>
+                    </li>
+                    {customerList.map(customer => (
+                      <li key={customer._id || customer.id}>
                         <Link
                           to="#"
-                          className="dropdown-item rounded-1"
-                          onClick={() => setSelectedCustomer(name)}
+                          className={`dropdown-item rounded-1 ${selectedCustomerId === (customer._id || customer.id) ? 'active' : ''}`}
+                          onClick={() => {
+                            setSelectedCustomerId((customer._id || customer.id) as string);
+                            setCurrentPage(1);
+                          }}
                         >
-                          {name}
+                          {customer.customer || `${customer.firstName} ${customer.lastName || ''}`.trim()}
                         </Link>
                       </li>
                     ))}
@@ -311,7 +410,10 @@ const InvoiceList = () => {
                       <Link 
                         to="#" 
                         className="dropdown-item rounded-1"
-                        onClick={() => setSelectedPaymentStatus("Paid")}
+                        onClick={() => {
+                          setSelectedPaymentStatus("Paid");
+                          setCurrentPage(1);
+                        }}
                       >
                         Paid
                       </Link>
@@ -320,7 +422,10 @@ const InvoiceList = () => {
                       <Link 
                         to="#" 
                         className="dropdown-item rounded-1"
-                        onClick={() => setSelectedPaymentStatus("Unpaid")}
+                        onClick={() => {
+                          setSelectedPaymentStatus("Unpaid");
+                          setCurrentPage(1);
+                        }}
                       >
                         Unpaid
                       </Link>
@@ -329,7 +434,10 @@ const InvoiceList = () => {
                       <Link 
                         to="#" 
                         className="dropdown-item rounded-1"
-                        onClick={() => setSelectedPaymentStatus("Partially Paid")}
+                        onClick={() => {
+                          setSelectedPaymentStatus("Partially Paid");
+                          setCurrentPage(1);
+                        }}
                       >
                         Partially Paid
                       </Link>
@@ -338,7 +446,10 @@ const InvoiceList = () => {
                       <Link 
                         to="#" 
                         className="dropdown-item rounded-1"
-                        onClick={() => setSelectedPaymentStatus("Overdue")}
+                        onClick={() => {
+                          setSelectedPaymentStatus("Overdue");
+                          setCurrentPage(1);
+                        }}
                       >
                         Overdue
                       </Link>
@@ -351,14 +462,21 @@ const InvoiceList = () => {
                     className="dropdown-toggle btn btn-white btn-md d-inline-flex align-items-center"
                     data-bs-toggle="dropdown"
                   >
-                    Sort By : Recent
+                    {sortBy === 'asc' ? 'Sort By: Ascending' : 
+                     sortBy === 'desc' ? 'Sort By: Descending' :
+                     sortBy === 'lastMonth' ? 'Sort By: Last Month' :
+                     sortBy === 'last7' ? 'Sort By: Last 7 Days' :
+                     'Sort By: Recent'}
                   </Link>
                   <ul className="dropdown-menu dropdown-menu-end p-3">
                     <li>
                       <Link 
                         to="#" 
                         className="dropdown-item rounded-1"
-                        onClick={() => setSortBy("recent")}
+                        onClick={() => {
+                          setSortBy("recent");
+                          setCurrentPage(1);
+                        }}
                       >
                         Recently Added
                       </Link>
@@ -367,7 +485,10 @@ const InvoiceList = () => {
                       <Link 
                         to="#" 
                         className="dropdown-item rounded-1"
-                        onClick={() => setSortBy("asc")}
+                        onClick={() => {
+                          setSortBy("asc");
+                          setCurrentPage(1);
+                        }}
                       >
                         Ascending
                       </Link>
@@ -376,7 +497,10 @@ const InvoiceList = () => {
                       <Link 
                         to="#" 
                         className="dropdown-item rounded-1"
-                        onClick={() => setSortBy("desc")}
+                        onClick={() => {
+                          setSortBy("desc");
+                          setCurrentPage(1);
+                        }}
                       >
                         Descending
                       </Link>
@@ -385,7 +509,10 @@ const InvoiceList = () => {
                       <Link 
                         to="#" 
                         className="dropdown-item rounded-1"
-                        onClick={() => setSortBy("lastMonth")}
+                        onClick={() => {
+                          setSortBy("lastMonth");
+                          setCurrentPage(1);
+                        }}
                       >
                         Last Month
                       </Link>
@@ -394,7 +521,10 @@ const InvoiceList = () => {
                       <Link 
                         to="#" 
                         className="dropdown-item rounded-1"
-                        onClick={() => setSortBy("last7")}
+                        onClick={() => {
+                          setSortBy("last7");
+                          setCurrentPage(1);
+                        }}
                       >
                         Last 7 Days
                       </Link>
@@ -406,13 +536,14 @@ const InvoiceList = () => {
                 className="btn btn-light ms-2"
                 onClick={() => {
                   setSelectedPaymentStatus(null);
-                  setSelectedCustomer(null);
+                  setSelectedCustomerId(null);
                   setSortBy(null);
                   setFilteredData(dataSource);
+                  setCurrentPage(1);
                 }}
                 disabled={
                   !selectedPaymentStatus &&
-                  !selectedCustomer &&
+                  !selectedCustomerId &&
                   !sortBy
                 }
               >
@@ -420,21 +551,30 @@ const InvoiceList = () => {
               </button>
             </div>
             <div className="card-body">
-              <div className="table-responsive">
-                <PrimeDataTable
-                  column={columns}
-                  data={filteredData}
-                  rows={rows}
-                  setRows={setRows}
-                  currentPage={currentPage}
-                  setCurrentPage={setCurrentPage}
-                  totalRecords={filteredData.length}
-                  searchQuery={searchQuery}
-                  selectionMode="checkbox"
-                  selection={selectedInvoices}
-                  onSelectionChange={(e: any) => setSelectedInvoices(e.value)}
-                />
-              </div>
+              {loading ? (
+                <div className="d-flex justify-content-center py-5">
+                  <div className="spinner-border text-primary" role="status">
+                    <span className="visually-hidden">Loading...</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="table-responsive">
+                  <PrimeDataTable
+                    dataKey="invoiceId"
+                    column={columns}
+                    data={filteredData}
+                    rows={rows}
+                    setRows={setRows}
+                    currentPage={currentPage}
+                    setCurrentPage={setCurrentPage}
+                    totalRecords={totalRecords}
+                    searchQuery={searchQuery}
+                    selectionMode="checkbox"
+                    selection={selectedInvoices}
+                    onSelectionChange={(e: any) => setSelectedInvoices(e.value)}
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -442,49 +582,7 @@ const InvoiceList = () => {
       </div>
 
       <EditInvoice invoice={editingInvoice} onUpdate={loadData} />
-
-      {/* Delete Modal */}
-      {showDeleteModal && (
-        <div
-          className="modal show d-block"
-          style={{ background: "rgba(0,0,0,0.4)" }}
-        >
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Delete Invoice</h5>
-                <button
-                  type="button"
-                  className="btn-close"
-                  onClick={() => setShowDeleteModal(false)}
-                />
-              </div>
-
-              <div className="modal-body">
-                <p>Are you sure you want to delete this invoice?</p>
-              </div>
-
-              <div className="modal-footer">
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => setShowDeleteModal(false)}
-                >
-                  Cancel
-                </button>
-
-                <button
-                  type="button"
-                  className="btn btn-danger"
-                  onClick={handleDeleteInvoice}
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <DeleteModal onConfirm={handleDeleteInvoice} />
     </div>
   );
 };

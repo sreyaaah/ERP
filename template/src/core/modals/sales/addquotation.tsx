@@ -30,6 +30,8 @@ const AddQuotation = ({ onSuccess }: AddQuotationProps) => {
   const [text, setText] = useState("");
   const [quotationNumber, setQuotationNumber] = useState<string>("");
   const [referenceNo, setReferenceNo] = useState("");
+  const [paymentStatus, setPaymentStatus] = useState<string>("Unpaid");
+  const [paidAmount, setPaidAmount] = useState<number>(0);
   const [errors, setErrors] = useState<any>({});
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ msg: string; type: string } | null>(null);
@@ -381,10 +383,16 @@ useEffect(() => {
     setValidityDate(new Date());
     setReferenceNo("");
     setSelectedCustomer(null);
+    setCustomerSearch("");
     setSelectedStatus(null);
     setText("");
     setErrors({});
-    setRows([
+    setQuotationType("intrastate");
+    setPaymentStatus("Unpaid");
+    setPaidAmount(0);
+    setSelectedCurrency(null);
+    
+    const initialRows = [
       {
         product: null,
         productSearch: "",        
@@ -392,12 +400,14 @@ useEffect(() => {
         qty: 1,
         rate: 0,
         discount: 0,
-        tax: getDefaultTaxByQuotationType(quotationType),
+        tax: getDefaultTaxByQuotationType("intrastate"),
         taxAmount: 0,
         unitCost: 0,
         total: 0,
       },
-    ]);
+    ];
+    setRows(initialRows);
+    calculateSummary(initialRows);
 
     // Refresh quotation number from API for next use
     QuotationService.generateNumber()
@@ -428,6 +438,8 @@ useEffect(() => {
           discountPercent: Number(row.discount || 0),
           taxPercent: Number(row.tax || 0),
         })),
+        paymentStatus,
+        paidAmount,
       };
 
       await QuotationService.create(payload);
@@ -956,10 +968,23 @@ const filteredCustomers = customers.filter(customer =>
                               </div>
                             )}
 
-                            <div className="d-flex justify-content-between fw-bold border-top pt-2">
-                              <span>Grand Total</span>
-                              <span>₹{grandTotal.toFixed(2)}</span>
-                            </div>
+                             <div className="d-flex justify-content-between fw-bold border-top pt-2">
+                               <span>Grand Total</span>
+                               <span>₹{grandTotal.toFixed(2)}</span>
+                             </div>
+
+                             {(paymentStatus === "Paid" || paymentStatus === "Partially Paid") && (
+                               <div className="mt-2 pt-2 border-top">
+                                 <div className="d-flex justify-content-between mb-1">
+                                   <span>Paid Amount</span>
+                                   <span>₹{paidAmount.toFixed(2)}</span>
+                                 </div>
+                                 <div className="d-flex justify-content-between text-danger fw-bold">
+                                   <span>Amount Due</span>
+                                   <span>₹{(grandTotal - (paidAmount || 0)).toFixed(2)}</span>
+                                 </div>
+                               </div>
+                             )}
                           </div>
                         </div>
                       </div>
@@ -995,19 +1020,54 @@ const filteredCustomers = customers.filter(customer =>
                               Status
                               {requiredFields.Status && (<span className="text-danger ms-1">*</span>)}
                             </label>
-                            <CommonSelect
-                              className="w-100"
-                              options={Status}
-                              value={selectedStatus}
-                              onChange={(e) => setSelectedStatus(e.value)}
-                              placeholder="Choose"
-                              filter={false}
-                            />
+                            <select 
+                              className="form-select" 
+                              value={selectedStatus || ""}
+                              onChange={(e) => setSelectedStatus(e.target.value)}
+                            >
+                              <option value="">Choose</option>
+                              {Status.map(s => (
+                                <option key={s.value} value={s.value}>{s.label}</option>
+                              ))}
+                            </select>
                             {errors.status && (
                               <small className="text-danger">{errors.status}</small>
                             )}
                           </div>
                         </div>
+                        <div className="col-lg-3 col-md-6 col-sm-12">
+                          <div className="mb-3">
+                            <label className="form-label">Payment Status</label>
+                            <select 
+                              className="form-select" 
+                              value={paymentStatus}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setPaymentStatus(val);
+                                if (val === "Unpaid") setPaidAmount(0);
+                                else if (val === "Paid") setPaidAmount(grandTotal);
+                              }}
+                            >
+                              <option value="Unpaid">Unpaid</option>
+                              <option value="Partially Paid">Partially Paid</option>
+                              <option value="Paid">Paid</option>
+                            </select>
+                          </div>
+                        </div>
+                        {(paymentStatus === "Paid" || paymentStatus === "Partially Paid") && (
+                          <div className="col-lg-3 col-md-6 col-sm-12">
+                            <div className="mb-3">
+                              <label className="form-label">Paid Amount</label>
+                              <input 
+                                type="number" 
+                                className="form-control" 
+                                value={paidAmount} 
+                                onChange={(e) => setPaidAmount(Number(e.target.value))}
+                                max={grandTotal}
+                              />
+                            </div>
+                          </div>
+                        )}
                       </div>
                   </div>
                 <div className="modal-footer">

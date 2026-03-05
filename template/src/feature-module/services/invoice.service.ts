@@ -1,341 +1,224 @@
+import apiClient from "./api.service";
+
 export interface InvoiceItem {
-  productId: string;
+  itemId?: number;
+  productId?: string;
   productName: string;
-  productImage?: string;
-  qty: number;
+  quantity: number;
   rate: number;
   discount: number;
-  tax: number;
-  taxAmount: number;
-  unitCost: number;
-  total: number;
+  taxPercent: number;
+  amount: number;
 }
 
 export interface Invoice {
-  id: number;
+  invoiceId?: string;
   invoiceNumber: string;
-  invoiceDate: string;
-  dueDate: string;
-  customerId: string;
-  customerName: string;
-  customerImage: string;
-  customerAddress?: string;
+  invoiceType: "Intrastate" | "Interstate" | "International";
+  customer?: {
+    customerId: string;
+    name: string;
+    email: string;
+    phone: string;
+    address: string;
+  };
+  customerId?: string; // For creating/updating
+  customerName?: string;
   customerEmail?: string;
   customerPhone?: string;
-  quotationId?: number;
-  quotationNumber?: string;
-  invoiceType: "interstate" | "intrastate" | "international";
-  currency?: string;
-  items: InvoiceItem[];
-  subTotal: number;
-  totalTax: number;
-  grandTotal: number;
-  paidAmount: number;
-  amountInWords: string;
+  customerAddress?: string;
+  customerGstin?: string;
+  invoiceDate: string;
+  dueDate: string;
   paymentStatus: "Paid" | "Unpaid" | "Partially Paid" | "Overdue";
+  items: InvoiceItem[];
+  subtotal: number;
+  taxAmount: number;
+  grandTotal: number;
+  paidAmount?: number;
+  amountDue?: number;
   notes?: string;
-  termsAndConditions?: string;
-  createdAt: string;
-  updatedAt: string;
+  terms?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
-const INVOICE_STORAGE_KEY = "invoiceList";
-
-export class InvoiceService {
-
-  static generateInvoiceNumber(): string {
-    const d = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-    return `INV-${d}-${Math.floor(1000 + Math.random() * 9000)}`;
-  }
-
-
-  static getAllInvoices(): Invoice[] {
-    try {
-      const data = localStorage.getItem(INVOICE_STORAGE_KEY);
-      const invoices: Invoice[] = data ? JSON.parse(data) : [];
-
-      return invoices.map(inv => ({
-        ...inv,
-        paidAmount: inv.paidAmount ?? 0
-      }));
-    } catch (error) {
-      console.error('Error loading invoices:', error);
-      return [];
-    }
-  }
-
-  static getInvoiceById(id: number): Invoice | null {
-    return this.getAllInvoices().find(i => i.id === id) || null;
-  }
-
-  static saveInvoice(invoice: Invoice): void {
-    const invoices = this.getAllInvoices();
-    invoices.unshift(invoice);
-    localStorage.setItem(INVOICE_STORAGE_KEY, JSON.stringify(invoices));
-    window.dispatchEvent(new Event("storage"));
-  }
-
-  static updateInvoice(updated: Invoice): void {
-    const invoices = this.getAllInvoices().map(i =>
-      i.id === updated.id ? { ...updated, updatedAt: new Date().toISOString() } : i
-    );
-    localStorage.setItem(INVOICE_STORAGE_KEY, JSON.stringify(invoices));
-    window.dispatchEvent(new Event("storage"));
-  }
-
-  static deleteInvoice(id: number): void {
-    const invoices = this.getAllInvoices().filter(i => i.id !== id);
-    localStorage.setItem(INVOICE_STORAGE_KEY, JSON.stringify(invoices));
-    window.dispatchEvent(new Event("storage"));
-  }
-
-  static createInvoiceFromQuotation(quotation: any): Invoice {
-    console.log('Converting quotation:', quotation);
-
-    if (!quotation) {
-      throw new Error('Quotation data is required');
-    }
-
-    const today = new Date();
-    const due = new Date();
-    due.setDate(due.getDate() + 30);
-
-    let items: InvoiceItem[] = [];
-
-    if (Array.isArray(quotation.details) && quotation.details.length > 0) {
-
-      items = quotation.details.map((detail: any) => {
-        const product = detail.product || {};
-        const qty = Number(detail.qty || 0);
-        const rate = Number(detail.rate || 0);
-        const discount = Number(detail.discount || 0);
-        const tax = Number(detail.tax || 0);
-
-        const baseAmount = qty * rate;
-        const taxAmount = ((baseAmount - discount) * tax) / 100;
-        const total = baseAmount - discount + taxAmount;
-
-        return {
-          productId: product.value || product.sku || String(product.id || ''),
-          productName: product.label || product.product || product.name || 'Unknown Product',
-          productImage: product.img || product.image || 'product-01.jpg',
-          qty,
-          rate,
-          discount,
-          tax,
-          taxAmount,
-          unitCost: rate,
-          total
-        };
-      });
-    } else if (Array.isArray(quotation.products) && quotation.products.length > 0) {
-      items = quotation.products.map((p: any) => {
-        const qty = Number(p.qty || 1);
-        const rate = Number(p.rate || p.price || 0);
-        const discount = Number(p.discount || 0);
-        const tax = Number(p.tax || 0);
-
-        const baseAmount = qty * rate;
-        const taxAmount = ((baseAmount - discount) * tax) / 100;
-        const total = baseAmount - discount + taxAmount;
-
-        return {
-          productId: String(p.id || p.productId || ''),
-          productName: p.name || p.productName || 'Unknown Product',
-          productImage: p.image || p.productImage || 'product-01.jpg',
-          qty,
-          rate,
-          discount,
-          tax,
-          taxAmount,
-          unitCost: rate,
-          total
-        };
-      });
-    } else if (quotation.Product_Name) {
-
-      let qty = Number(quotation.Qty || 1);
-      let rate = Number(quotation.Rate || 0);
-      let discount = Number(quotation.Discount || 0);
-      let tax = Number(quotation.Tax || 0);
-
-      if (rate === 0 && quotation.Total) {
-        const cleanedTotal = String(quotation.Total).replace(/[^0-9.]/g, '');
-        rate = Number(cleanedTotal);
-      }
-
-      const baseAmount = qty * rate;
-      const taxAmount = ((baseAmount - discount) * tax) / 100;
-      const total = baseAmount - discount + taxAmount;
-
-      items = [{
-        productId: quotation.Product_Id || 'P1',
-        productName: quotation.Product_Name || 'Unknown Product',
-        productImage: quotation.Product_image || 'product-01.jpg',
-        qty,
-        rate,
-        discount,
-        tax,
-        taxAmount,
-        unitCost: rate,
-        total
-      }];
-    }
-
-    if (items.length === 0) {
-      if (quotation.GrandTotal || quotation.Total) {
-        const totalVal = Number(quotation.GrandTotal || String(quotation.Total).replace(/[^0-9.]/g, ''));
-        items = [{
-          productId: 'GENERIC',
-          productName: 'Quotation Item',
-          productImage: 'product-01.jpg',
-          qty: 1,
-          rate: totalVal,
-          discount: 0,
-          tax: 0,
-          taxAmount: 0,
-          unitCost: totalVal,
-          total: totalVal
-        }];
-      } else {
-        throw new Error('No valid items found in quotation');
-      }
-    }
-
-    const subTotal = items.reduce((sum, item) => sum + (item.qty * item.rate - item.discount), 0);
-    const totalTax = items.reduce((sum, item) => sum + item.taxAmount, 0);
-    const grandTotal = subTotal + totalTax;
-
-    const invoiceType = quotation.quotationType || quotation.invoiceType || 'intrastate';
-
-    return {
-      id: Date.now(),
-      invoiceNumber: this.generateInvoiceNumber(),
-      invoiceDate: today.toLocaleDateString("en-GB"),
-      dueDate: due.toLocaleDateString("en-GB"),
-      customerId: quotation.Custmer_Id || quotation.customerId || '',
-      customerName: quotation.Custmer_Name || quotation.customerName || 'Unknown Customer',
-      customerImage: quotation.Custmer_Image || quotation.customerImage || 'user-01.jpg',
-      customerAddress: quotation.customerAddress || '',
-      customerEmail: quotation.customerEmail || '',
-      customerPhone: quotation.customerPhone || '',
-      quotationId: quotation.id,
-      quotationNumber: quotation.Quotation_No || quotation.quotationNumber || '',
-      invoiceType: invoiceType as "interstate" | "intrastate" | "international",
-      items,
-      subTotal,
-      totalTax,
-      grandTotal,
-      paidAmount: 0,
-      amountInWords: this.numberToWords(grandTotal, invoiceType),
-      paymentStatus: "Unpaid",
-      notes: quotation.Description || quotation.notes || '',
-      termsAndConditions: quotation.termsAndConditions ||
-        "Please pay within 30 days from the date of invoice, overdue interest @ 14% will be charged on delayed payments.",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-  }
-
-  static numberToWords(num: number, invoiceType: string): string {
-    const roundedNum = Math.round(num);
-
-    if (roundedNum === 0) {
-      return invoiceType === 'international' ? "Zero Dollars Only" : "Zero Rupees Only";
-    }
-
-    if (invoiceType === 'international') {
-      return this.numberToWordsUSD(roundedNum);
-    }
-    return this.numberToWordsINR(roundedNum);
-  }
-
-  static numberToWordsINR(num: number): string {
-    if (num === 0) return "Zero Rupees Only";
-
-    const ones = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine"];
-    const teens = ["Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen",
-      "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
-    const tens = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
-
-    const convertLessThanThousand = (n: number): string => {
-      if (n === 0) return "";
-      if (n < 10) return ones[n];
-      if (n < 20) return teens[n - 10];
-      if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 ? " " + ones[n % 10] : "");
-      return ones[Math.floor(n / 100)] + " Hundred" + (n % 100 ? " " + convertLessThanThousand(n % 100) : "");
-    };
-
-    let result = "";
-
-    const crore = Math.floor(num / 10000000);
-    num %= 10000000;
-
-    const lakh = Math.floor(num / 100000);
-    num %= 100000;
-
-    const thousand = Math.floor(num / 1000);
-    num %= 1000;
-
-    if (crore) result += convertLessThanThousand(crore) + " Crore ";
-    if (lakh) result += convertLessThanThousand(lakh) + " Lakh ";
-    if (thousand) result += convertLessThanThousand(thousand) + " Thousand ";
-    if (num) result += convertLessThanThousand(num);
-
-    return result.trim() + " Rupees Only";
-  }
-
-  static numberToWordsUSD(num: number): string {
-    if (num === 0) return "Zero Dollars Only";
-
-    const ones = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine"];
-    const teens = ["Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen",
-      "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
-    const tens = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
-
-    const convertLessThanThousand = (n: number): string => {
-      if (n === 0) return "";
-      if (n < 10) return ones[n];
-      if (n < 20) return teens[n - 10];
-      if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 ? " " + ones[n % 10] : "");
-      return ones[Math.floor(n / 100)] + " Hundred" + (n % 100 ? " " + convertLessThanThousand(n % 100) : "");
-    };
-
-    let result = "";
-
-    const billion = Math.floor(num / 1000000000);
-    num %= 1000000000;
-
-    const million = Math.floor(num / 1000000);
-    num %= 1000000;
-
-    const thousand = Math.floor(num / 1000);
-    num %= 1000;
-
-    if (billion) result += convertLessThanThousand(billion) + " Billion ";
-    if (million) result += convertLessThanThousand(million) + " Million ";
-    if (thousand) result += convertLessThanThousand(thousand) + " Thousand ";
-    if (num) result += convertLessThanThousand(num);
-
-    return result.trim() + " Dollars Only";
-  }
-
-  static updatePaymentStatus(invoice: Invoice): Invoice {
-    if (invoice.paymentStatus === "Paid") return invoice;
-
-    try {
-      const [d, m, y] = invoice.dueDate.split("/").map(Number);
-      const dueDate = new Date(y, m - 1, d);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      if (dueDate < today && invoice.paymentStatus === "Unpaid") {
-        return { ...invoice, paymentStatus: "Overdue" };
-      }
-    } catch (error) {
-      console.error('Error updating payment status:', error);
-    }
-
-    return invoice;
-  }
+export interface InvoiceListResponse {
+  status: boolean;
+  message: string;
+  totalRecords: number;
+  currentPage: number;
+  totalPages: number;
+  data: Invoice[];
 }
+
+export const InvoiceService = {
+  // GET all invoices
+  getAllInvoices: async (params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: string;
+    customerId?: string;
+    sortBy?: string;
+  }): Promise<InvoiceListResponse> => {
+    try {
+      const response = await apiClient.get("/invoices", { params });
+      return response.data;
+    } catch (error) {
+      console.error("Get invoices failed:", error);
+      throw error;
+    }
+  },
+
+  // GET invoice by ID
+  getInvoiceById: async (id: string): Promise<{ status: boolean; data: Invoice }> => {
+    try {
+      const response = await apiClient.get(`/invoices/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error("Get invoice by ID failed:", error);
+      throw error;
+    }
+  },
+
+  // POST add invoice
+  saveInvoice: async (invoiceData: Partial<Invoice>): Promise<{ status: boolean; message: string; invoiceId: string; invoiceNumber: string }> => {
+    try {
+      const response = await apiClient.post("/invoices/add", invoiceData);
+      return response.data;
+    } catch (error) {
+      console.error("Save invoice failed:", error);
+      throw error;
+    }
+  },
+
+  // PUT update invoice
+  updateInvoice: async (id: string, invoiceData: Partial<Invoice>): Promise<{ status: boolean; message: string }> => {
+    try {
+      const response = await apiClient.put(`/invoices/update/${id}`, invoiceData);
+      return response.data;
+    } catch (error) {
+      console.error("Update invoice failed:", error);
+      throw error;
+    }
+  },
+
+  // DELETE invoice
+  deleteInvoice: async (id: string): Promise<{ status: boolean; message: string }> => {
+    try {
+      const response = await apiClient.delete(`/invoices/delete/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error("Delete invoice failed:", error);
+      throw error;
+    }
+  },
+
+  // PATCH status
+  updateStatus: async (id: string, status: string): Promise<{ status: boolean; message: string }> => {
+    try {
+      const response = await apiClient.patch(`/invoices/${id}/status`, { status });
+      return response.data;
+    } catch (error) {
+      console.error("Update status failed:", error);
+      throw error;
+    }
+  },
+
+  // POST bulk delete
+  bulkDelete: async (invoiceIds: string[]): Promise<{ status: boolean; message: string }> => {
+    try {
+      const response = await apiClient.post("/invoices/bulk-delete", { invoiceIds });
+      return response.data;
+    } catch (error) {
+      console.error("Bulk delete failed:", error);
+      throw error;
+    }
+  },
+
+  // POST bulk update
+  bulkUpdate: async (invoiceIds: string[], status: string): Promise<{ status: boolean; message: string }> => {
+    try {
+      const response = await apiClient.post("/invoices/bulk-update", { invoiceIds, status });
+      return response.data;
+    } catch (error) {
+      console.error("Bulk update failed:", error);
+      throw error;
+    }
+  },
+
+  // GET generate number
+  generateInvoiceNumber: async (): Promise<{ status: boolean; invoiceNumber: string }> => {
+    try {
+      const response = await apiClient.get("/invoices/generate-number");
+      return response.data;
+    } catch (error) {
+      console.error("Generate invoice number failed:", error);
+      throw error;
+    }
+  },
+
+  // Export PDF (Single)
+  downloadInvoicePdf: async (id: string, invoiceNumber?: string): Promise<void> => {
+    try {
+      const response = await apiClient.get(`/invoices/${id}/export/pdf`, {
+        responseType: "blob",
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: "application/pdf" }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `invoice-${invoiceNumber || id}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Download PDF failed:", error);
+      throw error;
+    }
+  },
+
+  // Export Bulk
+  exportBulk: async (format: "pdf" | "xlsx"): Promise<void> => {
+    try {
+      const response = await apiClient.get(`/invoices/export/${format}`, {
+        responseType: "blob",
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `invoices-export-${new Date().getTime()}.${format}`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error(`Export ${format} failed:`, error);
+      throw error;
+    }
+  },
+
+  // Utility: Number to Words (INR)
+  numberToWords(num: number, invoiceType: string): string {
+    const ones = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine",
+      "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen",
+      "Seventeen", "Eighteen", "Nineteen"];
+    const tens = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
+
+    const convert = (n: number): string => {
+      if (n === 0) return "";
+      if (n < 20) return ones[n] + " ";
+      if (n < 100) return tens[Math.floor(n / 10)] + " " + ones[n % 10] + " ";
+      if (n < 1000) return ones[Math.floor(n / 100)] + " Hundred " + convert(n % 100);
+      if (n < 100000) return convert(Math.floor(n / 1000)) + "Thousand " + convert(n % 1000);
+      if (n < 10000000) return convert(Math.floor(n / 100000)) + "Lakh " + convert(n % 100000);
+      return convert(Math.floor(n / 10000000)) + "Crore " + convert(n % 10000000);
+    };
+
+    const rounded = Math.round(num);
+    if (rounded === 0) return invoiceType === 'international' ? "Zero Dollars Only" : "Zero Rupees Only";
+
+    const words = convert(rounded).trim();
+    return invoiceType === 'international' ? `${words} Dollars Only` : `${words} Rupees Only`;
+  }
+};
