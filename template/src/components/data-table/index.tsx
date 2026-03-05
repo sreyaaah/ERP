@@ -27,6 +27,7 @@ interface Props {
   selectionMode?: 'single' | 'multiple' | 'checkbox' | 'radiobutton' | null;
   selection?: any;
   onSelectionChange?: (e: any) => void;
+  dataKey?: string;
 }
 
 const PrimeDataTable: React.FC<Props> = ({
@@ -45,6 +46,7 @@ const PrimeDataTable: React.FC<Props> = ({
   onSelectionChange,
   searchQuery,
   totalRecords,
+  dataKey = "id"
 }) => {
   const skeletonRows = Array(rows).fill({});
 
@@ -112,7 +114,7 @@ const PrimeDataTable: React.FC<Props> = ({
       paginator: false,
       emptyMessage: customEmptyMessage,
       footer: footer,
-      dataKey: "id",
+      dataKey: dataKey,
       responsiveLayout: "scroll" as any
     };
 

@@ -1,15 +1,15 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { InvoiceService, type Invoice, type InvoiceItem } from "../services/invoice.service";
+import { CustomerService } from "../services/customer.service";
+import { ProductService } from "../services/product.service";
 import { all_routes } from "../../routes/all_routes";
 import CommonFooter from "../../components/footer/commonFooter";
 
 import CommonSelect from "../../components/select/common-select";
 import { ALL_SELECTED_CURRENCIES } from "../settings/financialsettings/currencies";
 import { INITIAL_TAX_RATES } from "../settings/financialsettings/taxrates";
-
-
-
+import Swal from "sweetalert2";
 interface Customer {
   id: string;
   name: string;
@@ -28,14 +28,18 @@ interface Product {
 
 interface FormInvoiceItem {
   id: number;
+  product: any;
   productName: string;
-  description: string;
+  productSearch: string;
+  showProductDropdown: boolean;
   quantity: number;
   rate: number;
-  discount: number;
+  discount: number; // Percentage
   tax: number;
-  amount: number;
-  showDropdown?: boolean;
+  taxAmount: number;
+  unitCost: number; // baseAmount + taxAmount
+  amount: number; // total row cost
+  _inputRect?: any;
 }
 
 const AddInvoice = () => {
@@ -43,7 +47,6 @@ const AddInvoice = () => {
   const route = all_routes;
 
   const customerDropdownRef = useRef<HTMLDivElement>(null);
-  const productDropdownRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
   const [invoiceType, setInvoiceType] = useState<'interstate' | 'intrastate' | 'international' | ''>('');
   const [selectedCurrency, setSelectedCurrency] = useState<any>(null);
@@ -53,10 +56,11 @@ const AddInvoice = () => {
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerAddress, setCustomerAddress] = useState("");
-  const [customerImage, setCustomerImage] = useState("user-01.jpg");
-  const [invoiceDate] = useState(new Date().toLocaleDateString("en-GB"));
+  const [customerGstin, setCustomerGstin] = useState("");
+  const [invoiceNumber, setInvoiceNumber] = useState("");
+  const [invoiceDate] = useState(new Date().toISOString().split('T')[0]);
   const [dueDate, setDueDate] = useState("");
-  const [paymentStatus, setPaymentStatus] = useState<"Paid" | "Unpaid" | "Partially Paid">("Unpaid");
+  const [paymentStatus, setPaymentStatus] = useState<"Paid" | "Unpaid" | "Partially Paid" | "Overdue">("Unpaid");
   const [paidAmount, setPaidAmount] = useState(0);
   const [notes, setNotes] = useState("");
   const [terms, setTerms] = useState("Please pay within 30 days from the date of invoice, overdue interest @ 14% will be charged on delayed payments.");
@@ -67,7 +71,20 @@ const AddInvoice = () => {
   const [products, setProducts] = useState<Product[]>([]);
   
   const [items, setItems] = useState<FormInvoiceItem[]>([
-    { id: 1, productName: "", description: "", quantity: 1, rate: 0, discount: 0, tax: 0, amount: 0, showDropdown: false }
+    {
+      id: Date.now(),
+      product: null,
+      productName: "",
+      productSearch: "",
+      showProductDropdown: false,
+      quantity: 1,
+      rate: 0,
+      discount: 0,
+      tax: 18,
+      taxAmount: 0,
+      unitCost: 0,
+      amount: 0,
+    }
   ]);
 
   const [subtotal, setSubtotal] = useState(0);
@@ -76,6 +93,15 @@ const AddInvoice = () => {
   const [grandTotal, setGrandTotal] = useState(0);
 
   const currencySymbol = invoiceType === 'international' ? '$' : '₹';
+
+  const getDefaultTaxByInvoiceType = (
+    type: "international" | "interstate" | "intrastate" | ""
+  ) => {
+    if (type === "international") return 5;
+    if (type === "interstate") return 18;
+    if (type === "intrastate") return 18;
+    return 0;
+  };
 
   const getFilteredTaxRates = () => {
     if (invoiceType === "intrastate") {
@@ -86,7 +112,7 @@ const AddInvoice = () => {
         .filter((t: any) => t.type === "GST" || t.type === "IGST")
         .map((t: any) => ({
           ...t,
-          name: t.name.includes("GST") ? t.name.replace("GST", "IGST") : t.name
+          label: t.name.includes("GST") ? t.name.replace("GST", "IGST") : t.name
         }));
     }
     if (invoiceType === "international") {
@@ -99,7 +125,12 @@ const AddInvoice = () => {
     const today = new Date();
     const due = new Date(today);
     due.setDate(due.getDate() + 30);
-    setDueDate(due.toLocaleDateString("en-GB"));
+    setDueDate(due.toISOString().split('T')[0]);
+
+    // Fetch next invoice number
+    InvoiceService.generateInvoiceNumber().then(res => {
+      if (res.status) setInvoiceNumber(res.invoiceNumber);
+    });
   }, []);
 
   useEffect(() => {
@@ -128,67 +159,45 @@ const AddInvoice = () => {
   }, []);
 
   useEffect(() => {
-  const storedCustomers = JSON.parse(localStorage.getItem("customers") || "[]");
+    const fetchCustomers = async () => {
+      try {
+        const response = await CustomerService.getCustomers({ limit: 100, page: 1 });
+        const formattedCustomers: Customer[] = (response.data || []).map((c: any) => ({
+          id: c.id || c._id || `CUST-${Math.random()}`,
+          name: c.customer || `${c.firstName} ${c.lastName}`.trim() || c.name || "",
+          email: c.email || "",
+          phone: c.phone || "",
+          address: c.address || "",
+          gstin: c.gstin || "",
+          image: c.avatar || "user-01.jpg",
+        }));
+        setCustomers(formattedCustomers);
+      } catch (err) {
+        console.error("Failed to fetch customers:", err);
+      }
+    };
 
-  const formattedCustomers: Customer[] = storedCustomers.map((c: any) => ({
-    id: c.id || c.code || `CUST-${Math.random()}`,
-    name: c.customer || c.name || c.customerName || "",
-    email: c.email || "",
-    phone: c.phone || "",
-    address: c.address || "",
-    image: c.avatar || c.image || "user-01.jpg",
-  }));
+    fetchCustomers();
+  }, []);
 
-  const invoices = InvoiceService.getAllInvoices();
-  invoices.forEach(inv => {
-    if (!formattedCustomers.find(c => c.id === inv.customerId)) {
-      formattedCustomers.push({
-        id: inv.customerId,
-        name: inv.customerName,
-        email: inv.customerEmail || "",
-        phone: inv.customerPhone || "",
-        address: inv.customerAddress || "",
-        image: inv.customerImage || "user-01.jpg",
-      });
-    }
-  });
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await ProductService.getAll({ limit: 100 });
+        const formattedProducts: Product[] = (response.data || []).map((p: any) => ({
+          id: p._id || p.id || `PROD-${Math.random()}`,
+          name: p.product || p.productName || "Unnamed Product",
+          rate: p.priceAfterTax || p.priceBeforeTax || 0,
+          tax: p.taxRate || 0,
+        }));
+        setProducts(formattedProducts);
+      } catch (err) {
+        console.error("Failed to fetch products:", err);
+      }
+    };
 
-  setCustomers(formattedCustomers);
-}, []);
-
-useEffect(() => {
-  try {
-    const storedProducts =
-      JSON.parse(localStorage.getItem("products") || "[]") ||
-      JSON.parse(localStorage.getItem("productList") || "[]") ||
-      [];
-
-    const staticProducts: Product[] = [];
-
-    const dynamicProducts: Product[] = storedProducts.map((p: any) => ({
-      id: p.id || p.sku || `LS-${Math.random()}`,
-      name:
-        p.productName ||
-        p.product ||
-        p.name ||
-        "Unnamed Product",
-      rate: Number(
-        typeof p.price === "string"
-          ? p.price.replace(/[^0-9.]/g, "")
-          : p.price ||
-            p.selling_price ||
-            p.priceAfterTax ||
-            p.priceBeforeTax ||
-            0
-      ),
-      tax: Number(p.taxRate || p.tax || 0),
-    }));
-
-    setProducts([...staticProducts, ...dynamicProducts]);
-  } catch (err) {
-    console.error("Product load error", err);
-  }
-}, []);
+    fetchProducts();
+  }, []);
 
 
 
@@ -200,30 +209,19 @@ useEffect(() => {
       if (customerDropdownRef.current && !customerDropdownRef.current.contains(target)) {
         setShowCustomerDropdown(false);
       }
-
-      let clickedInsideAnyProductDropdown = false;
-      productDropdownRefs.current.forEach((ref) => {
-        if (ref && ref.contains(target)) {
-          clickedInsideAnyProductDropdown = true;
-        }
-      });
-      
-      if (!clickedInsideAnyProductDropdown) {
-        setItems(prev => prev.map(item => ({ ...item, showDropdown: false })));
-      }
     };
     
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleCustomerSelect = (customer: Customer) => {
+  const handleCustomerSelect = (customer: any) => {
     setSelectedCustomerId(customer.id);
     setCustomerName(customer.name);
-    setCustomerEmail(customer.email);
-    setCustomerPhone(customer.phone);
-    setCustomerAddress(customer.address);
-    setCustomerImage(customer.image);
+    setCustomerEmail(customer.email || "");
+    setCustomerPhone(customer.phone || "");
+    setCustomerAddress(customer.address || "");
+    setCustomerGstin(customer.gstin || "");
     setCustomerSearchQuery(customer.name);
     setShowCustomerDropdown(false);
   };
@@ -231,7 +229,18 @@ useEffect(() => {
   const handleCustomerNameChange = (value: string) => {
     setCustomerName(value);
     setCustomerSearchQuery(value);
-    if (selectedCustomerId) setSelectedCustomerId("");
+    
+    // If we were using a selected customer and the name changes, 
+    // we clear the ID and potentially the auto-filled fields if they want to enter a new one
+    if (selectedCustomerId) {
+      setSelectedCustomerId("");
+      // Option: Clear other fields? Let's clear them so they can enter fresh data for new customer
+      setCustomerEmail("");
+      setCustomerPhone("");
+      setCustomerAddress("");
+      setCustomerGstin("");
+    }
+    
     setShowCustomerDropdown(value.length > 0);
   };
 
@@ -240,144 +249,206 @@ useEffect(() => {
     customer.email.toLowerCase().includes(customerSearchQuery.toLowerCase())
   );
 
-  const getFilteredProducts = (search: string) => {
-    if (!search) return products.slice(0, 10);
-    return products.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));
-  };
+  const getFilteredProducts = (search: string, index: number) => {
+    const selectedProductIds = items
+      .map((item, i) => i !== index ? (item.product?.id || item.product?.value) : null)
+      .filter(Boolean);
+    const selectedProductNames = items
+      .map((item, i) => i !== index ? (item.product?.name || item.productName || item.productSearch) : null)
+      .filter(Boolean);
 
-  const calculateItemAmount = (item: FormInvoiceItem) => {
-    const baseAmount = item.quantity * item.rate;
-    const discountAmount = item.discount;
-    const amountAfterDiscount = baseAmount - discountAmount;
-    const taxAmount = (amountAfterDiscount * item.tax) / 100;
-    return amountAfterDiscount + taxAmount;
-  };
-
-  const updateItem = (id: number, field: keyof FormInvoiceItem, value: any) => {
-    setItems(items.map(item => {
-      if (item.id === id) {
-        const updatedItem = { ...item, [field]: value };
-        updatedItem.amount = calculateItemAmount(updatedItem);
-        return updatedItem;
-      }
-      return item;
-    }));
-  };
-
-  const selectProduct = (itemId: number, product: Product) => {
-    setItems(prev =>
-      prev.map(item =>
-        item.id === itemId
-          ? {
-              ...item,
-              productName: product.name,
-              rate: product.rate,
-              tax: product.tax,
-              amount: calculateItemAmount({ ...item, rate: product.rate, tax: product.tax }),
-              showDropdown: false,
-            }
-          : item
-      )
+    const filtered = products.filter(p => 
+      !selectedProductIds.includes(p.id) && 
+      !selectedProductNames.includes(p.name)
     );
+
+    if (!search) return filtered.slice(0, 10);
+    return filtered.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));
   };
 
-  const addItem = () => {
-    const newItem: FormInvoiceItem = {
-      id: Date.now(),
-      productName: "",
-      description: "",
-      quantity: 1,
-      rate: 0,
-      discount: 0,
-      tax: 0,
-      amount: 0,
-      showDropdown: false
+  const recalculateRow = (updatedRows: any[], index: number) => {
+    const row = updatedRows[index];
+
+    const qty = Number(row.quantity || 0);
+    const rate = Number(row.rate || 0);
+    const discountPercent = Number(row.discount || 0);
+
+    const grossAmount = qty * rate;
+    const discountAmount = (grossAmount * discountPercent) / 100;
+    const baseAmount = grossAmount - discountAmount;
+
+    const taxPercent = Number(row.tax || 0);
+    const taxAmount = (baseAmount * taxPercent) / 100;
+
+    const rowTotal = baseAmount + taxAmount;
+
+    updatedRows[index] = {
+      ...row,
+      taxAmount: Number(taxAmount.toFixed(2)),
+      unitCost: Number(rowTotal.toFixed(2)), // Row total effectively
+      amount: Number(rowTotal.toFixed(2)),
     };
-    setItems([...items, newItem]);
+
+    setItems([...updatedRows]);
+  };
+
+  const onProductChange = (index: number, product: any) => {
+    if (!product) return;
+
+    const updated = [...items];
+    updated[index] = {
+      ...updated[index],
+      product,
+      productName: product.name,
+      productSearch: product.name,
+      showProductDropdown: false,
+      rate: Number(product.rate || 0),
+      tax: Number(product.tax || getDefaultTaxByInvoiceType(invoiceType)),
+      quantity: updated[index].quantity || 1,
+      discount: updated[index].discount || 0,
+    };
+    
+    recalculateRow(updated, index);
+  };
+
+  const onInputChange = (index: number, field: string, value: any) => {
+    if (!items[index]) return;
+
+    const updated = [...items];
+    updated[index] = {
+      ...updated[index],
+      [field]: value
+    };
+
+    recalculateRow(updated, index);
+  };
+
+  const addProductRow = () => {
+    setItems(prev => [
+      ...prev,
+      {
+        id: Date.now() + Math.random(),
+        product: null,
+        productName: "",
+        productSearch: "",
+        showProductDropdown: false,
+        quantity: 1,
+        rate: 0,
+        discount: 0,
+        tax: getDefaultTaxByInvoiceType(invoiceType),
+        taxAmount: 0,
+        unitCost: 0,
+        amount: 0,
+      },
+    ]);
   };
 
   const removeItem = (id: number) => {
-    if (items.length > 1) {
-      setItems(items.filter(item => item.id !== id));
-    }
+    setItems(prev => {
+      if (prev.length > 1) {
+        return prev.filter(item => item.id !== id);
+      }
+      return prev;
+    });
   };
 
   useEffect(() => {
     let sub = 0;
     let tax = 0;
     let discount = 0;
+    
     items.forEach(item => {
-      const baseAmount = item.quantity * item.rate;
-      const discountAmount = item.discount;
-      const amountAfterDiscount = baseAmount - discountAmount;
-      const taxAmount = (amountAfterDiscount * item.tax) / 100;
-      sub += amountAfterDiscount;
-      tax += taxAmount;
+      const grossAmount = item.quantity * item.rate;
+      const discountAmount = (grossAmount * item.discount) / 100;
+      
+      sub += grossAmount;
       discount += discountAmount;
+      tax += item.taxAmount || 0;
     });
+
     setSubtotal(sub);
-    setTotalTax(tax);
     setTotalDiscount(discount);
-    setGrandTotal(sub + tax);
+    setTotalTax(tax);
+    setGrandTotal(sub - discount + tax);
   }, [items]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // 1. Precise Validation
+    if (!selectedCustomerId) {
+      Swal.fire("Error", "Please select a customer", "error");
+      return;
+    }
     if (!invoiceType) {
+      Swal.fire("Error", "Please select an Invoice Type (Intrastate/Interstate/International)", "error");
       return;
     }
-    if (!customerName || !customerEmail || !dueDate) {
+    if (!dueDate) {
+      Swal.fire("Error", "Please select a Due Date", "error");
       return;
     }
-    if (items.some(item => !item.productName || item.quantity <= 0 || item.rate <= 0)) {
+    
+    // Check if items are valid
+    if (items.length === 0 || (items.length === 1 && !items[0].productName && !items[0].productSearch)) {
+      Swal.fire("Error", "Please add at least one product", "error");
+      return;
+    }
+
+    if (items.some(item => (!item.productName && !item.productSearch) || item.quantity <= 0 || item.rate < 0)) {
+      Swal.fire("Error", "Please fill in all product details correctly (Quantity > 0, Rate >= 0)", "error");
       return;
     }
 
     const invoiceItems: InvoiceItem[] = items.map(item => {
-      const baseAmount = item.quantity * item.rate;
-      const taxAmount = ((baseAmount - item.discount) * item.tax) / 100;
+      const grossAmount = item.quantity * item.rate;
+      const discountAmount = (grossAmount * (Number(item.discount) || 0)) / 100;
+      
       return {
-        productId: `P${item.id}`,
-        productName: item.productName,
-        productImage: 'product-01.jpg',
-        qty: item.quantity,
-        rate: item.rate,
-        discount: item.discount,
-        tax: item.tax,
-        taxAmount: taxAmount,
-        unitCost: item.rate,
-        total: item.amount
+        productId: (item.product?.id || item.product?.value || "").toString().match(/^[0-9a-fA-F]{24}$/) ? (item.product?.id || item.product?.value) : undefined,
+        productName: item.productName || item.productSearch || "Unnamed Product",
+        quantity: Number(item.quantity),
+        rate: Number(item.rate),
+        discount: Number(discountAmount.toFixed(2)), 
+        taxPercent: Number(item.tax),
+        amount: Number(item.amount.toFixed(2))
       };
     });
 
-    const newInvoice: Invoice = {
-      id: Date.now(),
-      invoiceNumber: InvoiceService.generateInvoiceNumber(),
-      invoiceDate,
-      dueDate,
-      customerId: selectedCustomerId || `CUST${Date.now()}`,
+    const newInvoice: Partial<Invoice> & any = {
+      invoiceType: (invoiceType.charAt(0).toUpperCase() + invoiceType.slice(1)) as any,
+      customerId: selectedCustomerId,
       customerName,
       customerEmail,
       customerPhone,
       customerAddress,
-      customerImage: customerImage,
-      invoiceType,
-      currency: selectedCurrency || undefined,
-      items: invoiceItems,
-      subTotal: subtotal,
-      totalTax: totalTax,
-      grandTotal: grandTotal,
-      paidAmount,
-      amountInWords: InvoiceService.numberToWords(grandTotal, invoiceType),
+      customerGstin,
+      invoiceDate: new Date().toISOString(),
+      dueDate: new Date(dueDate).toISOString(),
       paymentStatus,
+      items: invoiceItems,
       notes,
-      termsAndConditions: terms,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      terms,
+      paidAmount: Number(paidAmount) || 0,
+      subtotal: Number(subtotal.toFixed(2)),
+      taxAmount: Number(totalTax.toFixed(2)),
+      grandTotal: Number(grandTotal.toFixed(2))
     };
 
-    InvoiceService.saveInvoice(newInvoice);
-    navigate(route.invoicelist || "/sales/invoice-list");
+    console.log("Submitting Invoice Payload:", JSON.stringify(newInvoice, null, 2));
+
+    try {
+      const response = await InvoiceService.saveInvoice(newInvoice);
+      if (response.status) {
+        navigate(route.invoicelist || "/sales/invoice-list");
+      } else {
+        Swal.fire("Error", response.message || "Failed to save invoice", "error");
+      }
+    } catch (err: any) {
+      console.error("Save failed details:", err);
+      const errMsg = err.response?.data?.message || err.message || "Server Error";
+      Swal.fire("Server Error", errMsg, "error");
+    }
   };
 
   return (
@@ -474,7 +545,7 @@ useEffect(() => {
                         className="form-control"
                         value={customerName}
                         onChange={(e) => handleCustomerNameChange(e.target.value)}
-                        onFocus={() => setShowCustomerDropdown(customerName.length > 0)}
+                        onFocus={() => setShowCustomerDropdown(true)}
                         placeholder="Enter or select customer name"
                         autoComplete="off"
                         required
@@ -516,19 +587,24 @@ useEffect(() => {
                     )}
                   </div>
                   <div className="col-md-6 mb-3">
-                    <label className="form-label">Email <span className="text-danger">*</span></label>
+                    <label className="form-label">Email </label>
                     <input type="email" className="form-control" value={customerEmail}
-                      onChange={(e) => setCustomerEmail(e.target.value)} placeholder="Enter email address" required />
+                      onChange={(e) => setCustomerEmail(e.target.value)} placeholder="Enter email address" />
                   </div>
                   <div className="col-md-6 mb-3">
                     <label className="form-label">Phone Number</label>
                     <input type="tel" className="form-control" value={customerPhone}
                       onChange={(e) => setCustomerPhone(e.target.value)} placeholder="Enter phone number" />
                   </div>
-                  <div className="col-md-6 mb-3">
+                   <div className="col-md-6 mb-3">
                     <label className="form-label">Address</label>
                     <input type="text" className="form-control" value={customerAddress}
                       onChange={(e) => setCustomerAddress(e.target.value)} placeholder="Enter customer address" />
+                  </div>
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label">GSTIN</label>
+                    <input type="text" className="form-control" value={customerGstin}
+                      onChange={(e) => setCustomerGstin(e.target.value)} placeholder="Enter GSTIN (optional)" />
                   </div>
                 </div>
               </div>
@@ -539,13 +615,17 @@ useEffect(() => {
                 <h5 className="card-title mb-3">Invoice Details</h5>
                 <div className="row">
                   <div className="col-md-4 mb-3">
+                    <label className="form-label">Invoice No</label>
+                    <input type="text" className="form-control bg-light" value={invoiceNumber} readOnly placeholder="Auto-generated" />
+                  </div>
+                  <div className="col-md-4 mb-3">
                     <label className="form-label">Invoice Date <span className="text-danger">*</span></label>
-                    <input type="text" className="form-control" value={invoiceDate} readOnly />
+                    <input type="text" className="form-control bg-light" value={invoiceDate} readOnly />
                   </div>
                   <div className="col-md-4 mb-3">
                     <label className="form-label">Due Date <span className="text-danger">*</span></label>
-                    <input type="text" className="form-control" value={dueDate}
-                      onChange={(e) => setDueDate(e.target.value)} placeholder="DD/MM/YYYY" required />
+                    <input type="date" className="form-control" value={dueDate}
+                      onChange={(e) => setDueDate(e.target.value)} required />
                   </div>
                   <div className="col-md-4 mb-3">
                     <label className="form-label">Payment Status</label>
@@ -559,9 +639,9 @@ useEffect(() => {
                   {(paymentStatus === "Paid" || paymentStatus === "Partially Paid") && (
                     <div className="col-md-4 mb-3">
                       <label className="form-label">Paid Amount</label>
-                      <input type="number" className="form-control" value={paidAmount}
-                        onChange={(e) => setPaidAmount(parseFloat(e.target.value) || 0)}
-                        placeholder="0.00" step="0.01" min="0" max={grandTotal} />
+                        <input type="number" className="form-control" value={paidAmount}
+                          onChange={(e) => setPaidAmount(parseFloat(e.target.value) || 0)}
+                          placeholder="0.00" step="0.01" min="0" max={grandTotal} />
                     </div>
                   )}
                 </div>
@@ -570,173 +650,172 @@ useEffect(() => {
 
             <div className="card mb-3">
               <div className="card-body">
-                <div className="d-flex justify-content-between align-items-center mb-3">
-                  <h5 className="card-title mb-0">Invoice Items</h5>
-                  <button type="button" className="btn btn-sm btn-primary" onClick={addItem}>
-                    <i className="ti ti-plus me-1"></i>Add Item
-                  </button>
-                </div>
-
-                <div className="table-responsive"  style={{ overflow: "visible" }}>
-                  <table className="table table-bordered">
-                    <thead>
+                <h5 className="card-title mb-3">Invoice Items</h5>
+                <div className="table-responsive" style={{ overflow: "visible" }}>
+                  <table className="table table-bordered mb-0">
+                    <thead className="table-light">
                       <tr>
-                        <th style={{ width: "20%" }}>Product/Service</th>
-                        <th style={{ width: "25%" }}>Description</th>
-                        <th style={{ width: "8%" }}>Qty</th>
-                        <th style={{ width: "12%" }}>Rate ({currencySymbol})</th>
-                        <th style={{ width: "12%" }}>Discount ({currencySymbol})</th>
-                        <th style={{ width: "10%" }}>Tax %</th>
-                        <th style={{ width: "10%" }}>Amount</th>
-                        <th style={{ width: "3%" }}>Action</th>
+                        <th style={{ minWidth: "200px" }}>Item</th>
+                        <th style={{ width: "100px", textAlign: "center" }}>Qty</th>
+                        <th style={{ width: "150px", textAlign: "right" }}>Rate</th>
+                        <th style={{ width: "110px", textAlign: "right" }}>Discount (%)</th>
+                        <th style={{ width: "180px" }}>Tax (%)</th>
+                        <th style={{ width: "120px", textAlign: "right" }}>Tax Amount</th>
+                        <th style={{ width: "120px", textAlign: "right" }}>Unit Cost</th>
+                        <th style={{ width: "130px", textAlign: "right" }}>Total Cost</th>
+                        <th style={{ width: "30px" }}></th>
                       </tr>
                     </thead>
                     <tbody>
-                      {items.map((item) => (
-                        <tr key={item.id}>
-                          {/* FIXED: Added ref to product dropdown container */}
-                          <td className="position-relative">
-                            <div
-                              ref={(el) => {
-                                if (el) {
-                                  productDropdownRefs.current.set(item.id, el);
-                                } else {
-                                  productDropdownRefs.current.delete(item.id);
-                                }
-                              }}
-                            >
-                              <input type="text" className="form-control form-control-sm" value={item.productName}
+                      {items.map((row, index) => (
+                        <tr key={index}>
+                          <td style={{ minWidth: "200px" }}>
+                            <div className="position-relative">
+                              <input
+                                type="text"
+                                className="form-control w-100"
+                                placeholder="Search product..."
+                                value={row.productSearch}
                                 onChange={(e) => {
-                                  updateItem(item.id, "productName", e.target.value);
-                                  setItems(prev => prev.map(i => i.id === item.id ? { ...i, showDropdown: true } : i));
+                                  const updated = [...items];
+                                  updated[index] = {
+                                    ...updated[index],
+                                    productSearch: e.target.value,
+                                    showProductDropdown: true,
+                                  };
+                                  if (!e.target.value) {
+                                    updated[index].product = null;
+                                  }
+                                  setItems(updated);
                                 }}
-                                onFocus={() => setItems(prev => prev.map(i => i.id === item.id ? { ...i, showDropdown: true } : i))}
-                                placeholder="Search or type product" autoComplete="off" required />
-                                {item.showDropdown && (
-                                  <div className="position-absolute w-100 bg-white border rounded shadow"
-                                      style={{ maxHeight: 200, overflowY: "auto", zIndex: 1000 }}>
-                                    {getFilteredProducts(item.productName).length > 0 ? (
-                                      getFilteredProducts(item.productName).map(prod => (
-                                        <div
-                                          key={prod.id}
-                                          className="px-2 py-2"
-                                          onClick={() => selectProduct(item.id, prod)}
-                                          style={{ cursor: "pointer" }}
-                                        >
-                                          <strong>{prod.name}</strong><br />
-                                          <small className="text-muted">
-                                            {currencySymbol}{prod.rate.toFixed(2)} | Tax {prod.tax}%
-                                          </small>
-                                        </div>
-                                      ))
-                                    ) : (
-                                      <div className="px-2 py-2 text-muted">
-                                        No products found – typing new product
+                                onFocus={(e) => {
+                                  const updated = [...items];
+                                  updated[index].showProductDropdown = true;
+                                  updated[index]._inputRect = e.currentTarget.getBoundingClientRect();
+                                  setItems(updated);
+                                }}
+                                onBlur={() => {
+                                  setTimeout(() => {
+                                    setItems(prev => {
+                                      const updated = [...prev];
+                                      if (updated[index]) {
+                                        updated[index].showProductDropdown = false;
+                                      }
+                                      return updated;
+                                    });
+                                  }, 200);
+                                }}
+                              />
+                              {row.showProductDropdown && (
+                                <div 
+                                  className="bg-white border rounded shadow-lg overflow-auto"
+                                  style={{ 
+                                    position: "fixed",
+                                    top: row._inputRect ? row._inputRect.bottom + 2 : 0,
+                                    left: row._inputRect ? row._inputRect.left : 0,
+                                    width: row._inputRect ? row._inputRect.width : 200,
+                                    zIndex: 9999, 
+                                    maxHeight: "250px",
+                                    boxShadow: "0 8px 24px rgba(0,0,0,0.15)"
+                                  }}
+                                >
+                                  {getFilteredProducts(row.productSearch, index).length > 0 ? (
+                                    getFilteredProducts(row.productSearch, index).map((product) => (
+                                      <div
+                                        key={product.id}
+                                        className="px-2 py-2"
+                                        style={{ cursor: "pointer", borderBottom: "1px solid #f0f0f0" }}
+                                        onMouseDown={(e) => e.preventDefault()}
+                                        onClick={() => onProductChange(index, product)}
+                                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f8f9fa")}
+                                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "white")}
+                                      >
+                                        <div className="fw-semibold" style={{ fontSize: 13 }}>{product.name}</div>
+                                        <small className="text-muted">
+                                          Rate: ₹{product.rate.toFixed(2)} &nbsp;|&nbsp; Tax: {product.tax}%
+                                        </small>
                                       </div>
-                                    )}
-                                  </div>
-                                )}
+                                    ))
+                                  ) : (
+                                    <div className="px-2 py-2 text-muted" style={{ fontSize: 13 }}>No products found</div>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           </td>
-                            <td>
-                              <input
-                                type="text"
-                                className="form-control form-control-sm"
-                                value={item.description}
-                                onChange={(e) =>
-                                  updateItem(item.id, "description", e.target.value)
-                                }
-                                placeholder="Description"
-                              />
-                            </td>
-
-                            <td>
-                              <input
-                                type="number"
-                                className="form-control form-control-sm"
-                                value={item.quantity === 0 ? "" : item.quantity}
-                                onChange={(e) =>
-                                  updateItem(
-                                    item.id,
-                                    "quantity",
-                                    e.target.value === "" ? 0 : parseInt(e.target.value)
-                                  )
-                                }
-                                min="1"
-                                placeholder="Qty"
-                                required
-                              />
-                            </td>
-
-                            <td>
-                              <input
-                                type="number"
-                                className="form-control form-control-sm"
-                                value={item.rate === 0 ? "" : item.rate}
-                                onChange={(e) =>
-                                  updateItem(
-                                    item.id,
-                                    "rate",
-                                    e.target.value === "" ? 0 : parseFloat(e.target.value)
-                                  )
-                                }
-                                step="0.01"
-                                min="0"
-                                placeholder="Rate"
-                                required
-                              />
-                            </td>
-
-                            <td>
-                              <input
-                                type="number"
-                                className="form-control form-control-sm"
-                                value={item.discount === 0 ? "" : item.discount}
-                                onChange={(e) =>
-                                  updateItem(
-                                    item.id,
-                                    "discount",
-                                    e.target.value === "" ? 0 : parseFloat(e.target.value)
-                                  )
-                                }
-                                step="0.01"
-                                min="0"
-                                placeholder="Discount"
-                              />
-                            </td>
-                            <td>
-                              <CommonSelect
-                                className="select"
-                                value={item.tax}
-                                options={[
-                                  { label: "No Tax", value: 0 },
-                                  ...getFilteredTaxRates().map((t: any) => ({
-                                    label: t.name,
-                                    value: t.rate,
-                                  })),
-                                ]}
-                                onChange={(e: any) =>
-                                  updateItem(item.id, "tax", e.value)
-                                }
-                              />
-                            </td>
-
-                            <td>
-                              <input
-                                type="text"
-                                className="form-control form-control-sm"
-                                value={item.amount.toFixed(2)}
-                                readOnly
-                              />
-                            </td>
-                            <td>
-                            <button type="button" className="btn btn-sm btn-danger" onClick={() => removeItem(item.id)}
-                              disabled={items.length === 1} title="Remove item">
+                          <td style={{ textAlign: "center" }}>
+                            <input
+                              type="number"
+                              className="form-control text-center"
+                              min={1}
+                              value={row.quantity}
+                              onChange={(e) =>
+                                onInputChange(index, "quantity", Number(e.target.value))
+                              }
+                            />
+                          </td>
+                          <td style={{ textAlign: "right" }}>
+                            <input
+                              type="number"
+                              className="form-control text-end"
+                              value={row.rate}
+                              onChange={(e) =>
+                                onInputChange(index, "rate", Number(e.target.value))
+                              }
+                            />
+                          </td>
+                          <td style={{ textAlign: "right" }}>
+                            <input
+                              type="number"
+                              className="form-control text-end"
+                              value={row.discount}
+                              onChange={(e) =>
+                                onInputChange(index, "discount", Number(e.target.value))
+                              }
+                            />
+                          </td>
+                          <td>
+                            <select
+                              className="form-select"
+                              value={row.tax}
+                              onChange={(e) =>
+                                onInputChange(index, "tax", Number(e.target.value))
+                              }
+                            >
+                              <option value={0}>No Tax (0%)</option>
+                              {getFilteredTaxRates().map((rate: any) => (
+                                <option key={rate.id || rate.label} value={rate.rate || rate.value}>
+                                  {rate.label || rate.name} ({rate.rate || rate.value}%)
+                                </option>
+                              ))}
+                            </select>
+                          </td>
+                          <td style={{ textAlign: "right" }}>{row.taxAmount || 0}</td>
+                          <td style={{ textAlign: "right" }}>{row.unitCost || 0}</td>
+                          <td style={{ textAlign: "right" }}>{row.amount || 0}</td>
+                          <td className="text-center">
+                            <button
+                              type="button"
+                              className="btn btn-sm text-danger"
+                              onClick={() => removeItem(row.id)}
+                              disabled={items.length === 1}
+                            >
                               <i className="ti ti-trash"></i>
                             </button>
                           </td>
                         </tr>
                       ))}
+                      <tr>
+                        <td colSpan={9}>
+                          <button
+                            type="button"
+                            className="btn btn-link text-primary p-0"
+                            onClick={addProductRow}
+                          >
+                            <i className="ti ti-plus me-1"></i> Add Product
+                          </button>
+                        </td>
+                      </tr>
                     </tbody>
                   </table>
                 </div>
@@ -766,46 +845,68 @@ useEffect(() => {
                 <div className="card mb-3">
                   <div className="card-body">
                     <h5 className="card-title mb-3">Invoice Summary</h5>
-                    <table className="table table-borderless">
-                      <tbody>
-                        <tr>
-                          <td className="fw-medium">Subtotal:</td>
-                          <td className="text-end">{currencySymbol}{subtotal.toFixed(2)}</td>
-                        </tr>
-                        {totalDiscount > 0 && (
-                          <tr>
-                            <td className="fw-medium">Total Discount:</td>
-                            <td className="text-end">{currencySymbol}{totalDiscount.toFixed(2)}</td>
-                          </tr>
-                        )}
-                        <tr>
-                          <td className="fw-medium">Tax ({invoiceType === 'intrastate' ? 'GST/CGST/SGST' : invoiceType === 'interstate' ? 'IGST' : 'VAT'}):</td>
-                          <td className="text-end">{currencySymbol}{totalTax.toFixed(2)}</td>
-                        </tr>
-                        <tr className="border-top">
-                          <td className="fw-bold">Grand Total:</td>
-                          <td className="text-end fw-bold text-primary">{currencySymbol}{grandTotal.toFixed(2)}</td>
-                        </tr>
-                        <tr>
-                          <td colSpan={2} className="text-muted small">
-                            <strong>Amount in Words:</strong><br />
-                            {InvoiceService.numberToWords(grandTotal, invoiceType)}
-                          </td>
-                        </tr>
-                        {(paymentStatus === "Paid" || paymentStatus === "Partially Paid") && (
-                          <>
-                            <tr>
-                              <td className="fw-medium">Paid Amount:</td>
-                              <td className="text-end text-success">{currencySymbol}{paidAmount.toFixed(2)}</td>
-                            </tr>
-                            <tr>
-                              <td className="fw-medium">Amount Due:</td>
-                              <td className="text-end text-danger">{currencySymbol}{(grandTotal - paidAmount).toFixed(2)}</td>
-                            </tr>
-                          </>
-                        )}
-                      </tbody>
-                    </table>
+                    <div style={{ minWidth: "250px" }}>
+                      <div className="d-flex justify-content-between mb-2">
+                        <span className="fw-medium">Subtotal</span>
+                        <span>{currencySymbol}{subtotal.toFixed(2)}</span>
+                      </div>
+                      {totalDiscount > 0 && (
+                        <div className="d-flex justify-content-between mb-2 text-danger">
+                          <span className="fw-medium">Total Discount ({((totalDiscount / (subtotal || 1)) * 100).toFixed(0)}%)</span>
+                          <span>-{currencySymbol}{totalDiscount.toFixed(2)}</span>
+                        </div>
+                      )}
+                      
+                      {invoiceType === 'intrastate' && totalTax > 0 && (
+                        <>
+                          <div className="d-flex justify-content-between mb-2">
+                            <span className="fw-medium">CGST</span>
+                            <span>{currencySymbol}{(totalTax / 2).toFixed(2)}</span>
+                          </div>
+                          <div className="d-flex justify-content-between mb-2">
+                            <span className="fw-medium">SGST</span>
+                            <span>{currencySymbol}{(totalTax / 2).toFixed(2)}</span>
+                          </div>
+                        </>
+                      )}
+                      {invoiceType === 'interstate' && totalTax > 0 && (
+                        <div className="d-flex justify-content-between mb-2">
+                          <span className="fw-medium">IGST</span>
+                          <span>{currencySymbol}{totalTax.toFixed(2)}</span>
+                        </div>
+                      )}
+                      {invoiceType === 'international' && totalTax > 0 && (
+                        <div className="d-flex justify-content-between mb-2">
+                          <span className="fw-medium">VAT</span>
+                          <span>{currencySymbol}{totalTax.toFixed(2)}</span>
+                        </div>
+                      )}
+
+                      <div className="d-flex justify-content-between fw-bold border-top pt-2 mt-2 h5 mb-3">
+                        <span>Grand Total</span>
+                        <span className="text-primary">{currencySymbol}{grandTotal.toFixed(2)}</span>
+                      </div>
+
+                      <div className="bg-light p-2 rounded mb-3">
+                        <small className="text-muted d-block fw-bold mb-1">Amount in Words:</small>
+                        <small className="text-dark fw-medium">
+                          {InvoiceService.numberToWords(grandTotal, invoiceType)}
+                        </small>
+                      </div>
+
+                      {(paymentStatus === "Paid" || paymentStatus === "Partially Paid") && (
+                        <div className="border-top pt-2 mt-2">
+                          <div className="d-flex justify-content-between mb-1">
+                            <span className="fw-medium small">Paid Amount</span>
+                            <span className="text-success small">{currencySymbol}{paidAmount.toFixed(2)}</span>
+                          </div>
+                          <div className="d-flex justify-content-between">
+                            <span className="fw-medium small">Amount Due</span>
+                            <span className="text-danger small">{currencySymbol}{(grandTotal - paidAmount).toFixed(2)}</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>

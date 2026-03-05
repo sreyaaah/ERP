@@ -10,6 +10,7 @@ interface CommonSelectProps {
   disabled?: boolean;
   filter?: boolean;
   editable?: boolean;
+  appendTo?: "self" | HTMLElement | (() => HTMLElement) | null | undefined;
 }
 
 const CommonSelect: React.FC<CommonSelectProps> = ({
@@ -21,6 +22,7 @@ const CommonSelect: React.FC<CommonSelectProps> = ({
   disabled = false,
   filter = true,
   editable = false,
+  appendTo = "self",
 }) => {
   console.log("CommonSelect options:", options);
   console.log("CommonSelect value:", value);
@@ -32,7 +34,7 @@ const CommonSelect: React.FC<CommonSelectProps> = ({
       placeholder={placeholder}
       className={className}
       disabled={disabled}
-      appendTo={"self"}
+      appendTo={appendTo}
       filter={filter}
       editable={editable}
     />

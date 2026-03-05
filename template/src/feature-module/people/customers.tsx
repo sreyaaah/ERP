@@ -807,7 +807,7 @@ const Customers = () => {
           </p>
         </div>
       </div>
-      <div className="modal fade" id="add-customer">
+      <div className="modal fade" id="add-customer" data-bs-focus="false">
         <div className="modal-dialog modal-dialog-centered">
           <div className="modal-content">
             <AddCustomers
@@ -839,7 +839,7 @@ const Customers = () => {
           </div>
         </div>
       </div>
-      <div className="modal fade" id="edit-customer">
+      <div className="modal fade" id="edit-customer" data-bs-focus="false">
         <div className="modal-dialog modal-dialog-centered">
           <div className="modal-content">
             <EditCustomers

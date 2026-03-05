@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { pdf } from "../../utils/imagepath";
 import { QuotationService } from "../services/quotation.service";
 import { useEffect, useState } from "react";
+import html2pdf from "html2pdf.js";
 
 const STATUS_BADGE: Record<string, string> = {
   Pending:   "badge-warning",
@@ -31,13 +32,21 @@ const QuotationDetails = () => {
 
   const handlePrint = () => window.print();
 
-  const handleDownloadPdf = async () => {
-    if (!quotation) return;
-    try {
-      await QuotationService.downloadSinglePdf(quotation.id, quotation.quotationNo);
-    } catch {
-      alert("Failed to download PDF");
-    }
+  const handleRefresh = () => window.location.reload();
+
+  const handleDownloadPdf = () => {
+    const element = document.getElementById("quotation-content");
+    if (!element || !quotation) return;
+
+    const opt = {
+      margin: 10,
+      filename: `Quotation_${quotation.quotationNo}.pdf`,
+      image: { type: "jpeg" as const, quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: "mm" as const, format: "a4" as const, orientation: "portrait" as const },
+    };
+
+    html2pdf().set(opt).from(element).save();
   };
 
   // ── Loading state ──
@@ -101,12 +110,15 @@ const QuotationDetails = () => {
               <li>
                 <Link
                   to="#"
-                  onClick={handlePrint}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleRefresh();
+                  }}
                   data-bs-toggle="tooltip"
                   data-bs-placement="top"
-                  title="Print"
+                  title="Refresh"
                 >
-                  <i className="feather icon-printer feather-rotate-ccw" />
+                  <i className="feather icon-rotate-ccw" />
                 </Link>
               </li>
               <li>
@@ -131,7 +143,7 @@ const QuotationDetails = () => {
           </div>
 
           {/* ── Card Body ── */}
-          <div className="card">
+          <div className="card" id="quotation-content">
             <div className="card-body">
 
               {/* ── Section 1: Header info ── */}
