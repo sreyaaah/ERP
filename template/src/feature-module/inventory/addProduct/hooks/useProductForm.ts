@@ -99,31 +99,20 @@ export const useProductForm = () => {
       const sku = await ProductService.generateSku();
       updateField("sku", sku);
     } catch (error) {
-      const fallback = `SKU-${Date.now()}`;
+      const fallback = `PRD-${Date.now().toString().slice(-6)}`;
       updateField("sku", fallback);
-    }
-  };
-
-  const generateItemCode = async () => {
-    try {
-      const code = await ProductService.generateItemCode();
-      updateField("itemCode", code);
-    } catch (error) {
-      const fallback = `ITEM-${Date.now()}`;
-      updateField("itemCode", fallback);
     }
   };
 
   // Auto-generate codes on mount
   useEffect(() => {
     generateSKU();
-    generateItemCode();
   }, []);
 
   const validateProduct = () => {
     if (!formData.productName.trim()) return "Product name is required";
     if (!formData.sku.trim()) return "SKU is required";
-    if (!formData.category) return "Category is required";
+    if (!formData.itemCode?.trim()) return "HSN/SAC Number is required";
     if (!formData.priceBeforeTax || Number(formData.priceBeforeTax) < 0) return "Price must be valid";
     return null;
   };
@@ -152,9 +141,9 @@ export const useProductForm = () => {
         description: formData.description,
         taxType: formData.taxMode === "exclusive" ? "Exclusive" : formData.taxMode === "no-tax" ? "None" : "Inclusive",
         taxRate: Number(formData.taxRate),
-        priceBeforeTax: Number(formData.priceBeforeTax),
+        priceBeforeTax: formData.taxMode === "inclusive" ? Number(formData.priceAfterTax) : Number(formData.priceBeforeTax),
         taxAmount: Number(formData.taxAmount),
-        priceAfterTax: Number(formData.priceAfterTax),
+        priceAfterTax: formData.taxMode === "inclusive" ? Number(formData.priceBeforeTax) : Number(formData.priceAfterTax),
         quantity: Number(formData.quantity) || 0,
         status: "Available",
         customFields: {
@@ -216,9 +205,7 @@ export const useProductForm = () => {
     } else {
       const basePrice = inputPrice / (1 + rate / 100);
       const tax = inputPrice - basePrice;
-      setFormData((prev) => ({ ...prev, taxAmount: tax.toFixed(2), priceAfterTax: inputPrice.toFixed(2) }));
-      // Note: Inclusive tax usually means priceAfterTax IS the inputPrice, and priceBeforeTax should be lower. 
-      // But the UI seems to treat priceBeforeTax as the core input.
+      setFormData((prev) => ({ ...prev, taxAmount: tax.toFixed(2), priceAfterTax: basePrice.toFixed(2) }));
     }
   }, [formData.taxMode, formData.taxRate, formData.priceBeforeTax]);
 
@@ -234,7 +221,6 @@ export const useProductForm = () => {
     addImage,
     removeImage,
     generateSKU,
-    generateItemCode,
     handleSubmit,
     updateSlugManually,
   };

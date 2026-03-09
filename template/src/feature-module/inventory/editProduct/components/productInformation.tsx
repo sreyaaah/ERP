@@ -10,7 +10,6 @@ interface Props {
     value: ProductFormData[K]
   ) => void;
   generateSKU: () => void;
-  generateItemCode: () => void;
   updateSlugManually: (value: string) => void;
   categoryOptions: any[];
   brandOptions: any[];
@@ -26,7 +25,6 @@ const ProductInformation = ({
   formData,
   updateField,
   generateSKU,
-  generateItemCode,
   updateSlugManually,
   categoryOptions,
   brandOptions,
@@ -65,7 +63,7 @@ const ProductInformation = ({
             <div className="col-sm-6 col-12">
               <div className="mb-3">
                 <label className="form-label">
-                  Store<span className="text-danger ms-1">*</span>
+                  Store
                 </label>
                 <CommonSelect
                   className="w-100"
@@ -81,7 +79,7 @@ const ProductInformation = ({
             <div className="col-sm-6 col-12">
               <div className="mb-3">
                 <label className="form-label">
-                  Warehouse<span className="text-danger ms-1">*</span>
+                  Warehouse
                 </label>
                 <CommonSelect
                   className="w-100"
@@ -149,7 +147,7 @@ const ProductInformation = ({
             <div className="col-sm-6 col-12">
               <div className="mb-3">
                 <label className="form-label">
-                  Selling Type<span className="text-danger ms-1">*</span>
+                  Selling Type
                 </label>
                 <CommonSelect
                   className="w-100"
@@ -170,7 +168,7 @@ const ProductInformation = ({
                 <div className="mb-3">
                   <div className="d-flex align-items-center justify-content-between">
                     <label className="form-label">
-                      Category<span className="text-danger ms-1">*</span>
+                      Category
                     </label>
                     <Link
                       to="#"
@@ -243,7 +241,7 @@ const ProductInformation = ({
                 <div className="mb-3">
                   <div className="d-flex align-items-center justify-content-between">
                     <label className="form-label">
-                      Unit<span className="text-danger ms-1">*</span>
+                      Unit
                     </label>
                   </div>
                   <CommonSelect
@@ -280,21 +278,14 @@ const ProductInformation = ({
             <div className="col-lg-6 col-sm-6 col-12">
               <div className="mb-3 list position-relative">
                 <label className="form-label">
-                  Item Code<span className="text-danger ms-1">*</span>
+                  HSN/SAC Number<span className="text-danger ms-1">*</span>
                 </label>
                 <input
                   type="text"
-                  className="form-control list"
+                  className="form-control"
                   value={formData.itemCode}
                   onChange={(e) => updateField("itemCode", e.target.value)}
                 />
-                <button
-                  type="button"
-                  className="btn btn-primaryadd"
-                  onClick={generateItemCode}
-                >
-                  Generate
-                </button>
               </div>
             </div>
           </div>

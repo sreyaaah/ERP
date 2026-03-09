@@ -163,14 +163,5 @@ export const ProductService = {
         }
     },
 
-    // Generate Item Code
-    generateItemCode: async (): Promise<string> => {
-        try {
-            const res = await apiClient.get("/products/generate-item-code");
-            return res.data.itemCode;
-        } catch (error) {
-            console.error("Failed to generate Item Code:", error);
-            throw error;
-        }
-    }
+
 };

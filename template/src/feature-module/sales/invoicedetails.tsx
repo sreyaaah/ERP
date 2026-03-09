@@ -1,6 +1,6 @@
 import CommonFooter from "../../components/footer/commonFooter";
 import { all_routes } from "../../routes/all_routes";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { logo, logoWhite, qrCodeImage, sign } from "../../utils/imagepath";
 import { InvoiceService, type Invoice } from "../services/invoice.service";
 import { useEffect, useState } from "react";
@@ -11,6 +11,7 @@ const Invoicedetails = () => {
   const { id } = useParams<{ id: string }>();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [loading, setLoading] = useState(true);
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     const fetchInvoice = async () => {
@@ -44,6 +45,19 @@ const Invoicedetails = () => {
 
     html2pdf().set(opt).from(element).save();
   };
+
+  // Auto-trigger download when opened with ?download=true (from invoice list download icon)
+  useEffect(() => {
+    if (!invoice || loading) return;
+    if (searchParams.get("download") === "true") {
+      // Small delay to ensure DOM is fully rendered
+      setTimeout(() => {
+        handleDownloadPdf();
+        // Close the tab after download starts
+        setTimeout(() => window.close(), 1500);
+      }, 800);
+    }
+  }, [invoice, loading]);
 
 
   const handlePrint = () => {

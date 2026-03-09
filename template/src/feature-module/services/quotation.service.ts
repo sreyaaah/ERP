@@ -9,6 +9,7 @@ export interface QuotationItem {
     rate: number;
     discountPercent: number;
     taxPercent: number;
+    hsnSac?: string;
     taxAmount?: number;
     unitCost?: number;
     totalCost?: number;
@@ -161,7 +162,7 @@ export const QuotationService = {
             const url = window.URL.createObjectURL(new Blob([res.data], { type: "application/pdf" }));
             const a = document.createElement("a");
             a.href = url;
-            a.download = `quotation-${quotationNo}.pdf`;
+            a.download = `${quotationNo}.pdf`;
             document.body.appendChild(a);
             a.click();
             a.remove();
@@ -216,11 +217,11 @@ export const QuotationService = {
             const res = await apiClient.get("/quotations/generate-number");
             return res.data.quotationNo;
         } catch (error) {
-            // Fallback: generate locally
             const today = new Date();
-            const datePart = today.toISOString().slice(0, 10).replace(/-/g, "");
+            const monthName = today.toLocaleString('en-US', { month: 'long' });
+            const year = today.getFullYear();
             const rand = Math.floor(1000 + Math.random() * 9000);
-            return `QT-${datePart}-${rand}`;
+            return `Quote_${rand}_${monthName}_${year}`;
         }
     },
 
