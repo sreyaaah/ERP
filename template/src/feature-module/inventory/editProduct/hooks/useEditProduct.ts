@@ -9,7 +9,7 @@ export const useEditProduct = (productId: string) => {
     productName: "",
     slug: "",
     sku: "",
-    sellingType: "Transactional",
+    sellingType: null,
     category: null,
     subCategory: null,
     brand: null,
@@ -66,11 +66,11 @@ export const useEditProduct = (productId: string) => {
             itemCode: product.itemCode || "",
             description: product.description || "",
             quantity: String(product.quantity || 0),
-            taxMode: product.taxType?.toLowerCase() === "exclusive" ? "exclusive" : "inclusive",
+            taxMode: ((product.taxType?.toLowerCase() === "exclusive" || product.taxType?.toLowerCase() === "inclusive") ? product.taxType.toLowerCase() : "no-tax") as "inclusive" | "exclusive" | "no-tax",
             taxRate: String(product.taxRate || 0),
-            priceBeforeTax: String(product.priceBeforeTax || 0),
+            priceBeforeTax: product.taxType?.toLowerCase() === "inclusive" ? String(product.priceAfterTax || 0) : String(product.priceBeforeTax || 0),
             taxAmount: String(product.taxAmount || 0),
-            priceAfterTax: String(product.priceAfterTax || 0),
+            priceAfterTax: product.taxType?.toLowerCase() === "inclusive" ? String(product.priceBeforeTax || 0) : String(product.priceAfterTax || 0),
             discountType: product.customFields?.discountType || null,
             discountValue: product.customFields?.discountValue || "",
             quantityAlert: product.customFields?.quantityAlert || "",
@@ -163,25 +163,17 @@ export const useEditProduct = (productId: string) => {
       const sku = await ProductService.generateSku();
       updateField("sku", sku);
     } catch (error) {
-      const fallback = `SKU-${Date.now()}`;
+      const fallback = `PRD-${Date.now().toString().slice(-6)}`;
       updateField("sku", fallback);
     }
   };
 
-  const generateItemCode = async () => {
-    try {
-      const code = await ProductService.generateItemCode();
-      updateField("itemCode", code);
-    } catch (error) {
-      const fallback = `ITEM-${Date.now()}`;
-      updateField("itemCode", fallback);
-    }
-  };
+
 
   const validateProduct = () => {
     if (!formData.productName.trim()) return "Product name is required";
     if (!formData.sku.trim()) return "SKU is required";
-    if (!formData.category) return "Category is required";
+    if (!formData.itemCode?.trim()) return "HSN/SAC Number is required";
     if (!formData.priceBeforeTax || Number(formData.priceBeforeTax) < 0) return "Price must be valid";
     return null;
   };
@@ -201,7 +193,7 @@ export const useEditProduct = (productId: string) => {
         slug: formData.slug,
         sku: formData.sku,
         itemCode: formData.itemCode,
-        sellingType: formData.sellingType || "Transactional",
+        sellingType: formData.sellingType || null,
         categoryId: formData.category,
         subCategoryId: formData.subCategory,
         brandId: formData.brand,
@@ -210,9 +202,9 @@ export const useEditProduct = (productId: string) => {
         description: formData.description,
         taxType: formData.taxMode === "exclusive" ? "Exclusive" : formData.taxMode === "no-tax" ? "None" : "Inclusive",
         taxRate: Number(formData.taxRate),
-        priceBeforeTax: Number(formData.priceBeforeTax),
+        priceBeforeTax: formData.taxMode === "inclusive" ? Number(formData.priceAfterTax) : Number(formData.priceBeforeTax),
         taxAmount: Number(formData.taxAmount),
-        priceAfterTax: Number(formData.priceAfterTax),
+        priceAfterTax: formData.taxMode === "inclusive" ? Number(formData.priceBeforeTax) : Number(formData.priceAfterTax),
         quantity: Number(formData.quantity) || 0,
         customFields: {
           discountType: formData.discountType,
@@ -286,7 +278,7 @@ export const useEditProduct = (productId: string) => {
     } else {
       const basePrice = inputPrice / (1 + rate / 100);
       const tax = inputPrice - basePrice;
-      setFormData((prev) => ({ ...prev, taxAmount: tax.toFixed(2), priceAfterTax: inputPrice.toFixed(2) }));
+      setFormData((prev) => ({ ...prev, taxAmount: tax.toFixed(2), priceAfterTax: basePrice.toFixed(2) }));
     }
   }, [formData.taxMode, formData.taxRate, formData.priceBeforeTax]);
 
@@ -303,7 +295,6 @@ export const useEditProduct = (productId: string) => {
     addImage,
     removeImage,
     generateSKU,
-    generateItemCode,
     handleSubmit,
     updateSlugManually,
   };

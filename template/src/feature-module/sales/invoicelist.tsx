@@ -1,9 +1,10 @@
 import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import html2pdf from "html2pdf.js";
+import PrimeDataTable from "../../components/data-table";
 import CommonFooter from "../../components/footer/commonFooter";
 import TableTopHead from "../../components/table-top-head";
 import SearchFromApi from "../../components/data-table/search";
-import { useState, useEffect } from "react";
-import PrimeDataTable from "../../components/data-table";
 import { InvoiceService, type Invoice } from "../services/invoice.service";
 import { CustomerService, type Customer } from "../services/customer.service";
 import { all_routes } from "../../routes/all_routes";
@@ -77,6 +78,57 @@ const InvoiceList = () => {
   useEffect(() => {
     loadCustomers();
   }, []);
+
+  const handleDownloadPdfView = (id: string) => {
+    // Create an invisible iframe that loads the invoice details page with all CSS applied
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.left = "-9999px";
+    iframe.style.top = "0";
+    iframe.style.width = "1200px";
+    iframe.style.height = "900px";
+    iframe.style.opacity = "0";
+    iframe.style.pointerEvents = "none";
+    iframe.src = `/sales/invoice-details/${id}`;
+    document.body.appendChild(iframe);
+
+    iframe.onload = async () => {
+      try {
+        // Wait for React to fully render inside the iframe
+        await new Promise(resolve => setTimeout(resolve, 1500));
+
+        const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+        if (!iframeDoc) throw new Error("Cannot access iframe document");
+
+        const element = iframeDoc.getElementById("invoice-content");
+        if (!element) throw new Error("invoice-content not found");
+
+        // Get invoice number from the iframe page title or heading
+        const invoiceNumEl = iframeDoc.querySelector(".text-primary");
+        const invoiceNum = invoiceNumEl?.textContent?.trim() || id;
+
+        await html2pdf().set({
+          margin: 10,
+          filename: `Invoice_${invoiceNum}.pdf`,
+          image: { type: "jpeg", quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true, logging: false },
+          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        }).from(element).save();
+      } catch (err) {
+        console.error("PDF generation failed:", err);
+        // Fallback: open the page normally
+        window.open(`/sales/invoice-details/${id}`, "_blank");
+      } finally {
+        document.body.removeChild(iframe);
+      }
+    };
+
+    iframe.onerror = () => {
+      document.body.removeChild(iframe);
+      window.open(`/sales/invoice-details/${id}`, "_blank");
+    };
+  };
+
   useEffect(() => {
     const modalEl = document.getElementById('edit-invoice');
     if (modalEl) {
@@ -193,8 +245,9 @@ const InvoiceList = () => {
       ),
     },
     {
-      header: "Actions",
+      header: "",
       field: "actions",
+      sortable: false,
       key: "actions",
       body: (rowData: Invoice) => (
         <div className="edit-delete-action d-flex align-items-center justify-content-center">
@@ -217,7 +270,18 @@ const InvoiceList = () => {
           </Link>
 
           <Link
-            className="p-2 d-flex align-items-center justify-content-between border rounded"
+            className="me-2 p-2 d-flex align-items-center justify-content-between border rounded text-primary"
+            to="#"
+            onClick={(e) => {
+              e.preventDefault();
+              handleDownloadPdfView(rowData.invoiceId!);
+            }}
+            title="Download PDF"
+          >
+            <i className="feather icon-download"></i>
+          </Link>
+          <Link
+            className="p-2 d-flex align-items-center justify-content-between border rounded text-danger"
             to="#"
             data-bs-toggle="modal"
             data-bs-target="#delete-modal"
@@ -227,7 +291,7 @@ const InvoiceList = () => {
             }}
             title="Delete Invoice"
           >
-            <i className="feather icon-trash-2 text-danger"></i>
+            <i className="feather icon-trash-2"></i>
           </Link>
         </div>
       ),

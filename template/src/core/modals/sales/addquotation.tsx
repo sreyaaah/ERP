@@ -159,8 +159,9 @@ useEffect(() => {
         label: p.product || p.productName || "",
         value: p.id,
         id: p.id,
-        rate: Number(p.priceBeforeTax || p.price || 0),
+        rate: Number(p.priceBeforeTax || 0),
         tax: Number(p.taxRate || 0),
+        hsnSac: p.itemCode || "",
       }));
       setProductOptions(opts);
     })
@@ -177,6 +178,7 @@ useEffect(() => {
         product: null,
         productSearch: "",
         showProductDropdown: false,
+        hsnSac: "",
         qty: 1,
         rate: 0,
         discount: 0,
@@ -241,6 +243,7 @@ useEffect(() => {
     rate: Number(product.rate || 0),
     tax: productTax,              
     isTaxFromProduct: hasProductTax, 
+    hsnSac: product.hsnSac || "",
     qty: updated[index].qty || 1,
     discount: updated[index].discount || 0,
   };
@@ -418,6 +421,7 @@ useEffect(() => {
         product: null,
         productSearch: "",        
         showProductDropdown: false,
+        hsnSac: "",
         qty: 1,
         rate: 0,
         discount: 0,
@@ -458,6 +462,7 @@ useEffect(() => {
           rate: Number(row.rate),
           discountPercent: Number(row.discount || 0),
           taxPercent: Number(row.tax || 0),
+          hsnSac: row.hsnSac || "",
         })),
         paymentStatus,
         paidAmount,
@@ -477,7 +482,7 @@ useEffect(() => {
     }
   };
 
-const onInputChange = (index: number, field: string, value: number) => {
+const onInputChange = (index: number, field: string, value: any) => {
   if (!rows[index]) return;
 
   const updated = [...rows];
@@ -771,21 +776,22 @@ const filteredCustomers = customers.filter(customer =>
                           <table className="table table-bordered mb-0">
                             <thead className="table-light">
                                 <tr>
-                                  <th style={{ minWidth: "200px" }}>Item</th>
-                                  <th style={{ width: "100px", textAlign: "center" }}>Qty</th>
-                                  <th style={{ width: "200px", textAlign: "right" }}>Rate</th>
-                                  <th style={{ width: "110px", textAlign: "right" }}>Discount (%)</th>
+                                  <th style={{ width: "15%" }}>Item</th>
+                                  <th style={{ width: "10%" }}>HSN/SAC</th>
+                                  <th style={{ width: "110px", textAlign: "center" }}>Qty</th>
+                                  <th style={{ width: "180px", textAlign: "right" }}>Rate</th>
+                                  <th style={{ width: "120px", textAlign: "right" }}>Discount (%)</th>
                                   <th style={{ width: "180px" }}>Tax (%)</th>
-                                  <th style={{ width: "120px", textAlign: "right" }}>Tax Amount</th>
-                                  <th style={{ width: "120px", textAlign: "right" }}>Unit Cost</th>
-                                  <th style={{ width: "130px", textAlign: "right" }}>Total Cost</th>
-                                  <th style={{ width: "30px" }}></th>
+                                  <th style={{ width: "100px", textAlign: "right" }}>Tax Amount</th>
+                                  <th style={{ width: "100px", textAlign: "right" }}>Unit Cost</th>
+                                  <th style={{ width: "100px", textAlign: "right" }}>Total Cost</th>
+                                  <th style={{ width: "40px" }}></th>
                                 </tr>
                             </thead>
                             <tbody>
                               {rows.map((row, index) => (
                                 <tr key={index}>
-                                  <td style={{ minWidth: "200px" }}>
+                                  <td>
                                     <div className="position-relative">
                                       <input
                                         type="text"
@@ -862,10 +868,20 @@ const filteredCustomers = customers.filter(customer =>
                                       )}
                                     </div>
                                   </td>
+                                  <td style={{ width: "180px" }}>
+                                    <input
+                                      type="text"
+                                      className="form-control w-100"
+                                      value={row.hsnSac}
+                                      onChange={(e) =>
+                                        onInputChange(index, "hsnSac", e.target.value)
+                                      }
+                                    />
+                                  </td>
                                   <td style={{ textAlign: "center" }}>
                                     <input
                                       type="number"
-                                      className="form-control text-center"
+                                      className="form-control text-center w-100"
                                       min={1}
                                       value={row.qty}
                                       onChange={(e) =>
@@ -877,7 +893,7 @@ const filteredCustomers = customers.filter(customer =>
                                   <td style={{ textAlign: "right" }}>
                                     <input
                                       type="number"
-                                      className="form-control text-end no-spinner"
+                                      className="form-control text-end no-spinner w-100"
                                       value={row.rate}
                                       onChange={(e) =>
                                         onInputChange(index, "rate", Number(e.target.value))
@@ -888,7 +904,7 @@ const filteredCustomers = customers.filter(customer =>
                                   <td style={{ textAlign: "right" }}>
                                     <input
                                       type="number"
-                                      className="form-control text-end no-spinner"
+                                      className="form-control text-end no-spinner w-100"
                                       value={row.discount}
                                       onChange={(e) =>
                                         onInputChange(index, "discount", Number(e.target.value))
@@ -897,7 +913,7 @@ const filteredCustomers = customers.filter(customer =>
                                   </td>
                                   <td>
                                       <select
-                                        className="form-select"
+                                        className="form-select w-100"
                                         value={row.tax}
                                         onChange={(e) =>
                                           onInputChange(
@@ -907,10 +923,10 @@ const filteredCustomers = customers.filter(customer =>
                                           )
                                         }
                                       >
-                                        <option value={0}>No Tax (0%)</option>
+                                        <option value={0}>No Tax</option>
                                         {row.tax > 0 && !getFilteredTaxRates().some((r) => r.value === row.tax) && (
                                           <option value={row.tax}>
-                                            Product Tax ({row.tax}%)
+                                            Product Tax
                                           </option>
                                         )}
                                         {getFilteredTaxRates().map((rate: { label: string; value: number; type: string }) => {
@@ -920,7 +936,7 @@ const filteredCustomers = customers.filter(customer =>
                                           }
                                           return (
                                             <option key={`${rate.label}-${rate.value}`} value={rate.value}>
-                                              {displayLabel} ({rate.type} — {rate.value}%)
+                                              {displayLabel}
                                             </option>
                                           );
                                         })}
@@ -944,7 +960,7 @@ const filteredCustomers = customers.filter(customer =>
                                 </tr>
                               ))}
                               <tr>
-                                <td colSpan={9}>
+                                <td colSpan={10}>
                                   <button
                                     type="button"
                                     className="btn btn-link text-primary p-0"

@@ -31,10 +31,19 @@ export const INDIA_SOUTH_ASIA_CURRENCIES = [
   { name: "Bangladeshi Taka", code: "BDT", symbol: "৳" },
   { name: "Pakistani Rupee", code: "PKR", symbol: "₨" },
 ];
+const OTHER_EUROPE = EUROPE_CURRENCIES.filter(c => c.code !== "EUR");
+const OTHER_AMERICA = AMERICA_CURRENCIES.filter(c => c.code !== "USD");
+const OTHER_OCEANIA = OCEANIA_CURRENCIES.filter(c => c.code !== "AUD");
+const OTHER_INDIA = INDIA_SOUTH_ASIA_CURRENCIES.filter(c => c.code !== "INR");
+
 export const ALL_SELECTED_CURRENCIES = [
-  ...EUROPE_CURRENCIES,
-  ...AMERICA_CURRENCIES,
+  ...INDIA_SOUTH_ASIA_CURRENCIES.filter(c => c.code === "INR"),
+  ...AMERICA_CURRENCIES.filter(c => c.code === "USD"),
+  ...OCEANIA_CURRENCIES.filter(c => c.code === "AUD"),
+  ...EUROPE_CURRENCIES.filter(c => c.code === "EUR"),
   ...MIDDLE_EAST_CURRENCIES,
-  ...OCEANIA_CURRENCIES,
-  ...INDIA_SOUTH_ASIA_CURRENCIES,
+  ...OTHER_INDIA,
+  ...OTHER_AMERICA,
+  ...OTHER_OCEANIA,
+  ...OTHER_EUROPE,
 ];

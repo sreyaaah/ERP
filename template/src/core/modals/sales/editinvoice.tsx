@@ -29,6 +29,7 @@ interface Product {
   value: string;
   rate: number;
   tax: number;
+  hsnSac?: string;
 }
 
 interface EditInvoiceProps {
@@ -95,8 +96,9 @@ const EditInvoice = ({ invoice, onUpdate }: EditInvoiceProps) => {
           label: p.product || p.productName || "Unnamed Product",
           value: p._id || p.id,
           id: p._id || p.id,
-          rate: Number(p.priceAfterTax || p.priceBeforeTax || 0),
+          rate: Number(p.priceBeforeTax || 0),
           tax: Number(p.taxRate || 0),
+          hsnSac: p.itemCode || "",
           ...p
         }));
         setProductOptions(formatted);
@@ -135,6 +137,12 @@ const EditInvoice = ({ invoice, onUpdate }: EditInvoiceProps) => {
     };
     loadTaxRates();
   }, []);
+
+  const onInputChange = (index: number, field: string, value: any) => {
+      const updated = [...rows];
+      updated[index] = { ...updated[index], [field]: value };
+      recalculateRow(updated, index);
+  };
 
   useEffect(() => {
     if (!invoice?.invoiceId) {
@@ -228,6 +236,7 @@ const EditInvoice = ({ invoice, onUpdate }: EditInvoiceProps) => {
                 rate: rate,
                 discount: discountPercent, // Store as percentage in UI
                 tax: taxPercent,
+                hsnSac: item.hsnSac || "",
                 isTaxFromProduct: false,
                 taxAmount: Number(taxAmount.toFixed(2)),
                 unitCost: Number((netAmount + taxAmount).toFixed(2)),
@@ -245,6 +254,7 @@ const EditInvoice = ({ invoice, onUpdate }: EditInvoiceProps) => {
               rate: 0,
               discount: 0,
               tax: 0,
+              hsnSac: "",
               isTaxFromProduct: false,
               taxAmount: 0,
               unitCost: 0,
@@ -381,6 +391,7 @@ const EditInvoice = ({ invoice, onUpdate }: EditInvoiceProps) => {
         rate: Number(product.rate || 0),
         tax: productTax,              
         isTaxFromProduct: !!product.tax, 
+        hsnSac: product.hsnSac || "",
         qty: updated[index].qty || 1,
         discount: updated[index].discount || 0,
       };
@@ -388,10 +399,9 @@ const EditInvoice = ({ invoice, onUpdate }: EditInvoiceProps) => {
       recalculateRow(updated, index);
   };
 
-  const onInputChange = (index: number, field: string, value: number) => {
-      const updated = [...rows];
-      updated[index] = { ...updated[index], [field]: value };
-      recalculateRow(updated, index);
+  const onProductDeleted = (index: number) => {
+      setRows(rows.filter((_, i) => i !== index));
+      calculateSummary(rows.filter((_, i) => i !== index));
   };
 
 
@@ -407,6 +417,7 @@ const EditInvoice = ({ invoice, onUpdate }: EditInvoiceProps) => {
         rate: 0,
         discount: 0,
         tax: 0,
+        hsnSac: "",
         isTaxFromProduct: false,
         taxAmount: 0,
         unitCost: 0,
@@ -432,6 +443,7 @@ const EditInvoice = ({ invoice, onUpdate }: EditInvoiceProps) => {
               rate: Number(r.rate),
               discount: Number(discountAmount.toFixed(2)),
               taxPercent: Number(r.tax),
+              hsnSac: r.hsnSac || "",
               amount: Number(r.total)
           };
       });
@@ -679,23 +691,23 @@ const EditInvoice = ({ invoice, onUpdate }: EditInvoiceProps) => {
                             <table className="table table-bordered">
                                 <thead>
                                     <tr>
-                                        <th>Product</th>
-                                        <th>Qty</th>
-                                        <th>Rate</th>
-                                        <th>Discount</th>
-                                        <th>Tax (%)</th>
-                                        <th>Amount</th>
-                                        <th></th>
+                                        <th style={{ width: "15%" }}>Product</th>
+                                        <th style={{ width: "10%" }}>HSN/SAC</th>
+                                        <th style={{ width: "110px" }}>Qty</th>
+                                        <th style={{ width: "180px" }}>Rate</th>
+                                        <th style={{ width: "120px" }}>Discount</th>
+                                        <th style={{ width: "180px" }}>Tax (%)</th>
+                                        <th style={{ width: "100px" }}>Amount</th>
+                                        <th style={{ width: "40px" }}></th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {rows.map((row, index) => (
-                                        <tr key={index}>
-                                            <td style={{minWidth: '200px'}}>
+                                        <tr key={index}><td>
                                                  <div className="position-relative">
                                                      <input
                                                         type="text"
-                                                        className="form-control"
+                                                        className="form-control w-100"
                                                         value={row.productSearch}
                                                         onChange={(e) => {
                                                             const updated = [...rows];
@@ -739,61 +751,70 @@ const EditInvoice = ({ invoice, onUpdate }: EditInvoiceProps) => {
                                                                        Rate: ₹{Number(p.rate || 0).toFixed(2)} &nbsp;|&nbsp; Tax: {p.tax}%
                                                                      </small>
                                                                 </div>
-                                                                                                                                                                                           ))
+                                                                                                                                                                                            ))
                                                             ) : (
                                                                 <div className="px-2 py-2 text-muted" style={{ fontSize: 13 }}>No products found</div>
                                                             )}
                                                         </div>
                                                      )}
                                                  </div>
-                                            </td>
+                                             </td>
 
-                                            <td>
-                                                <input type="number" className="form-control" value={row.qty} onChange={(e) => onInputChange(index, 'qty', Number(e.target.value))} />
-                                            </td>
-                                            <td>
-                                                <input type="number" className="form-control" value={row.rate} onChange={(e) => onInputChange(index, 'rate', Number(e.target.value))} />
-                                            </td>
                                              <td>
-                                                <input type="number" className="form-control" value={row.discount} onChange={(e) => onInputChange(index, 'discount', Number(e.target.value))} />
-                                            </td>
+                                                 <input
+                                                   type="text"
+                                                   className="form-control w-100"
+                                                   value={row.hsnSac}
+                                                   onChange={(e) =>
+                                                     onInputChange(index, "hsnSac", e.target.value)
+                                                   }
+                                                 />
+                                             </td>
+
                                              <td>
-                                                  <select
-                                                    className="form-select"
-                                                    value={row.tax}
-                                                    onChange={(e) => onInputChange(index, 'tax', Number(e.target.value))}
-                                                  >
-                                                    <option value={0}>No Tax (0%)</option>
-                                                    {getFilteredTaxRates().map((rate: any) => {
-                                                      let displayLabel = rate.label;
-                                                      if (invoiceType === "interstate" && rate.type === "GST") {
-                                                        displayLabel = rate.label.replace(/GST/i, "IGST");
-                                                      }
-                                                      return (
-                                                        <option key={rate.label + rate.value} value={rate.value}>
-                                                          {displayLabel} ({rate.type} — {rate.value}%)
-                                                        </option>
-                                                      );
-                                                    })}
-                                                  </select>
-                                              </td>
-                                            <td>{row.total}</td>
-                                            <td>
-                                                <button type="button" className="btn btn-sm btn-danger" onClick={() => {
-                                                    setRows(rows.filter((_, i) => i !== index));
-                                                    calculateSummary(rows.filter((_, i) => i !== index));
-                                                }}>
-                                                    <i className="feather icon-trash-2"></i>
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                             <button type="button" className="btn btn-primary mt-2" onClick={addProductRow}>+ Add Item</button>
-                      </div>
-                 </div>
-            </div>
+                                                 <input type="number" className="form-control w-100" value={row.qty} onChange={(e) => onInputChange(index, 'qty', Number(e.target.value))} />
+                                             </td>
+                                             <td>
+                                                 <input type="number" className="form-control w-100" value={row.rate} onChange={(e) => onInputChange(index, 'rate', Number(e.target.value))} />
+                                             </td>
+                                              <td>
+                                                 <input type="number" className="form-control w-100" value={row.discount} onChange={(e) => onInputChange(index, 'discount', Number(e.target.value))} />
+                                             </td>
+                                              <td>
+                                                   <select
+                                                     className="form-select w-100"
+                                                     value={row.tax}
+                                                     onChange={(e) => onInputChange(index, 'tax', Number(e.target.value))}
+                                                   >
+                                                     <option value={0}>No Tax</option>
+                                                     {getFilteredTaxRates().map((rate: any) => {
+                                                       let displayLabel = rate.label;
+                                                       if (invoiceType === "interstate" && rate.type === "GST") {
+                                                         displayLabel = rate.label.replace(/GST/i, "IGST");
+                                                       }
+                                                       return (
+                                                         <option key={rate.label + rate.value} value={rate.value}>
+                                                           {displayLabel}
+                                                         </option>
+                                                       );
+                                                     })}
+                                                   </select>
+                                               </td>
+                                             
+                                             <td>{row.total}</td>
+                                             <td>
+                                                 <button type="button" className="btn btn-sm btn-danger" onClick={() => onProductDeleted(index)}>
+                                                     <i className="feather icon-trash-2"></i>
+                                                 </button>
+                                             </td>
+                                         </tr>
+                                     ))}
+                                 </tbody>
+                             </table>
+                              <button type="button" className="btn btn-primary mt-2" onClick={addProductRow}>+ Add Item</button>
+                       </div>
+                  </div>
+             </div>
 
             <div className="row mt-4">
                 <div className="col-lg-6 offset-lg-6">

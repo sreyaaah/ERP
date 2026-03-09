@@ -21,6 +21,7 @@ import { BrandService } from "../../services/brand.service";
 import { UnitService } from "../../services/unit.service";
 import { SubcategoryService } from "../../services/subcategory.service";
 import { DropdownService } from "../../services/dropdown.service";
+import { TaxService } from "../../services/tax.service";
 
 const AddProduct = () => {
   const [categories, setCategories] = useState<any[]>([]);
@@ -34,6 +35,7 @@ const AddProduct = () => {
   const [sellingTypeOptions, setSellingTypeOptions] = useState<any[]>([]);
   const [barcodeOptions, setBarcodeOptions] = useState<any[]>([]);
   const [warrantyOptions, setWarrantyOptions] = useState<any[]>([]);
+  const [taxOptions, setTaxOptions] = useState<any[]>([]);
 
   const navigate = useNavigate();
 
@@ -75,6 +77,10 @@ const AddProduct = () => {
       const warranties = await DropdownService.getWarranties();
       setWarrantyOptions(warranties.map((w: any) => ({ label: w.name, value: w.id })));
 
+      const taxesRes = await TaxService.getAllTaxes();
+      const taxOpts = (taxesRes.data || []).map((t: any) => ({ label: t.name, value: String(t.rate) }));
+      setTaxOptions(taxOpts);
+
     } catch (error) {
       console.error("Failed to fetch options", error);
     }
@@ -112,7 +118,6 @@ const AddProduct = () => {
     addImage,
     removeImage,
     generateSKU,
-    generateItemCode,
     handleSubmit,
     updateSlugManually
   } = useProductForm();
@@ -177,7 +182,6 @@ const AddProduct = () => {
                   formData={formData}
                   updateField={updateField}
                   generateSKU={generateSKU}
-                  generateItemCode={generateItemCode}
                   updateSlugManually={updateSlugManually}
                   categoryOptions={categoryOptions}
                   brandOptions={brandOptions}
@@ -192,6 +196,7 @@ const AddProduct = () => {
                 <PricingStocksSection
                   formData={formData}
                   updateField={updateField}
+                  taxOptions={taxOptions}
                 />
 
                 <ImagesSection images={images} addImage={addImage} removeImage={removeImage} />

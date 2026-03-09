@@ -163,7 +163,7 @@ const ProductDetail = () => {
                       <h6 className="fw-semibold">{product.sku}</h6>
                     </div>
                     <div className="col-md-6 mb-3">
-                      <p className="text-muted mb-1">Item Code</p>
+                      <p className="text-muted mb-1">HSN/SAC Number</p>
                       <h6 className="fw-semibold">{product.itemCode}</h6>
                     </div>
                     <div className="col-md-6 mb-3">

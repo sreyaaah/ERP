@@ -19,7 +19,7 @@ interface ProductItem {
   price: string;
   unit: string;
   qty: string;
-  createdby: string;
+  itemCode: string;
   action?: string;
 }
 
@@ -83,7 +83,7 @@ const ProductList: React.FC = () => {
         price: `₹${p.price}`,
         unit: p.unit || 'Pc',
         qty: p.quantity || '0',
-        createdby: 'Admin',
+        itemCode: p.itemCode || 'N/A',
       }));
       
       setProducts(transformedProducts);
@@ -143,7 +143,7 @@ const ProductList: React.FC = () => {
               <td style="padding:10px;">${product.sku}</td>
             </tr>
             <tr style="background:#f9f9f9">
-              <td style="padding:10px;font-weight:bold;">Item Code</td>
+              <td style="padding:10px;font-weight:bold;">HSN/SAC Number</td>
               <td style="padding:10px;">${product.itemCode || "N/A"}</td>
             </tr>
             <tr>
@@ -259,6 +259,12 @@ const ProductList: React.FC = () => {
       ),
     },
     {
+      header: "HSN/SAC Number",
+      field: "itemCode",
+      key: "itemCode",
+      sortable: true,
+    },
+    {
       header: "Category",
       field: "category",
       key: "category",
@@ -281,15 +287,6 @@ const ProductList: React.FC = () => {
       field: "unit",
       key: "unit",
       sortable: true,
-    },
-    {
-      header: "Created By",
-      field: "createdby",
-      key: "createdby",
-      sortable: true,
-      body: (data: ProductItem) => (
-        <span>{data.createdby}</span>
-      ),
     },
     {
       header: "",

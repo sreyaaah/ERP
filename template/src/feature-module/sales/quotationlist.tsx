@@ -51,7 +51,7 @@ const QuotationList = () => {
   const fetchQuotations = useCallback(async () => {
     setLoading(true);
     try {
-      let sortByField = "createdAt";
+      const sortByField = "createdAt";
       let sortOrder   = "desc";
       if (sortBy === "asc")       { sortOrder = "asc"; }
       else if (sortBy === "desc") { sortOrder = "desc"; }
@@ -224,8 +224,9 @@ const QuotationList = () => {
       ),
     },
     {
-      header: "Actions",
+      header: "",
       field: "actions",
+      sortable: false,
       key: "actions",
       body: (row: Quotation) => (
         <div className="action-table-data">

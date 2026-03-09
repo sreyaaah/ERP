@@ -1,4 +1,5 @@
 import type { ProductFormData } from "../types";
+import CommonSelect from "../../../../components/select/common-select";
 
 interface Props {
   formData: ProductFormData;
@@ -6,9 +7,10 @@ interface Props {
     key: K,
     value: ProductFormData[K]
   ) => void;
+  taxOptions: { label: string; value: string }[];
 }
 
-const PriceCalculation = ({ formData, updateField }: Props) => {
+const PriceCalculation = ({ formData, updateField, taxOptions }: Props) => {
   return (
     <div className="accordion-item border mb-4">
       <h2 className="accordion-header" id="headingSpacingTwo">
@@ -110,14 +112,13 @@ const PriceCalculation = ({ formData, updateField }: Props) => {
                 <label className="form-label">
                   Tax Rate (%)<span className="text-danger ms-1">*</span>
                 </label>
-                <input
-                  type="number"
-                  className="form-control"
-                  value={formData.taxRate}
-                  onChange={(e) => updateField("taxRate", e.target.value)}
-                  placeholder="Enter tax rate"
-                  step="0.01"
-                  min="0"
+                <CommonSelect
+                  className="w-100"
+                  options={taxOptions}
+                  value={String(formData.taxRate)}
+                  onChange={(e: any) => updateField("taxRate", e.value)}
+                  placeholder="Select or Type Tax Rate"
+                  editable={true}
                 />
               </div>
             </div>

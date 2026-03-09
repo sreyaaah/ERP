@@ -40,7 +40,7 @@ const QuotationDetails = () => {
 
     const opt = {
       margin: 10,
-      filename: `Quotation_${quotation.quotationNo}.pdf`,
+      filename: `${quotation.quotationNo}.pdf`,
       image: { type: "jpeg" as const, quality: 0.98 },
       html2canvas: { scale: 2, useCORS: true },
       jsPDF: { unit: "mm" as const, format: "a4" as const, orientation: "portrait" as const },
@@ -226,6 +226,7 @@ const QuotationDetails = () => {
                       <tr>
                         <th>#</th>
                         <th>Product</th>
+                        <th>HSN/SAC</th>
                         <th className="text-end">Qty</th>
                         <th className="text-end">Rate (₹)</th>
                         <th className="text-end">Discount (%)</th>
@@ -240,6 +241,9 @@ const QuotationDetails = () => {
                           <td>{i + 1}</td>
                           <td>
                             <h6 className="mb-0">{item.productName || item.product || "—"}</h6>
+                          </td>
+                          <td>
+                            <span className="text-gray-9">{item.hsnSac || "-"}</span>
                           </td>
                           <td className="text-gray-9 fw-medium text-end">{item.qty}</td>
                           <td className="text-gray-9 fw-medium text-end">

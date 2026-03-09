@@ -24,6 +24,7 @@ interface Product {
   name: string;
   rate: number;
   tax: number;
+  hsnSac: string;
 }
 
 interface FormInvoiceItem {
@@ -32,6 +33,7 @@ interface FormInvoiceItem {
   productName: string;
   productSearch: string;
   showProductDropdown: boolean;
+  hsnSac: string;
   quantity: number;
   rate: number;
   discount: number; // Percentage
@@ -77,6 +79,7 @@ const AddInvoice = () => {
       productName: "",
       productSearch: "",
       showProductDropdown: false,
+      hsnSac: "",
       quantity: 1,
       rate: 0,
       discount: 0,
@@ -200,8 +203,9 @@ const AddInvoice = () => {
         const formattedProducts: Product[] = (response.data || []).map((p: any) => ({
           id: p._id || p.id || `PROD-${Math.random()}`,
           name: p.product || p.productName || "Unnamed Product",
-          rate: p.priceAfterTax || p.priceBeforeTax || 0,
+          rate: p.priceBeforeTax || 0,
           tax: p.taxRate || 0,
+          hsnSac: p.itemCode || "",
         }));
         setProducts(formattedProducts);
       } catch (err) {
@@ -317,6 +321,7 @@ const AddInvoice = () => {
       showProductDropdown: false,
       rate: Number(product.rate || 0),
       tax: Number(product.tax || getDefaultTaxByInvoiceType(invoiceType)),
+      hsnSac: product.hsnSac || "",
       quantity: updated[index].quantity || 1,
       discount: updated[index].discount || 0,
     };
@@ -345,6 +350,7 @@ const AddInvoice = () => {
         productName: "",
         productSearch: "",
         showProductDropdown: false,
+        hsnSac: "",
         quantity: 1,
         rate: 0,
         discount: 0,
@@ -424,6 +430,7 @@ const AddInvoice = () => {
         rate: Number(item.rate),
         discount: Number(discountAmount.toFixed(2)), 
         taxPercent: Number(item.tax),
+        hsnSac: item.hsnSac || "",
         amount: Number(item.amount.toFixed(2))
       };
     });
@@ -668,21 +675,22 @@ const AddInvoice = () => {
                   <table className="table table-bordered mb-0">
                     <thead className="table-light">
                       <tr>
-                        <th style={{ minWidth: "200px" }}>Item</th>
-                        <th style={{ width: "100px", textAlign: "center" }}>Qty</th>
-                        <th style={{ width: "150px", textAlign: "right" }}>Rate</th>
-                        <th style={{ width: "110px", textAlign: "right" }}>Discount (%)</th>
+                        <th style={{ width: "15%" }}>Item</th>
+                        <th style={{ width: "10%" }}>HSN/SAC</th>
+                        <th style={{ width: "110px", textAlign: "center" }}>Qty</th>
+                        <th style={{ width: "180px", textAlign: "right" }}>Rate</th>
+                        <th style={{ width: "120px", textAlign: "right" }}>Discount (%)</th>
                         <th style={{ width: "180px" }}>Tax (%)</th>
-                        <th style={{ width: "120px", textAlign: "right" }}>Tax Amount</th>
-                        <th style={{ width: "120px", textAlign: "right" }}>Unit Cost</th>
-                        <th style={{ width: "130px", textAlign: "right" }}>Total Cost</th>
-                        <th style={{ width: "30px" }}></th>
+                        <th style={{ width: "100px", textAlign: "right" }}>Tax Amount</th>
+                        <th style={{ width: "100px", textAlign: "right" }}>Unit Cost</th>
+                        <th style={{ width: "100px", textAlign: "right" }}>Total Cost</th>
+                        <th style={{ width: "40px" }}></th>
                       </tr>
                     </thead>
                     <tbody>
                       {items.map((row, index) => (
                         <tr key={index}>
-                          <td style={{ minWidth: "200px" }}>
+                          <td>
                             <div className="position-relative">
                               <input
                                 type="text"
@@ -756,10 +764,20 @@ const AddInvoice = () => {
                               )}
                             </div>
                           </td>
+                          <td style={{ width: "180px" }}>
+                            <input
+                              type="text"
+                              className="form-control w-100"
+                              value={row.hsnSac}
+                              onChange={(e) =>
+                                onInputChange(index, "hsnSac", e.target.value)
+                              }
+                            />
+                          </td>
                           <td style={{ textAlign: "center" }}>
                             <input
                               type="number"
-                              className="form-control text-center"
+                              className="form-control text-center w-100"
                               min={1}
                               value={row.quantity}
                               onChange={(e) =>
@@ -770,7 +788,7 @@ const AddInvoice = () => {
                           <td style={{ textAlign: "right" }}>
                             <input
                               type="number"
-                              className="form-control text-end"
+                              className="form-control text-end w-100"
                               value={row.rate}
                               onChange={(e) =>
                                 onInputChange(index, "rate", Number(e.target.value))
@@ -780,7 +798,7 @@ const AddInvoice = () => {
                           <td style={{ textAlign: "right" }}>
                             <input
                               type="number"
-                              className="form-control text-end"
+                              className="form-control text-end w-100"
                               value={row.discount}
                               onChange={(e) =>
                                 onInputChange(index, "discount", Number(e.target.value))
@@ -789,13 +807,13 @@ const AddInvoice = () => {
                           </td>
                           <td>
                             <select
-                              className="form-select"
+                              className="form-select w-100"
                               value={row.tax}
                               onChange={(e) =>
                                 onInputChange(index, "tax", Number(e.target.value))
                               }
                             >
-                              <option value={0}>No Tax (0%)</option>
+                              <option value={0}>No Tax</option>
                               {getFilteredTaxRates().map((rate: any) => {
                                 let displayLabel = rate.label;
                                 if (invoiceType === "interstate" && rate.type === "GST") {
@@ -803,7 +821,7 @@ const AddInvoice = () => {
                                 }
                                 return (
                                   <option key={rate.label + rate.value} value={rate.value}>
-                                    {displayLabel} ({rate.type} — {rate.value}%)
+                                    {displayLabel}
                                   </option>
                                 );
                               })}
@@ -825,7 +843,7 @@ const AddInvoice = () => {
                         </tr>
                       ))}
                       <tr>
-                        <td colSpan={9}>
+                        <td colSpan={10}>
                           <button
                             type="button"
                             className="btn btn-link text-primary p-0"

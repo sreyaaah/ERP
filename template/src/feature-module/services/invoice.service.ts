@@ -8,6 +8,7 @@ export interface InvoiceItem {
   rate: number;
   discount: number;
   taxPercent: number;
+  hsnSac?: string;
   amount: number;
 }
 
@@ -168,7 +169,7 @@ export const InvoiceService = {
       const url = window.URL.createObjectURL(new Blob([response.data], { type: "application/pdf" }));
       const link = document.createElement("a");
       link.href = url;
-      link.setAttribute("download", `invoice-${invoiceNumber || id}.pdf`);
+      link.setAttribute("download", `${invoiceNumber || id}.pdf`);
       document.body.appendChild(link);
       link.click();
       link.remove();
