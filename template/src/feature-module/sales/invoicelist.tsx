@@ -38,7 +38,8 @@ const InvoiceList = () => {
         search: searchQuery,
         status: selectedPaymentStatus || undefined,
         customerId: selectedCustomerId || undefined,
-        sortBy: sortBy || undefined
+        sortBy: sortBy || undefined,
+        type: "Invoice"
       });
       
       if (response.status) {

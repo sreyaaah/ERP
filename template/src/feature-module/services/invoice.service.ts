@@ -15,6 +15,7 @@ export interface InvoiceItem {
 export interface Invoice {
   invoiceId?: string;
   invoiceNumber: string;
+  saleNumber?: string;
   invoiceType: "Intrastate" | "Interstate" | "International";
   customer?: {
     customerId: string;
@@ -38,6 +39,7 @@ export interface Invoice {
   grandTotal: number;
   paidAmount?: number;
   amountDue?: number;
+  type?: "Invoice" | "Sale";
   notes?: string;
   terms?: string;
   createdAt?: string;
@@ -62,6 +64,7 @@ export const InvoiceService = {
     status?: string;
     customerId?: string;
     sortBy?: string;
+    type?: "Invoice" | "Sale";
   }): Promise<InvoiceListResponse> => {
     try {
       const response = await apiClient.get("/invoices", { params });
@@ -150,9 +153,9 @@ export const InvoiceService = {
   },
 
   // GET generate number
-  generateInvoiceNumber: async (): Promise<{ status: boolean; invoiceNumber: string }> => {
+  generateInvoiceNumber: async (type: "Invoice" | "Sale" = "Invoice"): Promise<{ status: boolean; invoiceNumber: string }> => {
     try {
-      const response = await apiClient.get("/invoices/generate-number");
+      const response = await apiClient.get("/invoices/generate-number", { params: { type } });
       return response.data;
     } catch (error) {
       console.error("Generate invoice number failed:", error);

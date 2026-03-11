@@ -1,22 +1,17 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
-import { InvoiceService, type Invoice, type InvoiceItem } from "../services/invoice.service";
-import { CustomerService } from "../services/customer.service";
-import { ProductService } from "../services/product.service";
-import { all_routes } from "../../routes/all_routes";
-import CommonFooter from "../../components/footer/commonFooter";
-
-import CommonSelect from "../../components/select/common-select";
-import { ALL_SELECTED_CURRENCIES } from "../settings/financialsettings/currencies";
-import { TaxService } from "../services/tax.service";
+import { InvoiceService, type Invoice, type InvoiceItem } from "../../services/invoice.service";
+import { CustomerService } from "../../services/customer.service";
+import { ProductService } from "../../services/product.service";
+import { all_routes } from "../../../routes/all_routes";
+import CommonFooter from "../../../components/footer/commonFooter";
+import { TaxService } from "../../services/tax.service";
 import Swal from "sweetalert2";
 interface Customer {
   id: string;
   name: string;
   email: string;
   phone: string;
-  address: string;
-  image: string;
 }
 
 interface Product {
@@ -36,29 +31,24 @@ interface FormInvoiceItem {
   hsnSac: string;
   quantity: number;
   rate: number;
-  discount: number; // Percentage
   tax: number;
   taxAmount: number;
-  unitCost: number; // baseAmount + taxAmount
   amount: number; // total row cost
   _inputRect?: any;
 }
 
-const AddInvoice = () => {
+const AddSales = () => {
   const navigate = useNavigate();
   const route = all_routes;
 
   const customerDropdownRef = useRef<HTMLDivElement>(null);
 
-  const [invoiceType, setInvoiceType] = useState<'interstate' | 'intrastate' | 'international' | ''>('');
-  const [selectedCurrency, setSelectedCurrency] = useState<any>(null);
+  const [invoiceType] = useState<'interstate' | 'intrastate' | 'international' | ''>('intrastate');
   const [taxRates, setTaxRates] = useState<any[]>([]);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
-  const [customerAddress, setCustomerAddress] = useState("");
-  const [customerGstin, setCustomerGstin] = useState("");
   const [invoiceNumber, setInvoiceNumber] = useState("");
   const [invoiceDate] = useState(new Date().toISOString().split('T')[0]);
   const [dueDate, setDueDate] = useState("");
@@ -82,29 +72,17 @@ const AddInvoice = () => {
       hsnSac: "",
       quantity: 1,
       rate: 0,
-      discount: 0,
       tax: 18,
       taxAmount: 0,
-      unitCost: 0,
       amount: 0,
     }
   ]);
 
   const [subtotal, setSubtotal] = useState(0);
   const [totalTax, setTotalTax] = useState(0);
-  const [totalDiscount, setTotalDiscount] = useState(0);
   const [grandTotal, setGrandTotal] = useState(0);
 
-  const currencySymbol = invoiceType === 'international' ? '$' : '₹';
-
-  const getDefaultTaxByInvoiceType = (
-    type: "international" | "interstate" | "intrastate" | ""
-  ) => {
-    if (type === "international") return 5;
-    if (type === "interstate") return 18;
-    if (type === "intrastate") return 18;
-    return 0;
-  };
+  const currencySymbol = '₹';
 
   const getFilteredTaxRates = () => {
     const type = (invoiceType || "intrastate").toLowerCase();
@@ -113,7 +91,6 @@ const AddInvoice = () => {
       const label = (r.label || "").toUpperCase().trim();
       
       if (type === "interstate") {
-        // Show IGST OR GST (since GST records often serve as IGST in this setup)
         return taxType === "IGST" || taxType === "GST" || label.includes("IGST");
       }
       if (type === "intrastate") {
@@ -134,44 +111,9 @@ const AddInvoice = () => {
     setDueDate(due.toISOString().split('T')[0]);
 
     // Fetch next invoice number
-    InvoiceService.generateInvoiceNumber().then(res => {
+    InvoiceService.generateInvoiceNumber("Sale").then(res => {
       if (res.status) setInvoiceNumber(res.invoiceNumber);
     });
-  }, []);
-
-  useEffect(() => {
-    if (invoiceType !== "international") {
-      setSelectedCurrency(null);
-    }
-  }, [invoiceType]);
-
-  useEffect(() => {
-    const loadTaxRates = async () => {
-      try {
-        const response = await TaxService.getAllTaxes();
-        let rawData: any[] = [];
-        
-        if (Array.isArray(response)) {
-          rawData = response;
-        } else if (response && Array.isArray(response.data)) {
-          rawData = response.data;
-        }
-
-        if (rawData.length > 0) {
-          setTaxRates(rawData.map((t: any) => ({
-            label: t.name || "",
-            value: Number(t.rate || 0),
-            type: t.type || ""
-          })));
-        } else {
-          setTaxRates([]);
-        }
-      } catch (e) {
-        console.error("Failed to load taxes:", e);
-        setTaxRates([]);
-      }
-    };
-    loadTaxRates();
   }, []);
 
   useEffect(() => {
@@ -183,9 +125,6 @@ const AddInvoice = () => {
           name: c.customer || `${c.firstName} ${c.lastName}`.trim() || c.name || "",
           email: c.email || "",
           phone: c.phone || "",
-          address: c.address || "",
-          gstin: c.gstin || "",
-          image: c.avatar || "user-01.jpg",
         }));
         setCustomers(formattedCustomers);
       } catch (err) {
@@ -216,6 +155,28 @@ const AddInvoice = () => {
     fetchProducts();
   }, []);
 
+  useEffect(() => {
+    const loadTaxRates = async () => {
+      try {
+        const response = await TaxService.getAllTaxes();
+        let rawData: any[] = [];
+        if (Array.isArray(response)) rawData = response;
+        else if (response && Array.isArray(response.data)) rawData = response.data;
+
+        if (rawData.length > 0) {
+          setTaxRates(rawData.map((t: any) => ({
+            label: t.name || "",
+            value: Number(t.rate || 0),
+            type: t.type || ""
+          })));
+        }
+      } catch (e) {
+        console.error("Failed to load taxes:", e);
+      }
+    };
+    loadTaxRates();
+  }, []);
+
 
 
 
@@ -237,8 +198,6 @@ const AddInvoice = () => {
     setCustomerName(customer.name);
     setCustomerEmail(customer.email || "");
     setCustomerPhone(customer.phone || "");
-    setCustomerAddress(customer.address || "");
-    setCustomerGstin(customer.gstin || "");
     setCustomerSearchQuery(customer.name);
     setShowCustomerDropdown(false);
   };
@@ -254,8 +213,6 @@ const AddInvoice = () => {
       // Option: Clear other fields? Let's clear them so they can enter fresh data for new customer
       setCustomerEmail("");
       setCustomerPhone("");
-      setCustomerAddress("");
-      setCustomerGstin("");
     }
     
     setShowCustomerDropdown(value.length > 0);
@@ -288,22 +245,17 @@ const AddInvoice = () => {
 
     const qty = Number(row.quantity || 0);
     const rate = Number(row.rate || 0);
-    const discountPercent = Number(row.discount || 0);
-
-    const grossAmount = qty * rate;
-    const discountAmount = (grossAmount * discountPercent) / 100;
-    const baseAmount = grossAmount - discountAmount;
+    const baseAmount = qty * rate;
 
     const taxPercent = Number(row.tax || 0);
     const taxAmount = (baseAmount * taxPercent) / 100;
 
-    const rowTotal = baseAmount + taxAmount;
+    const totalAmount = baseAmount + taxAmount;
 
     updatedRows[index] = {
       ...row,
       taxAmount: Number(taxAmount.toFixed(2)),
-      unitCost: Number(rowTotal.toFixed(2)), // Row total effectively
-      amount: Number(rowTotal.toFixed(2)),
+      amount: Number(totalAmount.toFixed(2)),
     };
 
     setItems([...updatedRows]);
@@ -320,10 +272,9 @@ const AddInvoice = () => {
       productSearch: product.name,
       showProductDropdown: false,
       rate: Number(product.rate || 0),
-      tax: Number(product.tax || getDefaultTaxByInvoiceType(invoiceType)),
+      tax: Number(product.tax || 18),
       hsnSac: product.hsnSac || "",
       quantity: updated[index].quantity || 1,
-      discount: updated[index].discount || 0,
     };
     
     recalculateRow(updated, index);
@@ -353,10 +304,8 @@ const AddInvoice = () => {
         hsnSac: "",
         quantity: 1,
         rate: 0,
-        discount: 0,
-        tax: getDefaultTaxByInvoiceType(invoiceType),
+        tax: 18,
         taxAmount: 0,
-        unitCost: 0,
         amount: 0,
       },
     ]);
@@ -374,21 +323,15 @@ const AddInvoice = () => {
   useEffect(() => {
     let sub = 0;
     let tax = 0;
-    let discount = 0;
     
     items.forEach(item => {
-      const grossAmount = item.quantity * item.rate;
-      const discountAmount = (grossAmount * item.discount) / 100;
-      
-      sub += grossAmount;
-      discount += discountAmount;
-      tax += item.taxAmount || 0;
+      sub += (item.quantity * item.rate);
+      tax += (item.taxAmount || 0);
     });
 
     setSubtotal(sub);
-    setTotalDiscount(discount);
     setTotalTax(tax);
-    setGrandTotal(sub - discount + tax);
+    setGrandTotal(sub + tax);
   }, [items]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -420,15 +363,12 @@ const AddInvoice = () => {
     }
 
     const invoiceItems: InvoiceItem[] = items.map(item => {
-      const grossAmount = item.quantity * item.rate;
-      const discountAmount = (grossAmount * (Number(item.discount) || 0)) / 100;
-      
       return {
         productId: (item.product?.id || item.product?.value || "").toString().match(/^[0-9a-fA-F]{24}$/) ? (item.product?.id || item.product?.value) : undefined,
         productName: item.productName || item.productSearch || "Unnamed Product",
         quantity: Number(item.quantity),
         rate: Number(item.rate),
-        discount: Number(discountAmount.toFixed(2)), 
+        discount: 0,
         taxPercent: Number(item.tax),
         hsnSac: item.hsnSac || "",
         amount: Number(item.amount.toFixed(2))
@@ -436,14 +376,12 @@ const AddInvoice = () => {
     });
 
     const newInvoice: Partial<Invoice> = {
-      type: "Invoice",
+      type: "Sale",
       invoiceType: (invoiceType.charAt(0).toUpperCase() + invoiceType.slice(1)) as any,
       customerId: selectedCustomerId,
       customerName,
       customerEmail,
       customerPhone,
-      customerAddress,
-      customerGstin,
       invoiceDate: new Date().toISOString(),
       dueDate: new Date(dueDate).toISOString(),
       paymentStatus,
@@ -461,7 +399,7 @@ const AddInvoice = () => {
     try {
       const response = await InvoiceService.saveInvoice(newInvoice);
       if (response.status) {
-        navigate(route.invoicelist || "/sales/invoice-list");
+        navigate(route.sales || "/sales");
       } else {
         Swal.fire("Error", response.message || "Failed to save invoice", "error");
       }
@@ -480,77 +418,21 @@ const AddInvoice = () => {
             <div className="page-header">
               <div className="add-item d-flex">
                 <div className="page-title">
-                  <h4>Add Invoice</h4>
-                  <h6>Create New Invoice</h6>
+                  <h4>Add Sales</h4>
+                  <h6>Create New Sales Record</h6>
                 </div>
               </div>
               <div className="page-btn">
-                <Link to={route.invoicelist || "/sales/invoice-list"} className="btn btn-secondary me-2">
+                <Link to={route.sales || "/sales"} className="btn btn-secondary me-2">
                   <i className="ti ti-arrow-left me-1"></i>Back to List
                 </Link>
                 <button type="submit" className="btn btn-primary">
-                  <i className="ti ti-device-floppy me-1"></i>Save Invoice
+                  <i className="ti ti-device-floppy me-1"></i>Save Sales
                 </button>
               </div>
             </div>
 
-            <div className="card mb-3">
-              <div className="card-body">
-                <h5 className="card-title mb-3">Invoice Type <span className="text-danger">*</span></h5>
-                <div className="row">
-                  <div className="col-md-4">
-                    <div className="form-check">
-                      <input className="form-check-input" type="radio" name="invoiceType" id="intrastate"
-                        checked={invoiceType === 'intrastate'} onChange={() => setInvoiceType('intrastate')} />
-                      <label className="form-check-label" htmlFor="intrastate">
-                        Intrastate Invoice (Within State - INR ₹)
-                      </label>
-                    </div>
-                  </div>
-                  <div className="col-md-4">
-                    <div className="form-check">
-                      <input className="form-check-input" type="radio" name="invoiceType" id="interstate"
-                        checked={invoiceType === 'interstate'} onChange={() => setInvoiceType('interstate')} />
-                      <label className="form-check-label" htmlFor="interstate">
-                        Interstate Invoice (Between States - INR ₹)
-                      </label>
-                    </div>
-                  </div>
-                  <div className="col-md-4">
-                    <div className="form-check">
-                      <input className="form-check-input" type="radio" name="invoiceType" id="international"
-                        checked={invoiceType === 'international'} onChange={() => setInvoiceType('international')} />
-                      <label className="form-check-label" htmlFor="international">
-                        International Invoice
-                      </label>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
 
-            {invoiceType === "international" && (
-              <div className="card mb-3">
-                <div className="card-body">
-                  <div className="row">
-                    <div className="col-lg-12">
-                      <div className="mb-3">
-                        <label className="form-label">Currency</label>
-                        <CommonSelect
-                          className="select"
-                          value={selectedCurrency}
-                          options={ALL_SELECTED_CURRENCIES.map((c) => ({
-                            label: `${c.name} (${c.symbol})`,
-                            value: c.code,
-                          }))}
-                          onChange={(e: any) => setSelectedCurrency(e.value)}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
 
             <div className="card mb-3">
               <div className="card-body">
@@ -607,25 +489,15 @@ const AddInvoice = () => {
                       </small>
                     )}
                   </div>
-                  <div className="col-md-6 mb-3">
+                  <div className="col-md-4 mb-3">
                     <label className="form-label">Email </label>
                     <input type="email" className="form-control" value={customerEmail}
                       onChange={(e) => setCustomerEmail(e.target.value)} placeholder="Enter email address" />
                   </div>
-                  <div className="col-md-6 mb-3">
+                  <div className="col-md-4 mb-3">
                     <label className="form-label">Phone Number</label>
                     <input type="tel" className="form-control" value={customerPhone}
                       onChange={(e) => setCustomerPhone(e.target.value)} placeholder="Enter phone number" />
-                  </div>
-                   <div className="col-md-6 mb-3">
-                    <label className="form-label">Address</label>
-                    <input type="text" className="form-control" value={customerAddress}
-                      onChange={(e) => setCustomerAddress(e.target.value)} placeholder="Enter customer address" />
-                  </div>
-                  <div className="col-md-6 mb-3">
-                    <label className="form-label">GSTIN</label>
-                    <input type="text" className="form-control" value={customerGstin}
-                      onChange={(e) => setCustomerGstin(e.target.value)} placeholder="Enter GSTIN (optional)" />
                   </div>
                 </div>
               </div>
@@ -633,10 +505,10 @@ const AddInvoice = () => {
 
             <div className="card mb-3">
               <div className="card-body">
-                <h5 className="card-title mb-3">Invoice Details</h5>
+                <h5 className="card-title mb-3">Sales Details</h5>
                 <div className="row">
                   <div className="col-md-4 mb-3">
-                    <label className="form-label">Invoice No</label>
+                    <label className="form-label">Sale No</label>
                     <input type="text" className="form-control bg-light" value={invoiceNumber} readOnly placeholder="Auto-generated" />
                   </div>
                   <div className="col-md-4 mb-3">
@@ -671,21 +543,18 @@ const AddInvoice = () => {
 
             <div className="card mb-3">
               <div className="card-body">
-                <h5 className="card-title mb-3">Invoice Items</h5>
+                <h5 className="card-title mb-3">Sales Items</h5>
                 <div className="table-responsive" style={{ overflow: "visible" }}>
                   <table className="table table-bordered mb-0">
                     <thead className="table-light">
                       <tr>
-                        <th style={{ width: "15%" }}>Item</th>
-                        <th style={{ width: "10%" }}>HSN/SAC</th>
-                        <th style={{ width: "110px", textAlign: "center" }}>Qty</th>
-                        <th style={{ width: "180px", textAlign: "right" }}>Rate</th>
-                        <th style={{ width: "120px", textAlign: "right" }}>Discount (%)</th>
-                        <th style={{ width: "180px" }}>Tax (%)</th>
-                        <th style={{ width: "100px", textAlign: "right" }}>Tax Amount</th>
-                        <th style={{ width: "100px", textAlign: "right" }}>Unit Cost</th>
-                        <th style={{ width: "100px", textAlign: "right" }}>Total Cost</th>
-                        <th style={{ width: "40px" }}></th>
+                        <th style={{ width: "30%" }}>Item</th>
+                        <th style={{ width: "15%" }}>HSN/SSAC</th>
+                        <th style={{ width: "10%", textAlign: "center" }}>Qty</th>
+                        <th style={{ width: "15%", textAlign: "right" }}>Rate</th>
+                        <th style={{ width: "15%" }}>Tax (%)</th>
+                        <th style={{ width: "10%", textAlign: "right" }}>Total Amount</th>
+                        <th style={{ width: "5%" }}></th>
                       </tr>
                     </thead>
                     <tbody>
@@ -754,7 +623,7 @@ const AddInvoice = () => {
                                       >
                                         <div className="fw-semibold" style={{ fontSize: 13 }}>{product.name}</div>
                                         <small className="text-muted">
-                                          Rate: ₹{product.rate.toFixed(2)} &nbsp;|&nbsp; Tax: {product.tax}%
+                                          Rate: ₹{product.rate.toFixed(2)} | HSN: {product.hsnSac} | Tax: {product.tax}%
                                         </small>
                                       </div>
                                     ))
@@ -765,10 +634,10 @@ const AddInvoice = () => {
                               )}
                             </div>
                           </td>
-                          <td style={{ width: "180px" }}>
+                          <td>
                             <input
                               type="text"
-                              className="form-control w-100"
+                              className="form-control"
                               value={row.hsnSac}
                               onChange={(e) =>
                                 onInputChange(index, "hsnSac", e.target.value)
@@ -796,41 +665,30 @@ const AddInvoice = () => {
                               }
                             />
                           </td>
-                          <td style={{ textAlign: "right" }}>
-                            <input
-                              type="number"
-                              className="form-control text-end w-100"
-                              value={row.discount}
-                              onChange={(e) =>
-                                onInputChange(index, "discount", Number(e.target.value))
-                              }
-                            />
-                          </td>
                           <td>
                             <select
-                              className="form-select w-100"
+                              className="form-select"
                               value={row.tax}
                               onChange={(e) =>
                                 onInputChange(index, "tax", Number(e.target.value))
                               }
                             >
                               <option value={0}>No Tax</option>
-                              {getFilteredTaxRates().map((rate: any) => {
-                                let displayLabel = rate.label;
-                                if (invoiceType === "interstate" && rate.type === "GST") {
-                                  displayLabel = rate.label.replace(/GST/i, "IGST");
-                                }
-                                return (
-                                  <option key={rate.label + rate.value} value={rate.value}>
-                                    {displayLabel}
-                                  </option>
-                                );
-                              })}
+                              {getFilteredTaxRates().map((rate: any) => (
+                                <option key={rate.label + rate.value} value={rate.value}>
+                                  {rate.label}
+                                </option>
+                              ))}
                             </select>
                           </td>
-                          <td style={{ textAlign: "right" }}>{row.taxAmount || 0}</td>
-                          <td style={{ textAlign: "right" }}>{row.unitCost || 0}</td>
-                          <td style={{ textAlign: "right" }}>{row.amount || 0}</td>
+                          <td style={{ textAlign: "right" }}>
+                            <input
+                              type="number"
+                              className="form-control text-end w-100 bg-light"
+                              value={row.amount}
+                              readOnly
+                            />
+                          </td>
                           <td className="text-center">
                             <button
                               type="button"
@@ -838,13 +696,13 @@ const AddInvoice = () => {
                               onClick={() => removeItem(row.id)}
                               disabled={items.length === 1}
                             >
-                              <i className="ti ti-trash"></i>
+                               <i className="ti ti-trash"></i>
                             </button>
                           </td>
                         </tr>
                       ))}
                       <tr>
-                        <td colSpan={10}>
+                        <td colSpan={7}>
                           <button
                             type="button"
                             className="btn btn-link text-primary p-0"
@@ -867,13 +725,23 @@ const AddInvoice = () => {
                     <h5 className="card-title mb-3">Additional Information</h5>
                     <div className="mb-3">
                       <label className="form-label">Notes</label>
-                      <textarea className="form-control" rows={3} value={notes}
-                        onChange={(e) => setNotes(e.target.value)} placeholder="Enter any additional notes"></textarea>
+                      <textarea
+                        className="form-control"
+                        rows={3}
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        placeholder="Enter any additional notes"
+                      ></textarea>
                     </div>
                     <div className="mb-3">
                       <label className="form-label">Terms & Conditions</label>
-                      <textarea className="form-control" rows={3} value={terms}
-                        onChange={(e) => setTerms(e.target.value)} placeholder="Enter terms and conditions"></textarea>
+                      <textarea
+                        className="form-control"
+                        rows={3}
+                        value={terms}
+                        onChange={(e) => setTerms(e.target.value)}
+                        placeholder="Enter terms and conditions"
+                      ></textarea>
                     </div>
                   </div>
                 </div>
@@ -882,46 +750,18 @@ const AddInvoice = () => {
               <div className="col-md-6">
                 <div className="card mb-3">
                   <div className="card-body">
-                    <h5 className="card-title mb-3">Invoice Summary</h5>
+                    <h5 className="card-title mb-3">Sales Summary</h5>
                     <div style={{ minWidth: "250px" }}>
                       <div className="d-flex justify-content-between mb-2">
                         <span className="fw-medium">Subtotal</span>
                         <span>{currencySymbol}{subtotal.toFixed(2)}</span>
                       </div>
-                      {totalDiscount > 0 && (
-                        <div className="d-flex justify-content-between mb-2 text-danger">
-                          <span className="fw-medium">Total Discount ({((totalDiscount / (subtotal || 1)) * 100).toFixed(0)}%)</span>
-                          <span>-{currencySymbol}{totalDiscount.toFixed(2)}</span>
-                        </div>
-                      )}
-                      
-                      {invoiceType === 'intrastate' && totalTax > 0 && (
-                        <>
-                          <div className="d-flex justify-content-between mb-2">
-                            <span className="fw-medium">CGST</span>
-                            <span>{currencySymbol}{(totalTax / 2).toFixed(2)}</span>
-                          </div>
-                          <div className="d-flex justify-content-between mb-2">
-                            <span className="fw-medium">SGST</span>
-                            <span>{currencySymbol}{(totalTax / 2).toFixed(2)}</span>
-                          </div>
-                        </>
-                      )}
-                      {invoiceType === 'interstate' && totalTax > 0 && (
-                        <div className="d-flex justify-content-between mb-2">
-                          <span className="fw-medium">IGST</span>
-                          <span>{currencySymbol}{totalTax.toFixed(2)}</span>
-                        </div>
-                      )}
-                      {invoiceType === 'international' && totalTax > 0 && (
-                        <div className="d-flex justify-content-between mb-2">
-                          <span className="fw-medium">VAT</span>
-                          <span>{currencySymbol}{totalTax.toFixed(2)}</span>
-                        </div>
-                      )}
-
-                      <div className="d-flex justify-content-between fw-bold border-top pt-2 mt-2 h5 mb-3">
-                        <span>Grand Total</span>
+                      <div className="d-flex justify-content-between mb-2">
+                        <span className="fw-medium">Total Tax</span>
+                        <span>{currencySymbol}{totalTax.toFixed(2)}</span>
+                      </div>
+                      <div className="d-flex justify-content-between mb-2 h5 border-top pt-2">
+                        <span className="fw-medium">Grand Total</span>
                         <span className="text-primary">{currencySymbol}{grandTotal.toFixed(2)}</span>
                       </div>
 
@@ -953,9 +793,9 @@ const AddInvoice = () => {
             <div className="card">
               <div className="card-body">
                 <div className="d-flex justify-content-end gap-2">
-                  <Link to={route.invoicelist || "/sales/invoice-list"} className="btn btn-secondary">Cancel</Link>
+                  <Link to={route.sales || "/sales"} className="btn btn-secondary">Cancel</Link>
                   <button type="submit" className="btn btn-primary">
-                    <i className="ti ti-device-floppy me-1"></i>Create Invoice
+                    <i className="ti ti-device-floppy me-1"></i>Create Sale
                   </button>
                 </div>
               </div>
@@ -968,4 +808,4 @@ const AddInvoice = () => {
   );
 };
 
-export default AddInvoice;
+export default AddSales;

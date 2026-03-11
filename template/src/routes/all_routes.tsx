@@ -204,6 +204,8 @@ export const all_routes = {
   payrollList: "/employee-salary",
 
   //New Page
+  sales: "/sales",
+  addsales: "/add-sales",
   onlineorder: "/online-orders",
   customer: "/customer",
   pos: "/pos",

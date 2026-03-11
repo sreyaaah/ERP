@@ -215,6 +215,9 @@ const Payslip = lazy(() => import("../feature-module/hrm/payslip"));
 const Holidays = lazy(() => import("../feature-module/hrm/holidays"));
 const SalesList = lazy(() => import("../feature-module/sales/saleslist"));
 const SalesReturn = lazy(() => import("../feature-module/sales/salesreturn"));
+const Sales = lazy(
+  () => import("../feature-module/sales/online-sales/sales")
+);
 const QuotationList = lazy(
   () => import("../feature-module/sales/quotationlist")
 );
@@ -226,6 +229,9 @@ const InvoiceList = lazy(
 );
 const AddInvoice = lazy(
   () => import("../feature-module/sales/addInvoice")
+);
+const AddSales = lazy(
+  () => import("../feature-module/sales/online-sales/addsales")
 );
 const Notes = lazy(() => import("../feature-module/application/notes"));
 const FileManager = lazy(
@@ -782,6 +788,20 @@ export const authRoutes = [
     path: routes.qrcode,
     name: "qrcode",
     element: <QRcode />,
+    route: Route,
+  },
+  {
+    id: 200,
+    path: routes.sales,
+    name: "sales",
+    element: <Sales />,
+    route: Route,
+  },
+  {
+    id: 201,
+    path: routes.addsales,
+    name: "addsales",
+    element: <AddSales />,
     route: Route,
   },
   {
