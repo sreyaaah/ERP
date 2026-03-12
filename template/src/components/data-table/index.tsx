@@ -48,12 +48,11 @@ const PrimeDataTable: React.FC<Props> = ({
   totalRecords,
   dataKey = "id"
 }) => {
-  const skeletonRows = Array(rows).fill({});
 
   // Filter data based on search query
   const filteredData = useMemo(() => {
-    if (totalRecords !== undefined && totalRecords > 0) {
-      return data;
+    if (typeof totalRecords === 'number') {
+      return data || [];
     }
 
     if (!searchQuery || searchQuery.trim() === "") {
@@ -80,18 +79,25 @@ const PrimeDataTable: React.FC<Props> = ({
   }, [searchQuery, setCurrentPage]);
 
   // Use totalRecords prop if provided (server-side pagination), otherwise use filtered data length
-  const effectiveTotalRecords = (totalRecords !== undefined && totalRecords > 0) ? totalRecords : filteredData.length;
+  const isServerSide = typeof totalRecords === 'number';
+  const effectiveTotalRecords = isServerSide ? totalRecords : filteredData.length;
   const totalPages = Math.ceil(effectiveTotalRecords / rows);
 
   // Calculate paginated data
   const startIndex = (currentPage - 1) * rows;
-  const endIndex = startIndex + rows;
   
-  // If effectiveTotalRecords is more than data.length, it means data is already paginated by the server
-  const isServerSide = totalRecords !== undefined && totalRecords > data.length;
-  const paginatedData = loading 
-    ? skeletonRows 
-    : (isServerSide ? filteredData : filteredData.slice(startIndex, endIndex));
+  // Decide what to show: Skeletons if loading, else the data
+  const paginatedData = useMemo(() => {
+    if (loading) {
+      return Array(rows).fill(0).map((_, i) => ({ _id: `skeleton-${i}` }));
+    }
+    
+    if (isServerSide) {
+      return data || [];
+    }
+    
+    return (data || []).slice(startIndex, startIndex + rows);
+  }, [loading, data, rows, isServerSide, startIndex]);
 
   const onPageChange = (newPage: number) => {
     setCurrentPage(newPage);

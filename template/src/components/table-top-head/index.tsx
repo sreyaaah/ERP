@@ -1,8 +1,7 @@
 import { excel, pdf } from "../../utils/imagepath";
 import { Link } from "react-router";
 import { Tooltip } from "primereact/tooltip";
-import { useSelector } from "react-redux";
-import { useDispatch } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { setToggleHeader } from "../../core/redux/sidebarSlice";
 
 interface TableTopHeadProps {
@@ -13,13 +12,16 @@ interface TableTopHeadProps {
 const TableTopHead = ({ onPdfExport, onExcelExport }: TableTopHeadProps) => {
   const dispatch = useDispatch();
   const { toggleHeader } = useSelector((state: any) => state.sidebar);
+  
   const handleToggleHeader = () => {
     dispatch(setToggleHeader(!toggleHeader));
   };
+
   return (
     <>
       <Tooltip target=".pr-tooltip" />
       <ul className="table-top-head">
+
         <li>
           <Link
             to="#"
@@ -48,7 +50,7 @@ const TableTopHead = ({ onPdfExport, onExcelExport }: TableTopHeadProps) => {
             className="pr-tooltip"
             data-pr-tooltip="Refresh"
             data-pr-position="top"
-            onClick={(e) => e.preventDefault()}
+            onClick={(e) => { e.preventDefault(); window.location.reload(); }}
           >
             <i className="ti ti-refresh" />
           </Link>
