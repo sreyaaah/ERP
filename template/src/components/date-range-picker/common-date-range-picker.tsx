@@ -14,7 +14,11 @@ dayjs.extend(localeData);
 const { RangePicker } = DatePicker;
 const dateFormat = 'YYYY/MM/DD';
 
-const CommonDateRangePicker: React.FC = () => {
+interface CommonDateRangePickerProps {
+  onRangeChange?: (startDate: string, endDate: string) => void;
+}
+
+const CommonDateRangePicker: React.FC<CommonDateRangePickerProps> = ({ onRangeChange }) => {
   const [dates, setDates] = useState<[dayjs.Dayjs, dayjs.Dayjs]>([
     dayjs().subtract(6, 'days'),
     dayjs(),
@@ -40,8 +44,12 @@ const CommonDateRangePicker: React.FC = () => {
       // Trigger calendar popup manually
       setTimeout(() => rangeRef.current?.focus(), 0);
     } else {
-      setDates(predefinedRanges[key]);
+      const newDates = predefinedRanges[key];
+      setDates(newDates);
       setCustomVisible(false);
+      if (onRangeChange) {
+        onRangeChange(newDates[0].format('YYYY-MM-DD'), newDates[1].format('YYYY-MM-DD'));
+      }
     }
   };
 
@@ -49,6 +57,9 @@ const CommonDateRangePicker: React.FC = () => {
     if (value) {
       setDates(value);
       setCustomVisible(false);
+      if (onRangeChange) {
+        onRangeChange(value[0].format('YYYY-MM-DD'), value[1].format('YYYY-MM-DD'));
+      }
     }
   };
 
