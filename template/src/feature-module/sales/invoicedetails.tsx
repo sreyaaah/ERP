@@ -1,338 +1,540 @@
 import CommonFooter from "../../components/footer/commonFooter";
 import { all_routes } from "../../routes/all_routes";
 import { Link, useParams, useSearchParams } from "react-router-dom";
-import { logo, logoWhite, qrCodeImage, sign } from "../../utils/imagepath";
-import { InvoiceService, type Invoice } from "../services/invoice.service";
+import { logo } from "../../utils/imagepath";
+import { InvoiceService } from "../services/invoice.service";
+import { BankService } from "../services/bank.service";
 import { useEffect, useState } from "react";
-import html2pdf from "html2pdf.js";
+import Swal from "sweetalert2";
 
 const Invoicedetails = () => {
   const route = all_routes;
   const { id } = useParams<{ id: string }>();
-  const [invoice, setInvoice] = useState<Invoice | null>(null);
-  const [loading, setLoading] = useState(true);
   const [searchParams] = useSearchParams();
 
-  useEffect(() => {
-    const fetchInvoice = async () => {
-      if (!id) return;
-      try {
-        const res = await InvoiceService.getInvoiceById(id);
-        if (res.status) {
-          setInvoice(res.data);
-        }
-      } catch (err) {
-        console.error("Fetch failed:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const [invoice, setInvoice] = useState<any | null>(null);
+  const [bankAccount, setBankAccount] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-    fetchInvoice();
+  useEffect(() => {
+    if (!id) return;
+
+    Promise.all([
+      InvoiceService.getInvoiceById(id),
+      BankService.getAllBankAccounts({ status: true }).catch(() => ({
+        data: [],
+      })),
+    ])
+      .then(([invRes, bRes]) => {
+        setInvoice(invRes.data ?? invRes);
+        const defaultBank =
+          bRes.data.find((b: any) => b.isDefault) || bRes.data[0];
+        setBankAccount(defaultBank);
+      })
+      .finally(() => setLoading(false));
   }, [id]);
 
-  const handleDownloadPdf = () => {
-    const element = document.getElementById("invoice-content");
-    if (!element || !invoice) return;
+  const handlePrint = () => window.print();
 
-    const opt = {
-      margin: 10,
-      filename: `Invoice_${invoice.invoiceNumber}.pdf`,
-      image: { type: "jpeg" as const, quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: "mm" as const, format: "a4" as const, orientation: "portrait" as const },
-    };
-
-    html2pdf().set(opt).from(element).save();
+  const handleDownloadPdf = async () => {
+    if (!id || !invoice) return;
+    try {
+      Swal.fire({
+        title: "Generating PDF...",
+        text: "Please wait",
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        },
+      });
+      await InvoiceService.downloadInvoicePdf(id, invoice.invoiceNumber);
+      Swal.close();
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Download Failed",
+        text: "Could not download the invoice. Please try again.",
+      });
+    }
   };
 
-  // Auto-trigger download when opened with ?download=true (from invoice list download icon)
+  // Auto-trigger download when opened with ?download=true
   useEffect(() => {
     if (!invoice || loading) return;
     if (searchParams.get("download") === "true") {
-      // Small delay to ensure DOM is fully rendered
-      setTimeout(() => {
-        handleDownloadPdf();
-        // Close the tab after download starts
-        setTimeout(() => window.close(), 1500);
-      }, 800);
+      handleDownloadPdf().then(() => {
+        if (searchParams.get("close") === "true") {
+          setTimeout(() => {
+            if (window.parent !== window) {
+              console.log("Download complete inside iframe");
+            } else {
+              window.close();
+            }
+          }, 2000);
+        }
+      });
     }
-  }, [invoice, loading]);
+  }, [invoice, loading, searchParams]);
 
+  if (loading) return <div className="text-center py-5">Loading...</div>;
+  if (!invoice)
+    return <div className="text-center py-5">Invoice Not Found</div>;
 
-  const handlePrint = () => {
-    window.print();
-  };
-
-
-
-  if (loading) {
-    return (
-      <div className="page-wrapper">
-        <div className="content">
-          <div className="text-center py-5">
-            <div className="spinner-border text-primary" role="status">
-              <span className="visually-hidden">Loading...</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!invoice) {
-    return (
-      <div className="page-wrapper">
-        <div className="content">
-          <div className="text-center py-5">
-            <h4>Invoice Not Found</h4>
-            <p>The invoice you're looking for doesn't exist.</p>
-            <Link to={route.invoicelist} className="btn btn-primary">
-              Back to Invoice List
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const quoteMatch = invoice.notes?.match(
+    /Converted from Quotation: (.*?) \(Dated: (.*?)\)/,
+  );
+  const quoteRefNo = quoteMatch?.[1] || "—";
+  const quoteDate = quoteMatch?.[2] || "—";
 
   return (
     <div>
+      <style>{`
+
+.invoice-doc{
+max-width:950px;
+margin:auto;
+font-family:Arial, Helvetica, sans-serif;
+color:#000;
+}
+
+.box-container{
+border:1px solid #aaa;
+margin-bottom:15px;
+}
+
+.invoice-table{
+width:100%;
+border-collapse:collapse;
+font-size:11px;
+}
+
+.invoice-table th,
+.invoice-table td{
+border-left:1px solid #aaa;
+border-right:1px solid #aaa;
+border-top:none;
+border-bottom:none;
+padding:6px;
+}
+
+.invoice-table thead th{
+border-top: 1px solid #aaa;
+border-bottom: 1px solid #aaa;
+}
+
+.invoice-table tbody tr:last-child td{
+/* prevent bottom gap */
+}
+
+.invoice-table th{
+text-align:center;
+font-weight:400;
+background:#fff;
+}
+
+.invoice-table td{
+vertical-align:middle;
+}
+
+.text-center{text-align:center}
+.text-end{text-align:right}
+
+.invoice-table td, 
+.invoice-table th {
+  white-space: normal;
+  word-wrap: break-word;
+}
+
+/* Prevent wrapping for specific columns */
+.invoice-table th:nth-child(1),
+.invoice-table th:nth-child(3),
+.invoice-table th:nth-child(4),
+.invoice-table th:nth-child(5),
+.invoice-table th:nth-child(6),
+.invoice-table th:nth-child(7),
+.invoice-table th:nth-child(8),
+.invoice-table td:nth-child(1),
+.invoice-table td:nth-child(3),
+.invoice-table td:nth-child(4),
+.invoice-table td:nth-child(5),
+.invoice-table td:nth-child(6),
+.invoice-table td:nth-child(7),
+.invoice-table td:nth-child(8) {
+  white-space: nowrap;
+}
+
+.bank-table td{
+border:none;
+padding:2px 0;
+font-size:12px;
+}
+
+@media print{
+
+.page-header,
+.footer-actions,
+.main-footer{
+display:none !important;
+}
+
+.page-wrapper{
+margin:0;
+padding:0;
+}
+
+.invoice-doc{
+width:100%;
+}
+
+}
+
+`}</style>
+
       <div className="page-wrapper">
         <div className="content">
-          {/* Invoices */}
-          <div className="card" id="invoice-content">
-            <div className="card-body">
-              <div className="row justify-content-between align-items-center border-bottom mb-3">
-                <div className="col-md-6">
-                  <div className="invoice-logo mb-2">
-                    <Link className="logo logo-normal" to="#">
-                      <img src={logo} width="130" className="img-fluid" alt="logo" />
-                    </Link>
-                    <Link className="logo logo-white" to="#">
-                      <img src={logoWhite} width="130" className="img-fluid" alt="logo" />
-                    </Link>
+          <div className="page-header d-print-none mb-4">
+            <div className="page-title">
+              <h4>Invoice View</h4>
+            </div>
+
+            <Link to={route.invoicelist} className="btn btn-primary">
+              Back
+            </Link>
+          </div>
+
+          <div id="invoice-content" className="invoice-doc">
+            <div
+              className="text-center fw-bold mb-2"
+              style={{ fontSize: "16px" }}
+            >
+              Tax Invoice
+            </div>
+
+            {/* HEADER */}
+            <div className="box-container">
+              <div className="d-flex">
+                <div className="col-6 border-end p-3">
+                  <div style={{ fontSize: "12px", fontWeight: "bold" }}>
+                    Invoice From:
                   </div>
-                  <p>3099 Kennedy Court Framingham, MA 01702</p>
-                </div>
-                <div className="col-md-6">
-                  <div className="text-end mb-3">
-                    <h5 className="text-gray mb-1">
-                      Invoice No <span className="text-primary">{invoice.invoiceNumber}</span>
-                    </h5>
-                    <p className="mb-1 fw-medium">
-                      Created Date: <span className="text-dark">{invoice.invoiceDate}</span>
-                    </p>
-                    <p className="fw-medium">
-                      Due Date: <span className="text-dark">{invoice.dueDate}</span>
-                    </p>
+
+                  <div style={{ fontWeight: "bold" }}>
+                    WEBERFOX TECHNOLOGIES PVT LTD
+                  </div>
+
+                  <div style={{ fontSize: "12px" }}>
+                    Building No:15/538, Koduvazhathu, Koivila P.O, Thevalakkara,
+                    Karunagappally, Kollam, Kerala PIN:691590
+                  </div>
+
+                  <div style={{ fontSize: "12px" }}>
+                    GSTIN : 32AADCW0489R1ZQ
+                  </div>
+
+                  <div style={{ fontSize: "12px" }}>State : Kerala (32)</div>
+
+                  <div style={{ fontSize: "12px" }}>
+                    Email : contact@weberfox.com
+                  </div>
+
+                  <div style={{ fontSize: "12px" }}>
+                    Contact : +91 94962 69666
+                  </div>
+
+                  <hr />
+
+                  <div style={{ fontWeight: "bold" }}>Buyer (Bill To)</div>
+
+                  <div style={{ fontWeight: "bold" }}>
+                    {invoice.customer?.name || invoice.customerName}
+                  </div>
+
+                  <div style={{ fontSize: "12px" }}>
+                    {invoice.customerAddress}
+                  </div>
+
+                  <div style={{ fontSize: "12px" }}>
+                    GSTIN : {invoice.customerGstin || "—"}
                   </div>
                 </div>
-              </div>
-              <div className="row border-bottom mb-3">
-                <div className="col-md-5">
-                  <p className="text-dark mb-2 fw-semibold">From</p>
-                  <div>
-                    <h4 className="mb-1">Your Company Name</h4>
-                    <p className="mb-1">2077 Chicago Avenue Orosi, CA 93647</p>
-                    <p className="mb-1">
-                      Email: <span className="text-dark">company@example.com</span>
-                    </p>
-                    <p>
-                      Phone: <span className="text-dark">+1 987 654 3210</span>
-                    </p>
+
+                <div className="col-6">
+                  <div className="text-center border-bottom p-2">
+                    <img src={logo} style={{ height: "45px" }} />
+
+                    <div style={{ fontSize: "10px", fontWeight: "bold" }}>
+                      AHEAD BY A WAVELENGTH
+                    </div>
                   </div>
-                </div>
-                <div className="col-md-5">
-                  <p className="text-dark mb-2 fw-semibold">To</p>
-                  <div>
-                    <h4 className="mb-1">{invoice.customer?.name || invoice.customerName}</h4>
-                    {invoice.customer?.address && <p className="mb-1">{invoice.customer.address}</p>}
-                    {invoice.customer?.email && (
-                      <p className="mb-1">
-                        Email: <span className="text-dark">{invoice.customer.email}</span>
-                      </p>
-                    )}
-                    {invoice.customer?.phone && (
-                      <p>
-                        Phone: <span className="text-dark">{invoice.customer.phone}</span>
-                      </p>
-                    )}
+
+                  <div className="d-flex border-bottom">
+                    <div className="col-7 border-end p-2">
+                      <div style={{ fontSize: "12px" }}>Invoice No</div>
+                      <div style={{ fontWeight: "bold" }}>
+                        {invoice.invoiceNumber}
+                      </div>
+                    </div>
+
+                    <div className="col-5 text-center p-2">
+                      <div style={{ fontSize: "12px" }}>Dated</div>
+                      <div className="fw-bold">
+                        {invoice.createdAt
+                          ? new Date(invoice.createdAt).toLocaleDateString(
+                              "en-GB",
+                            )
+                          : invoice.invoiceDate
+                            ? new Date(invoice.invoiceDate).toLocaleDateString(
+                                "en-GB",
+                              )
+                            : "—"}
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div className="col-md-2">
-                  <div className="mb-3">
-                    <p className="text-title mb-2 fw-medium">Payment Status</p>
-                    <span
-                      className={`badge ${
-                        invoice.paymentStatus === "Paid"
-                          ? "badge-success"
-                          : invoice.paymentStatus === "Partially Paid"
-                          ? "badge-warning"
-                          : invoice.paymentStatus === "Overdue"
-                          ? "badge-danger"
-                          : "badge-secondary"
-                      } text-white fs-10 px-2 rounded`}
-                    >
-                      <i className="ti ti-point-filled" />
-                      {invoice.paymentStatus}
-                    </span>
-                    <div className="mt-3">
-                      <img src={qrCodeImage} className="img-fluid" alt="QR" />
+
+                  <div className="d-flex border-bottom">
+                    <div className="col-7 border-end p-2">
+                      <div style={{ fontSize: "12px" }}>Quote Ref</div>
+                      <div style={{ fontWeight: "bold" }}>{quoteRefNo}</div>
+                    </div>
+
+                    <div className="col-5 text-center p-2">
+                      <div style={{ fontSize: "12px" }}>Dated</div>
+                      <div className="fw-bold">
+                        {quoteDate !== "—"
+                          ? new Date(quoteDate).toLocaleDateString("en-GB")
+                          : "—"}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-2">
+                    <div style={{ fontSize: "12px" }}>Place of Supply</div>
+                    <div style={{ fontWeight: "bold" }}>
+                      {invoice.placeOfSupply || "KARNATAKA (29)"}
                     </div>
                   </div>
                 </div>
               </div>
-              <div>
-                <p className="fw-medium mb-3">
-                  Invoice Type: <span className="text-dark fw-medium text-capitalize">{invoice.invoiceType}</span>
-                </p>
-                <div className="table-responsive mb-3">
-                  <table className="table">
-                    <thead className="thead-light">
-                      <tr>
-                        <th>Product</th>
-                        <th className="text-end">Qty</th>
-                        <th className="text-end">Rate</th>
-                        <th className="text-end">Discount</th>
-                        <th className="text-end">Tax (%)</th>
-                        <th className="text-end">Tax Amount</th>
-                        <th className="text-end">Total</th>
+            </div>
+
+            {/* ITEMS */}
+            <div className="box-container">
+              <table className="invoice-table">
+                <thead>
+                  <tr>
+                    <th rowSpan={2}>Sl.No</th>
+                    <th rowSpan={2}>Item & Description</th>
+                    <th rowSpan={2}>HSN/SAC</th>
+                    <th rowSpan={2}>Qty</th>
+                    <th rowSpan={2}>Rate</th>
+                    <th rowSpan={2}>Amount</th>
+                    <th colSpan={2}>IGST</th>
+                    <th rowSpan={2}>Total Amount (Inc GST)</th>
+                  </tr>
+
+                  <tr>
+                    <th>%</th>
+                    <th>Amt</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {invoice.items.map((item: any, idx: number) => {
+                    const qty = Number(item.quantity || item.qty) || 0;
+                    const rate = Number(item.rate) || 0;
+                    const tax = Number(item.taxPercent) || 0;
+
+                    const amount = qty * rate;
+                    const taxAmt = (amount * tax) / 100;
+                    const total = amount + taxAmt;
+
+                    return (
+                      <tr key={idx} style={{ height: "38px" }}>
+                        <td className="text-center">{idx + 1}</td>
+
+                        <td>{item.productName}</td>
+
+                        <td className="text-center">{item.hsnSac || "—"}</td>
+
+                        <td className="text-center">{qty}</td>
+
+                        <td className="text-end">
+                          {rate.toLocaleString("en-IN")}
+                        </td>
+
+                        <td className="text-end">
+                          {amount.toLocaleString("en-IN")}
+                        </td>
+
+                        <td className="text-center">{tax}</td>
+
+                        <td className="text-end">
+                          {taxAmt.toLocaleString("en-IN", {
+                            minimumFractionDigits: 2,
+                          })}
+                        </td>
+
+                        <td className="text-end">
+                          {total.toLocaleString("en-IN", {
+                            minimumFractionDigits: 2,
+                          })}
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {invoice.items.map((item, index) => (
-                        <tr key={index}>
+                    );
+                  })}
+
+                  <tr
+                    style={{
+                      fontWeight: "bold",
+                      borderTop: "1px solid #aaa",
+                      borderBottom: "1px solid #aaa",
+                    }}
+                  >
+                    <td></td>
+                    <td className="text-center">TOTAL</td>
+                    <td></td>
+
+                    <td className="text-center">
+                      {invoice.items.reduce(
+                        (s: any, i: any) =>
+                          s + (Number(i.quantity || i.qty) || 0),
+                        0,
+                      )}
+                    </td>
+
+                    <td></td>
+
+                    <td className="text-end">
+                      {invoice.subtotal.toLocaleString("en-IN")}
+                    </td>
+
+                    <td></td>
+
+                    <td className="text-end">
+                      {invoice.taxAmount.toLocaleString("en-IN", {
+                        minimumFractionDigits: 2,
+                      })}
+                    </td>
+
+                    <td className="text-end">
+                      {invoice.grandTotal.toLocaleString("en-IN", {
+                        minimumFractionDigits: 2,
+                      })}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <div
+                style={{
+                  borderTop: "1px solid #aaa",
+                  padding: "10px",
+                  textAlign: "center",
+                  fontSize: "18px",
+                }}
+              >
+                Total Invoice Amount (Rounded off) :
+                <strong>
+                  {" "}
+                  ₹{Math.round(invoice.grandTotal).toLocaleString("en-IN")}
+                </strong>
+              </div>
+            </div>
+
+            {/* FOOTER */}
+
+            <div className="box-container">
+              <div className="p-2 border-bottom">
+                <div style={{ fontSize: "12px" }}>
+                  Amount Chargeable (in words)
+                </div>
+
+                <div style={{ fontWeight: "bold" }}>
+                  INR{" "}
+                  {InvoiceService.numberToWords(
+                    invoice.grandTotal,
+                    invoice.invoiceType,
+                  ).toUpperCase()}
+                </div>
+              </div>
+
+              <div className="d-flex">
+                <div className="col-6 border-end p-3">
+                  <div style={{ fontWeight: "bold" }}>Remarks</div>
+
+                  <div style={{ fontSize: "12px" }}>
+                    {invoice.notes || "Warranty: As per Manufacturer"}
+                  </div>
+                </div>
+
+                <div className="col-6">
+                  <div className="p-3 border-bottom">
+                    <div style={{ fontWeight: "bold" }}>
+                      Company's Bank Details
+                    </div>
+
+                    <table className="bank-table">
+                      <tbody>
+                        <tr>
+                          <td width="150">A/c Holder</td>
+                          <td>:</td>
+                          <td>WEBERFOX TECHNOLOGIES PVT LTD</td>
+                        </tr>
+
+                        <tr>
+                          <td>Bank Name</td>
+                          <td>:</td>
+                          <td>{bankAccount?.bankName}</td>
+                        </tr>
+
+                        <tr>
+                          <td>A/c No</td>
+                          <td>:</td>
+                          <td>{bankAccount?.accountNumber}</td>
+                        </tr>
+
+                        <tr>
+                          <td>Branch & IFSC</td>
+                          <td>:</td>
                           <td>
-                            <h6>{item.productName}</h6>
-                          </td>
-                          <td className="text-gray-9 fw-medium text-end">{item.quantity}</td>
-                          <td className="text-gray-9 fw-medium text-end">
-                            {invoice.invoiceType === 'International' ? '$' : '₹'}{item.rate.toFixed(2)}
-                          </td>
-                          <td className="text-gray-9 fw-medium text-end">
-                            {invoice.invoiceType === 'International' ? '$' : '₹'}{item.discount.toFixed(2)}
-                          </td>
-                          <td className="text-gray-9 fw-medium text-end">{item.taxPercent}%</td>
-                          <td className="text-gray-9 fw-medium text-end">
-                            {invoice.invoiceType === 'International' ? '$' : '₹'}{((item.quantity * item.rate - item.discount) * item.taxPercent / 100).toFixed(2)}
-                          </td>
-                          <td className="text-gray-9 fw-medium text-end">
-                            {invoice.invoiceType === 'International' ? '$' : '₹'}{item.amount.toFixed(2)}
+                            {bankAccount?.branch} & {bankAccount?.ifsc}
                           </td>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-              <div className="row border-bottom mb-3">
-                <div className="col-md-5 ms-auto mb-3">
-                  <div className="d-flex justify-content-between align-items-center border-bottom mb-2 pe-3">
-                    <p className="mb-0">Sub Total</p>
-                    <p className="text-dark fw-medium mb-2">
-                      {invoice.invoiceType === 'International' ? '$' : '₹'}{(invoice.subtotal || 0).toFixed(2)}
-                    </p>
+
+                        <tr>
+                          <td>SWIFT</td>
+                          <td>:</td>
+                          <td>{bankAccount?.swiftCode}</td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </div>
-                  <div className="d-flex justify-content-between align-items-center border-bottom mb-2 pe-3">
-                    <p className="mb-0">Tax</p>
-                    <p className="text-dark fw-medium mb-2">
-                      {invoice.invoiceType === 'International' ? '$' : '₹'}{(invoice.taxAmount || 0).toFixed(2)}
-                    </p>
+
+                  <div className="p-3 text-end">
+                    for WEBERFOX TECHNOLOGIES PVT LTD
+                    <br />
+                    <br />
+                    Authorized Signatory
                   </div>
-                  <div className="d-flex justify-content-between align-items-center mb-2 pe-3">
-                    <h5>Total Amount</h5>
-                    <h5>
-                      {invoice.invoiceType === 'International' ? '$' : '₹'}{(invoice.grandTotal || 0).toFixed(2)}
-                    </h5>
-                  </div>
-                  <p className="fs-12">Amount in Words: {InvoiceService.numberToWords(invoice.grandTotal, invoice.invoiceType)}</p>
-                </div>
-              </div>
-              <div className="row align-items-center border-bottom mb-3">
-                <div className="col-md-7">
-                  <div>
-                    <div className="mb-3">
-                      <h6 className="mb-1">Terms and Conditions</h6>
-                      <p>{invoice.terms || 'Please pay within 15 days from the date of invoice, overdue interest @ 14% will be charged on delayed payments.'}</p>
-                    </div>
-                    {invoice.notes && (
-                      <div className="mb-3">
-                        <h6 className="mb-1">Notes</h6>
-                        <p>{invoice.notes}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="col-md-5">
-                  <div className="text-end">
-                    <img src={sign} className="img-fluid" alt="sign" />
-                  </div>
-                  <div className="text-end mb-3">
-                    <h6 className="fs-14 fw-medium pe-3">Authorized Signatory</h6>
-                    <p>Company Representative</p>
-                  </div>
-                </div>
-              </div>
-              <div className="text-center">
-                <div className="mb-3">
-                  <div className="invoice-logo">
-                    <Link className="logo logo-normal" to="#">
-                      <img src={logo} width="130" className="img-fluid" alt="logo" />
-                    </Link>
-                    <Link className="logo logo-white" to="#">
-                      <img src={logoWhite} width="130" className="img-fluid" alt="logo" />
-                    </Link>
-                  </div>
-                </div>
-                <p className="text-dark mb-1">
-                  Payment Made Via bank transfer / Cheque
-                </p>
-                <div className="d-flex justify-content-center align-items-center">
-                  <p className="fs-12 mb-0 me-3">
-                    Bank Name: <span className="text-dark">HDFC Bank</span>
-                  </p>
-                  <p className="fs-12 mb-0 me-3">
-                    Account Number: <span className="text-dark">45366287987</span>
-                  </p>
-                  <p className="fs-12">
-                    IFSC: <span className="text-dark">HDFC0018159</span>
-                  </p>
                 </div>
               </div>
             </div>
           </div>
-          {/* /Invoices */}
-          <div className="d-flex justify-content-center align-items-center mb-4">
-            <Link
-              to="#"
-              onClick={(e) => {
-                e.preventDefault();
-                handleDownloadPdf();
-              }}
-              className="btn btn-primary d-flex justify-content-center align-items-center me-2"
-            >
-              <i className="ti ti-download me-2" />
-              Download PDF
-            </Link>
-            <Link
-              to="#"
-              onClick={handlePrint}
-              className="btn btn-secondary d-flex justify-content-center align-items-center border me-2"
-            >
-              <i className="ti ti-printer me-2" />
-              Print Invoice
-            </Link>
 
-            <Link
-              to={route.invoicelist}
-              className="btn btn-secondary d-flex justify-content-center align-items-center border"
+          <div className="footer-actions text-center mt-4">
+            <button onClick={handlePrint} className="btn btn-primary me-2">
+              Print Invoice
+            </button>
+
+            <button
+              onClick={handleDownloadPdf}
+              className="btn btn-secondary me-2"
             >
-              <i className="feather icon-arrow-left me-2" />
-              Back to Invoices
-            </Link>
+              Download PDF
+            </button>
           </div>
         </div>
+
         <CommonFooter />
       </div>
     </div>
