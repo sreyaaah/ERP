@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
-import { useState, useEffect } from "react";
-import html2pdf from "html2pdf.js";
+import { useState, useEffect, useMemo } from "react";
+
 import PrimeDataTable from "../../components/data-table";
 import CommonFooter from "../../components/footer/commonFooter";
 import TableTopHead from "../../components/table-top-head";
@@ -16,8 +16,12 @@ const InvoiceList = () => {
   const route = all_routes;
   const [dataSource, setDataSource] = useState<Invoice[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [selectedPaymentStatus, setSelectedPaymentStatus] = useState<string | null>(null);
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
+  const [selectedPaymentStatus, setSelectedPaymentStatus] = useState<
+    string | null
+  >(null);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(
+    null,
+  );
   const [customerList, setCustomerList] = useState<Customer[]>([]);
   const [sortBy, setSortBy] = useState<string | null>(null);
   const [filteredData, setFilteredData] = useState<Invoice[]>([]);
@@ -39,9 +43,9 @@ const InvoiceList = () => {
         status: selectedPaymentStatus || undefined,
         customerId: selectedCustomerId || undefined,
         sortBy: sortBy || undefined,
-        type: "Invoice"
+        type: "Invoice",
       });
-      
+
       if (response.status) {
         setDataSource(response.data);
         setFilteredData(response.data);
@@ -52,7 +56,7 @@ const InvoiceList = () => {
         setTotalRecords(0);
       }
     } catch (error) {
-      console.error('Error loading invoices:', error);
+      console.error("Error loading invoices:", error);
       setDataSource([]);
       setFilteredData([]);
       setTotalRecords(0);
@@ -63,7 +67,14 @@ const InvoiceList = () => {
 
   useEffect(() => {
     loadData();
-  }, [currentPage, rows, searchQuery, selectedPaymentStatus, selectedCustomerId, sortBy]);
+  }, [
+    currentPage,
+    rows,
+    searchQuery,
+    selectedPaymentStatus,
+    selectedCustomerId,
+    sortBy,
+  ]);
 
   const loadCustomers = async () => {
     try {
@@ -80,65 +91,36 @@ const InvoiceList = () => {
     loadCustomers();
   }, []);
 
-  const handleDownloadPdfView = (id: string) => {
-    // Create an invisible iframe that loads the invoice details page with all CSS applied
-    const iframe = document.createElement("iframe");
-    iframe.style.position = "fixed";
-    iframe.style.left = "-9999px";
-    iframe.style.top = "0";
-    iframe.style.width = "1200px";
-    iframe.style.height = "900px";
-    iframe.style.opacity = "0";
-    iframe.style.pointerEvents = "none";
-    iframe.src = `/sales/invoice-details/${id}`;
-    document.body.appendChild(iframe);
-
-    iframe.onload = async () => {
-      try {
-        // Wait for React to fully render inside the iframe
-        await new Promise(resolve => setTimeout(resolve, 1500));
-
-        const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-        if (!iframeDoc) throw new Error("Cannot access iframe document");
-
-        const element = iframeDoc.getElementById("invoice-content");
-        if (!element) throw new Error("invoice-content not found");
-
-        // Get invoice number from the iframe page title or heading
-        const invoiceNumEl = iframeDoc.querySelector(".text-primary");
-        const invoiceNum = invoiceNumEl?.textContent?.trim() || id;
-
-        await html2pdf().set({
-          margin: 10,
-          filename: `Invoice_${invoiceNum}.pdf`,
-          image: { type: "jpeg", quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true, logging: false },
-          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-        }).from(element).save();
-      } catch (err) {
-        console.error("PDF generation failed:", err);
-        // Fallback: open the page normally
-        window.open(`/sales/invoice-details/${id}`, "_blank");
-      } finally {
-        document.body.removeChild(iframe);
-      }
-    };
-
-    iframe.onerror = () => {
-      document.body.removeChild(iframe);
-      window.open(`/sales/invoice-details/${id}`, "_blank");
-    };
+  const handleDownloadPdfView = async (id: string, invoiceNumber?: string) => {
+    try {
+      Swal.fire({
+        title: "Downloading...",
+        text: "Please wait while we generate your PDF",
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        },
+      });
+      await InvoiceService.downloadInvoicePdf(id, invoiceNumber);
+      Swal.close();
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Download Failed",
+        text: "Could not generate invoice PDF. Please try again.",
+      });
+    }
   };
 
   useEffect(() => {
-    const modalEl = document.getElementById('edit-invoice');
+    const modalEl = document.getElementById("edit-invoice");
     if (modalEl) {
       const handleHidden = () => {
         setEditingInvoice(null);
       };
-      modalEl.addEventListener('hidden.bs.modal', handleHidden);
+      modalEl.addEventListener("hidden.bs.modal", handleHidden);
       return () => {
-        modalEl.removeEventListener('hidden.bs.modal', handleHidden);
+        modalEl.removeEventListener("hidden.bs.modal", handleHidden);
       };
     }
   }, []);
@@ -148,156 +130,169 @@ const InvoiceList = () => {
     setCurrentPage(1);
   };
 
-  const columns = [
-    {
-      header: "Invoice No",
-      field: "invoiceNumber",
-      sortable: true,
-      key: "invoiceNumber",
-      body: (rowData: Invoice) => (
-        <Link to={`/sales/invoice-details/${rowData.invoiceId}`} className="text-primary fw-medium">
-          {rowData.invoiceNumber}
-        </Link>
-      ),
-    },
-    {
-      header: "Customer",
-      field: "customerName",
-      sortable: true,
-      key: "customerName",
-      body: (rowData: Invoice) => (
-        <Link to="#" className="text-dark fw-medium">{rowData.customerName}</Link>
-      ),
-    },
-    {
-      header: "Due Date",
-      field: "dueDate",
-      sortable: true,
-      key: "dueDate",
-    },
-    {
-      header: "Amount",
-      field: "grandTotal",
-      sortable: true,
-      key: "grandTotal",
-      body: (rowData: Invoice) => (
-        <span className="fw-medium">
-          {rowData.invoiceType === 'International' ? '$' : '₹'}
-          {(rowData.grandTotal || 0).toFixed(2)}
-        </span>
-      ),
-    },
-    {
-      header: "Paid",
-      field: "paidAmount",
-      sortable: true,
-      key: "paidAmount",
-      body: (rowData: Invoice) => (
-        <span className="fw-medium">
-          {rowData.invoiceType === 'International' ? '$' : '₹'}
-          {(rowData.paidAmount || 0).toFixed(2)}
-        </span>
-      ),
-    },
-    {
-      header: "Amount Due",
-      field: "amountDue",
-      sortable: true,
-      key: "amountDue",
-      body: (rowData: Invoice) => (
+  const columns = useMemo(
+    () => [
+      {
+        header: "Invoice No",
+        field: "invoiceNumber",
+        sortable: true,
+        key: "invoiceNumber",
+        body: (rowData: Invoice) => (
+          <Link
+            to={`/sales/invoice-details/${rowData.invoiceId}`}
+            className="text-primary fw-medium"
+          >
+            {rowData.invoiceNumber}
+          </Link>
+        ),
+      },
+      {
+        header: "Customer",
+        field: "customerName",
+        sortable: true,
+        key: "customerName",
+        body: (rowData: Invoice) => (
+          <Link to="#" className="text-dark fw-medium">
+            {rowData.customerName}
+          </Link>
+        ),
+      },
+      {
+        header: "Due Date",
+        field: "dueDate",
+        sortable: true,
+        key: "dueDate",
+      },
+      {
+        header: "Amount",
+        field: "grandTotal",
+        sortable: true,
+        key: "grandTotal",
+        body: (rowData: Invoice) => (
+          <span className="fw-medium">
+            {rowData.invoiceType === "International" ? "$" : "₹"}
+            {(rowData.grandTotal || 0).toFixed(2)}
+          </span>
+        ),
+      },
+      {
+        header: "Paid",
+        field: "paidAmount",
+        sortable: true,
+        key: "paidAmount",
+        body: (rowData: Invoice) => (
+          <span className="fw-medium">
+            {rowData.invoiceType === "International" ? "$" : "₹"}
+            {(rowData.paidAmount || 0).toFixed(2)}
+          </span>
+        ),
+      },
+      {
+        header: "Amount Due",
+        field: "amountDue",
+        sortable: true,
+        key: "amountDue",
+        body: (rowData: Invoice) => (
           <span className="fw-medium text-danger">
-            {rowData.invoiceType === 'International' ? '$' : '₹'}
+            {rowData.invoiceType === "International" ? "$" : "₹"}
             {(rowData.amountDue || 0).toFixed(2)}
           </span>
-        )
-    },
-    {
-      header: "Status",
-      field: "paymentStatus",
-      sortable: true,
-      key: "paymentStatus",
-      body: (rowData: Invoice) => (
-        <div>
-          {rowData.paymentStatus === "Paid" && (
-            <span className="badge badge-soft-success status-badge badge-xs shadow-none">
-              <i className="ti ti-point-filled me-1"></i>
-              {rowData.paymentStatus}
-            </span>
-          )}
-          {rowData.paymentStatus === "Unpaid" && (
-            <span className="badge badge-soft-danger status-badge badge-xs shadow-none">
-              <i className="ti ti-point-filled me-1"></i>
-              {rowData.paymentStatus}
-            </span>
-          )}
-          {rowData.paymentStatus === "Overdue" && (
-            <span className="badge badge-soft-warning status-badge badge-xs shadow-none">
-              <i className="ti ti-point-filled me-1"></i>
-              {rowData.paymentStatus}
-            </span>
-          )}
-          {rowData.paymentStatus === "Partially Paid" && (
-            <span className="badge badge-soft-info status-badge badge-xs shadow-none">
-              <i className="ti ti-point-filled me-1"></i>
-              {rowData.paymentStatus}
-            </span>
-          )}
-        </div>
-      ),
-    },
-    {
-      header: "",
-      field: "actions",
-      sortable: false,
-      key: "actions",
-      body: (rowData: Invoice) => (
-        <div className="edit-delete-action d-flex align-items-center justify-content-center">
+        ),
+      },
+      {
+        header: "Status",
+        field: "paymentStatus",
+        sortable: true,
+        key: "paymentStatus",
+        body: (rowData: Invoice) => (
+          <div>
+            {rowData.paymentStatus === "Paid" && (
+              <span className="badge badge-soft-success status-badge badge-xs shadow-none">
+                <i className="ti ti-point-filled me-1"></i>
+                {rowData.paymentStatus}
+              </span>
+            )}
+            {rowData.paymentStatus === "Unpaid" && (
+              <span className="badge badge-soft-danger status-badge badge-xs shadow-none">
+                <i className="ti ti-point-filled me-1"></i>
+                {rowData.paymentStatus}
+              </span>
+            )}
+            {rowData.paymentStatus === "Overdue" && (
+              <span className="badge badge-soft-warning status-badge badge-xs shadow-none">
+                <i className="ti ti-point-filled me-1"></i>
+                {rowData.paymentStatus}
+              </span>
+            )}
+            {rowData.paymentStatus === "Partially Paid" && (
+              <span className="badge badge-soft-info status-badge badge-xs shadow-none">
+                <i className="ti ti-point-filled me-1"></i>
+                {rowData.paymentStatus}
+              </span>
+            )}
+          </div>
+        ),
+      },
+      {
+        header: "",
+        field: "actions",
+        sortable: false,
+        key: "actions",
+        body: (rowData: Invoice) => (
+          <div className="edit-delete-action d-flex align-items-center justify-content-center">
             <Link
-            className="me-2 p-2 d-flex align-items-center justify-content-between border rounded"
-            to="#"
-            data-bs-toggle="modal"
-            data-bs-target="#edit-invoice"
-            onClick={() => setEditingInvoice(rowData)}
-            title="Edit Invoice"
-          >
-            <i className="feather icon-edit feather-edit"></i>
-          </Link>
-          <Link 
-            className="me-2 p-2 d-flex align-items-center justify-content-between border rounded" 
-            to={`/sales/invoice-details/${rowData.invoiceId}`}
-            title="View Invoice"
-          >
-            <i className="feather icon-eye feather-eye" />
-          </Link>
+              className="me-2 p-2 d-flex align-items-center justify-content-between border rounded"
+              to="#"
+              data-bs-toggle="modal"
+              data-bs-target="#edit-invoice"
+              onClick={() => setEditingInvoice(rowData)}
+              title="Edit Invoice"
+            >
+              <i className="feather icon-edit feather-edit"></i>
+            </Link>
+            <Link
+              className="me-2 p-2 d-flex align-items-center justify-content-between border rounded"
+              to={`/sales/invoice-details/${rowData.invoiceId}`}
+              title="View Invoice"
+            >
+              <i className="feather icon-eye feather-eye" />
+            </Link>
 
-          <Link
-            className="me-2 p-2 d-flex align-items-center justify-content-between border rounded text-primary"
-            to="#"
-            onClick={(e) => {
-              e.preventDefault();
-              handleDownloadPdfView(rowData.invoiceId!);
-            }}
-            title="Download PDF"
-          >
-            <i className="feather icon-download"></i>
-          </Link>
-          <Link
-            className="p-2 d-flex align-items-center justify-content-between border rounded text-danger"
-            to="#"
-            data-bs-toggle="modal"
-            data-bs-target="#delete-modal"
-            onClick={(e) => {
-              e.preventDefault();
-              setDeleteId(rowData.invoiceId as any);
-            }}
-            title="Delete Invoice"
-          >
-            <i className="feather icon-trash-2"></i>
-          </Link>
-        </div>
-      ),
-    },
-  ];
+            <Link
+              className="me-2 p-2 d-flex align-items-center justify-content-between border rounded text-primary"
+              to="#"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log(
+                  "DOWNLOAD CLICKED IN ACTION COLUMN FOR ID:",
+                  rowData.invoiceId,
+                );
+                handleDownloadPdfView(rowData.invoiceId!, rowData.invoiceNumber);
+              }}
+              title="Download PDF"
+            >
+              <i className="feather icon-download"></i>
+            </Link>
+            <Link
+              className="p-2 d-flex align-items-center justify-content-between border rounded text-danger"
+              to="#"
+              data-bs-toggle="modal"
+              data-bs-target="#delete-modal"
+              onClick={(e) => {
+                e.preventDefault();
+                setDeleteId(rowData.invoiceId as any);
+              }}
+              title="Delete Invoice"
+            >
+              <i className="feather icon-trash-2"></i>
+            </Link>
+          </div>
+        ),
+      },
+    ],
+    [handleDownloadPdfView],
+  );
 
   const handleDeleteInvoice = async () => {
     try {
@@ -309,7 +304,11 @@ const InvoiceList = () => {
         const ids = selectedInvoices.map((inv) => inv.invoiceId);
         await InvoiceService.bulkDelete(ids);
         setSelectedInvoices([]);
-        Swal.fire("Deleted!", `${ids.length} invoices have been deleted.`, "success");
+        Swal.fire(
+          "Deleted!",
+          `${ids.length} invoices have been deleted.`,
+          "success",
+        );
       }
       loadData();
     } catch (err) {
@@ -361,17 +360,11 @@ const InvoiceList = () => {
               }}
             />
             <div className="page-btn">
-              <Link
-                to={route.quotationlist}
-                className="btn btn-secondary me-2"
-              >
+              <Link to={route.quotationlist} className="btn btn-secondary me-2">
                 <i className="ti ti-file-text me-1"></i>
                 View Quotations
               </Link>
-              <Link
-                to={route.addinvoice}
-                className="btn btn-primary"
-              >
+              <Link to={route.addinvoice} className="btn btn-primary">
                 <i className="ti ti-circle-plus me-1"></i>
                 Add Invoice
               </Link>
@@ -396,16 +389,42 @@ const InvoiceList = () => {
                       </button>
                       <ul className="dropdown-menu dropdown-menu-end p-2">
                         <li>
-                          <Link to="#" className="dropdown-item rounded-1" onClick={() => handleBulkStatusChange("Paid")}>Paid</Link>
+                          <Link
+                            to="#"
+                            className="dropdown-item rounded-1"
+                            onClick={() => handleBulkStatusChange("Paid")}
+                          >
+                            Paid
+                          </Link>
                         </li>
                         <li>
-                          <Link to="#" className="dropdown-item rounded-1" onClick={() => handleBulkStatusChange("Unpaid")}>Unpaid</Link>
+                          <Link
+                            to="#"
+                            className="dropdown-item rounded-1"
+                            onClick={() => handleBulkStatusChange("Unpaid")}
+                          >
+                            Unpaid
+                          </Link>
                         </li>
                         <li>
-                          <Link to="#" className="dropdown-item rounded-1" onClick={() => handleBulkStatusChange("Partially Paid")}>Partially Paid</Link>
+                          <Link
+                            to="#"
+                            className="dropdown-item rounded-1"
+                            onClick={() =>
+                              handleBulkStatusChange("Partially Paid")
+                            }
+                          >
+                            Partially Paid
+                          </Link>
                         </li>
                         <li>
-                          <Link to="#" className="dropdown-item rounded-1" onClick={() => handleBulkStatusChange("Overdue")}>Overdue</Link>
+                          <Link
+                            to="#"
+                            className="dropdown-item rounded-1"
+                            onClick={() => handleBulkStatusChange("Overdue")}
+                          >
+                            Overdue
+                          </Link>
                         </li>
                       </ul>
                     </div>
@@ -417,7 +436,9 @@ const InvoiceList = () => {
                     >
                       <i className="ti ti-trash me-1"></i> Bulk Delete
                     </button>
-                    <span className="ms-2 text-muted small">({selectedInvoices.length} selected)</span>
+                    <span className="ms-2 text-muted small">
+                      ({selectedInvoices.length} selected)
+                    </span>
                   </div>
                 )}
               </div>
@@ -428,12 +449,20 @@ const InvoiceList = () => {
                     className="dropdown-toggle btn btn-white btn-md d-inline-flex align-items-center"
                     data-bs-toggle="dropdown"
                   >
-                    {selectedCustomerId 
-                      ? customerList.find(c => (c._id || c.id) === selectedCustomerId)?.firstName + ' ' + (customerList.find(c => (c._id || c.id) === selectedCustomerId)?.lastName || '')
-                      : "Customer"
-                    }
+                    {selectedCustomerId
+                      ? customerList.find(
+                          (c) => (c._id || c.id) === selectedCustomerId,
+                        )?.firstName +
+                        " " +
+                        (customerList.find(
+                          (c) => (c._id || c.id) === selectedCustomerId,
+                        )?.lastName || "")
+                      : "Customer"}
                   </Link>
-                  <ul className="dropdown-menu dropdown-menu-end p-3" style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                  <ul
+                    className="dropdown-menu dropdown-menu-end p-3"
+                    style={{ maxHeight: "300px", overflowY: "auto" }}
+                  >
                     <li>
                       <Link
                         to="#"
@@ -446,17 +475,20 @@ const InvoiceList = () => {
                         All Customers
                       </Link>
                     </li>
-                    {customerList.map(customer => (
+                    {customerList.map((customer) => (
                       <li key={customer._id || customer.id}>
                         <Link
                           to="#"
-                          className={`dropdown-item rounded-1 ${selectedCustomerId === (customer._id || customer.id) ? 'active' : ''}`}
+                          className={`dropdown-item rounded-1 ${selectedCustomerId === (customer._id || customer.id) ? "active" : ""}`}
                           onClick={() => {
-                            setSelectedCustomerId((customer._id || customer.id) as string);
+                            setSelectedCustomerId(
+                              (customer._id || customer.id) as string,
+                            );
                             setCurrentPage(1);
                           }}
                         >
-                          {customer.customer || `${customer.firstName} ${customer.lastName || ''}`.trim()}
+                          {customer.customer ||
+                            `${customer.firstName} ${customer.lastName || ""}`.trim()}
                         </Link>
                       </li>
                     ))}
@@ -472,8 +504,8 @@ const InvoiceList = () => {
                   </Link>
                   <ul className="dropdown-menu dropdown-menu-end p-3">
                     <li>
-                      <Link 
-                        to="#" 
+                      <Link
+                        to="#"
                         className="dropdown-item rounded-1"
                         onClick={() => {
                           setSelectedPaymentStatus("Paid");
@@ -484,8 +516,8 @@ const InvoiceList = () => {
                       </Link>
                     </li>
                     <li>
-                      <Link 
-                        to="#" 
+                      <Link
+                        to="#"
                         className="dropdown-item rounded-1"
                         onClick={() => {
                           setSelectedPaymentStatus("Unpaid");
@@ -496,8 +528,8 @@ const InvoiceList = () => {
                       </Link>
                     </li>
                     <li>
-                      <Link 
-                        to="#" 
+                      <Link
+                        to="#"
                         className="dropdown-item rounded-1"
                         onClick={() => {
                           setSelectedPaymentStatus("Partially Paid");
@@ -508,8 +540,8 @@ const InvoiceList = () => {
                       </Link>
                     </li>
                     <li>
-                      <Link 
-                        to="#" 
+                      <Link
+                        to="#"
                         className="dropdown-item rounded-1"
                         onClick={() => {
                           setSelectedPaymentStatus("Overdue");
@@ -527,16 +559,20 @@ const InvoiceList = () => {
                     className="dropdown-toggle btn btn-white btn-md d-inline-flex align-items-center"
                     data-bs-toggle="dropdown"
                   >
-                    {sortBy === 'asc' ? 'Sort By: Ascending' : 
-                     sortBy === 'desc' ? 'Sort By: Descending' :
-                     sortBy === 'lastMonth' ? 'Sort By: Last Month' :
-                     sortBy === 'last7' ? 'Sort By: Last 7 Days' :
-                     'Sort By: Recent'}
+                    {sortBy === "asc"
+                      ? "Sort By: Ascending"
+                      : sortBy === "desc"
+                        ? "Sort By: Descending"
+                        : sortBy === "lastMonth"
+                          ? "Sort By: Last Month"
+                          : sortBy === "last7"
+                            ? "Sort By: Last 7 Days"
+                            : "Sort By: Recent"}
                   </Link>
                   <ul className="dropdown-menu dropdown-menu-end p-3">
                     <li>
-                      <Link 
-                        to="#" 
+                      <Link
+                        to="#"
                         className="dropdown-item rounded-1"
                         onClick={() => {
                           setSortBy("recent");
@@ -547,8 +583,8 @@ const InvoiceList = () => {
                       </Link>
                     </li>
                     <li>
-                      <Link 
-                        to="#" 
+                      <Link
+                        to="#"
                         className="dropdown-item rounded-1"
                         onClick={() => {
                           setSortBy("asc");
@@ -559,8 +595,8 @@ const InvoiceList = () => {
                       </Link>
                     </li>
                     <li>
-                      <Link 
-                        to="#" 
+                      <Link
+                        to="#"
                         className="dropdown-item rounded-1"
                         onClick={() => {
                           setSortBy("desc");
@@ -571,8 +607,8 @@ const InvoiceList = () => {
                       </Link>
                     </li>
                     <li>
-                      <Link 
-                        to="#" 
+                      <Link
+                        to="#"
                         className="dropdown-item rounded-1"
                         onClick={() => {
                           setSortBy("lastMonth");
@@ -583,8 +619,8 @@ const InvoiceList = () => {
                       </Link>
                     </li>
                     <li>
-                      <Link 
-                        to="#" 
+                      <Link
+                        to="#"
                         className="dropdown-item rounded-1"
                         onClick={() => {
                           setSortBy("last7");
@@ -607,9 +643,7 @@ const InvoiceList = () => {
                   setCurrentPage(1);
                 }}
                 disabled={
-                  !selectedPaymentStatus &&
-                  !selectedCustomerId &&
-                  !sortBy
+                  !selectedPaymentStatus && !selectedCustomerId && !sortBy
                 }
               >
                 Clear Filters
