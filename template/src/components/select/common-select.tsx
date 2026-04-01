@@ -1,9 +1,9 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Dropdown } from "primereact/dropdown";
 
 interface CommonSelectProps {
   value: any;
-  options: { label: string; value: any }[];
+  options: any[];
   placeholder?: string;
   onChange: (e: { value: any }) => void;
   className?: string;
@@ -11,6 +11,8 @@ interface CommonSelectProps {
   filter?: boolean;
   editable?: boolean;
   appendTo?: "self" | HTMLElement | (() => HTMLElement) | null | undefined;
+  optionLabel?: string;
+  optionValue?: string;
 }
 
 const CommonSelect: React.FC<CommonSelectProps> = ({
@@ -23,20 +25,37 @@ const CommonSelect: React.FC<CommonSelectProps> = ({
   filter = true,
   editable = false,
   appendTo = "self",
+  optionLabel = "label",
+  optionValue = "value",
 }) => {
-  console.log("CommonSelect options:", options);
-  console.log("CommonSelect value:", value);
+  // Memoize the sanitized options to prevent unnecessary re-computations
+  const safeOptions = useMemo(() => {
+    if (!Array.isArray(options)) return [];
+
+    // Deduplicate and ensure no bad data breaks the dropdown
+    const seen = new Set();
+    return options.filter((opt) => {
+      // Robustly handle both objects and primitives
+      const val = (typeof opt === "object" && opt !== null) ? opt[optionValue] : opt;
+      if (val === undefined || seen.has(val)) return false;
+      seen.add(val);
+      return true;
+    });
+  }, [options, optionValue]);
+
   return (
     <Dropdown
       value={value}
-      options={Array.isArray(options) ? options : []}
+      options={safeOptions}
       onChange={onChange}
       placeholder={placeholder}
       className={className}
       disabled={disabled}
-      appendTo={appendTo}
       filter={filter}
       editable={editable}
+      appendTo={appendTo}
+      optionLabel={typeof (options?.[0]) === 'object' ? optionLabel : undefined}
+      optionValue={typeof (options?.[0]) === 'object' ? optionValue : undefined}
     />
   );
 };
