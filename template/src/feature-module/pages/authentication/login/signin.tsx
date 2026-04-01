@@ -83,7 +83,7 @@ const Signin: React.FC = () => {
         }
 
         // Redirect to dashboard on success
-        navigate(route.dashboard);
+        navigate(route.newdashboard);
       } else {
         setSubmitError(response.message);
       }
