@@ -2,7 +2,6 @@
 import { Link } from "react-router-dom";
 import "bootstrap-daterangepicker/daterangepicker.css";
 import { useState, useEffect } from "react";
-import dayjs from "dayjs";
 import CommonDateRangePicker from "../../components/date-range-picker/common-date-range-picker";
 import CommonSelect from "../../components/select/common-select";
 import { dashboardService } from "../services/dashboard.service";
@@ -29,10 +28,7 @@ const NewDashboard = () => {
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [chartData, setChartData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [dateRange, setDateRange] = useState<{start: string, end: string} | null>({
-    start: dayjs().subtract(6, 'days').format('YYYY-MM-DD'),
-    end: dayjs().format('YYYY-MM-DD')
-  });
+  const [dateRange, setDateRange] = useState<{start: string, end: string} | null>(null);
 
 
   const fetchDashboardData = async (start?: string, end?: string) => {
