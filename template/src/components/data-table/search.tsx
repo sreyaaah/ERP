@@ -7,7 +7,10 @@ interface searchProps {
   setRows: any;
 }
 const SearchFromApi: React.FC<searchProps> = ({ callback }) => {
-  const dataApi = debounce(callback, 700);
+  const dataApi = React.useMemo(() => debounce((val: any) => {
+    callback(val);
+  }, 700), [callback]);
+
   const handleChange = (e: any) => {
     dataApi(e.target.value?.trim());
   };
