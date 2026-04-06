@@ -18,7 +18,7 @@ const LowStockProducts: React.FC<LowStockProductsProps> = ({ products }) => {
           <h5 className="card-title mb-0">Low Stock Products</h5>
         </div>
       </div>
-      <div className="card-body">
+      <div className="card-body custom-scrollbar" style={{ height: '350px', overflowY: 'auto' }}>
         {products?.map((item: any, index: number) => (
           <div key={index} className={`d-flex align-items-center justify-content-between ${index < products.length - 1 ? 'mb-4' : 'mb-0'}`}>
             <div className="d-flex align-items-center">
@@ -39,7 +39,7 @@ const LowStockProducts: React.FC<LowStockProductsProps> = ({ products }) => {
           </div>
         ))}
         {(!products || products.length === 0) && (
-          <div className="text-center p-3">No low stock products found</div>
+          <div key="no-low-stock" className="text-center p-3">No low stock products found</div>
         )}
       </div>
     </div>

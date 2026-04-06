@@ -341,15 +341,6 @@ const Header = () => {
                 </div>
               </div>
             </li>
-            <li className="nav-item pos-nav">
-              <Link
-                to={route.pos}
-                className="btn btn-dark btn-md d-inline-flex align-items-center"
-              >
-                <i className="ti ti-device-laptop me-1" />
-                POS
-              </Link>
-            </li>
 
 
             <li className="nav-item nav-item-box">

@@ -117,13 +117,13 @@ const NewDashboard = () => {
             </div>
 
             <div className="row">
-               <div className="col-xxl-4 col-md-6 d-flex">
+               <div className="col-xxl-4 col-md-4 d-flex">
                     <TopSellingProducts products={dashboardData?.topSellingProducts} />
                </div>
-               <div className="col-xxl-4 col-md-6 d-flex">
+               <div className="col-xxl-4 col-md-4 d-flex">
                     <LowStockProducts products={dashboardData?.lowStockProducts} />
                </div>
-               <div className="col-xxl-4 col-md-6 d-flex">
+               <div className="col-xxl-4 col-md-4 d-flex">
                     <RecentSalesList sales={dashboardData?.transactions?.recentSales} />
                </div>
             </div>

@@ -14,7 +14,7 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({ transactions })
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (transactions && !internalData) {
+    if (transactions) {
       setInternalData(transactions);
     }
   }, [transactions]);
@@ -133,7 +133,7 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({ transactions })
                       </tr>
                     ))}
                     {(!internalData?.recentSales || internalData.recentSales.length === 0) && (
-                      <tr><td colSpan={4} className="text-center">No recent sales found</td></tr>
+                      <tr key="no-sale"><td colSpan={4} className="text-center">No recent sales found</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -174,7 +174,7 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({ transactions })
                       </tr>
                     ))}
                     {(!internalData?.recentPurchases || internalData.recentPurchases.length === 0) && (
-                      <tr><td colSpan={4} className="text-center">No recent purchases found</td></tr>
+                      <tr key="no-purchase"><td colSpan={4} className="text-center">No recent purchases found</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -217,7 +217,7 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({ transactions })
                       </tr>
                     ))}
                     {(!internalData?.recentQuotations || internalData.recentQuotations.length === 0) && (
-                      <tr><td colSpan={4} className="text-center">No recent quotations found</td></tr>
+                      <tr key="no-quotation"><td colSpan={4} className="text-center">No recent quotations found</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -260,7 +260,7 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({ transactions })
                       </tr>
                     ))}
                     {(!internalData?.invoices || internalData.invoices.length === 0) && (
-                      <tr><td colSpan={4} className="text-center">No recent invoices found</td></tr>
+                      <tr key="no-invoice"><td colSpan={4} className="text-center">No recent invoices found</td></tr>
                     )}
                   </tbody>
                 </table>

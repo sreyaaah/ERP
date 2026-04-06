@@ -16,7 +16,7 @@ const TopCategories: React.FC<TopCategoriesProps> = ({ categoryStats, totalCateg
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        if (categoryStats && internalStats.length === 0) {
+        if (categoryStats) {
             setInternalStats(categoryStats);
         }
     }, [categoryStats]);

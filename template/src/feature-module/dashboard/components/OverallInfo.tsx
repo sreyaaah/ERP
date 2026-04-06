@@ -50,24 +50,41 @@ const OverallInfo: React.FC<OverallInfoProps> = ({ summary }) => {
       <div className="card-body">
         <div className="row g-3">
           <div className="col-md-4">
-            <div className="info-item border bg-light p-3 text-center">
-              <div className="mb-3 text-info fs-24"><i className="ti ti-user-check" /></div>
-              <p className="mb-1">Suppliers</p>
-              <h5>{summary?.supplierCount || 0}</h5>
+            <div className="info-item border bg-light p-3 text-center rounded">
+              <div className="mb-2 text-info fs-24"><i className="ti ti-user-check" /></div>
+              <p className="mb-1 text-muted fs-13">Suppliers</p>
+              <h5 className="mb-0 fw-bold">{summary?.supplierCount || 0}</h5>
             </div>
           </div>
           <div className="col-md-4">
-            <div className="info-item border bg-light p-3 text-center">
-              <div className="mb-3 text-orange fs-24"><i className="ti ti-users" /></div>
-              <p className="mb-1">Customer</p>
-              <h5>{summary?.customerCount || 0}</h5>
+            <div className="info-item border bg-light p-3 text-center rounded">
+              <div className="mb-2 text-orange fs-24"><i className="ti ti-users" /></div>
+              <p className="mb-1 text-muted fs-13">Customer</p>
+              <h5 className="mb-0 fw-bold">{summary?.customerCount || 0}</h5>
             </div>
           </div>
           <div className="col-md-4">
-            <div className="info-item border bg-light p-3 text-center">
-              <div className="mb-3 text-teal fs-24"><i className="ti ti-shopping-cart" /></div>
-              <p className="mb-1">Orders</p>
-              <h5>{summary?.totalOrders || 0}</h5>
+            <div className="info-item border bg-light p-3 text-center rounded">
+              <div className="mb-2 text-teal fs-24"><i className="ti ti-shopping-cart" /></div>
+              <p className="mb-1 text-muted fs-13">Orders</p>
+              <h5 className="mb-0 fw-bold">{summary?.totalOrders || 0}</h5>
+            </div>
+          </div>
+        </div>
+
+        <div className="row g-3 mt-1">
+          <div className="col-md-6">
+            <div className="info-item border bg-soft-danger p-3 text-center rounded">
+              <div className="mb-2 text-danger fs-24"><i className="ti ti-calendar-off" /></div>
+              <p className="mb-1 text-muted fs-13">Expired</p>
+              <h5 className="mb-0 fw-bold text-danger">{summary?.expiredCount || 0}</h5>
+            </div>
+          </div>
+          <div className="col-md-6">
+            <div className="info-item border bg-soft-warning p-3 text-center rounded">
+              <div className="mb-2 text-warning fs-24"><i className="ti ti-box" /></div>
+              <p className="mb-1 text-muted fs-13">Low Stock</p>
+              <h5 className="mb-0 fw-bold text-warning">{summary?.lowStockCount || 0}</h5>
             </div>
           </div>
         </div>

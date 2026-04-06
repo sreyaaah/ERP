@@ -22,9 +22,12 @@ export interface Product {
     taxAmount: number;
     priceAfterTax: number;
     quantity: number;
+    quantityAlert: number;
     status: string;
     images?: any[];
     customFields?: any;
+    manufacturedDate?: string | Date;
+    expiryDate?: string | Date;
     createdAt?: string;
 }
 
@@ -108,16 +111,23 @@ export const ProductService = {
     },
 
     // Export
-    export: async (format: "xlsx" | "pdf", id?: string): Promise<void> => {
+    export: async (format: "xlsx" | "pdf", params?: any): Promise<void> => {
         try {
             const res = await apiClient.get("/products/export", {
-                params: { format, id },
+                params: { format, ...params },
                 responseType: "blob"
             });
             const url = window.URL.createObjectURL(new Blob([res.data]));
             const a = document.createElement("a");
             a.href = url;
-            a.download = id ? `product_${id}.${format}` : `products_${new Date().getTime()}.${format}`;
+            
+            let prefix = "products";
+            if (params?.expired) prefix = "expired_products";
+            else if (params?.lowStock) prefix = "low_stock_products";
+            else if (params?.outOfStock) prefix = "out_of_stock_products";
+            else if (params?.id) prefix = `product_${params.id}`;
+
+            a.download = `${prefix}_${new Date().getTime()}.${format}`;
             document.body.appendChild(a);
             a.click();
             a.remove();
