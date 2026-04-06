@@ -14,6 +14,14 @@ export interface PurchaseData {
     paidAmount: number;
     dueAmount?: number;
     paymentStatus?: string;
+    items?: Array<{
+        productId: string;
+        productName: string;
+        quantity: number;
+        rate: number;
+        taxPercent: number;
+        amount: number;
+    }>;
     createdAt?: string;
     updatedAt?: string;
 }
