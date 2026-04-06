@@ -14,7 +14,7 @@ const TopSellingProducts: React.FC<TopSellingProductsProps> = ({ products }) => 
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (products && !productList) {
+    if (products) {
       setProductList(products);
     }
   }, [products]);
@@ -73,7 +73,7 @@ const TopSellingProducts: React.FC<TopSellingProductsProps> = ({ products }) => 
           </ul>
         </div>
       </div>
-      <div className="card-body sell-product position-relative" style={{ minHeight: '200px' }}>
+      <div className="card-body sell-product position-relative custom-scrollbar" style={{ height: '350px', overflowY: 'auto' }}>
         {loading && (
           <div className="position-absolute top-50 start-50 translate-middle" style={{ zIndex: 10 }}>
             <div className="spinner-border text-primary" role="status">
@@ -105,7 +105,7 @@ const TopSellingProducts: React.FC<TopSellingProductsProps> = ({ products }) => 
             </div>
           ))}
           {(!productList || productList.length === 0) && !loading && (
-            <div className="text-center p-3">No top selling products found for this period</div>
+            <div key="no-topsale" className="text-center p-3">No top selling products found for this period</div>
           )}
         </div>
       </div>

@@ -10,7 +10,8 @@ import AddSubCategory from "../../../core/modals/inventory/addsubcategory";
 
 import { useProductForm } from "./hooks/useProductForm";
 import ProductInfoSection from "./components/ProductInfoSection";
-import PricingStocksSection from "./components/PricingStocksSection";
+import PricingSection from "./components/PricingSection";
+import StocksSection from "./components/StocksSection";
 import ImagesSection from "./components/ImagesSection";
 import CustomFieldsSection from "./components/CustomFieldsSection";
 import { useNavigate } from "react-router-dom";
@@ -193,10 +194,15 @@ const AddProduct = () => {
                   barcodeOptions={barcodeOptions}
                 />
 
-                <PricingStocksSection
+                <PricingSection
                   formData={formData}
                   updateField={updateField}
                   taxOptions={taxOptions}
+                />
+
+                <StocksSection 
+                  formData={formData} 
+                  updateField={updateField} 
                 />
 
                 <ImagesSection images={images} addImage={addImage} removeImage={removeImage} />

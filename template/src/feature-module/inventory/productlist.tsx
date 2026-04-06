@@ -3,12 +3,11 @@ import { Link } from "react-router-dom";
 import { all_routes } from "../../routes/all_routes";
 import PrimeDataTable from "../../components/data-table";
 import html2pdf from "html2pdf.js";
-import {stockImg1,} from "../../utils/imagepath";
+import { stockImg1 } from "../../utils/imagepath";
 import SearchFromApi from "../../components/data-table/search";
 import TooltipIcons from "../../components/tooltip-content/tooltipIcons";
 import RefreshIcon from "../../components/tooltip-content/refresh";
 import CollapesIcon from "../../components/tooltip-content/collapes";
-
 
 interface ProductItem {
   sku: string;
@@ -70,26 +69,29 @@ const ProductList: React.FC = () => {
         limit: rows,
         search: searchQuery,
         category: selectedCategory || undefined,
-        brand: selectedBrand || undefined
+        brand: selectedBrand || undefined,
       });
-      
+
       const transformedProducts = response.data.map((p: any) => ({
         id: p.id,
         product: p.product,
         productImage: p.productImage || stockImg1,
         sku: p.sku,
-        category: p.category || 'N/A',
-        brand: p.brand || 'N/A',
+        category: p.category || "N/A",
+        brand: p.brand || "N/A",
         price: `₹${p.price}`,
-        unit: p.unit || 'Pc',
-        qty: p.quantity || '0',
-        itemCode: p.itemCode || 'N/A',
+        unit: p.unit || "Pc",
+        qty: p.quantity || "0",
+        itemCode: p.itemCode || "N/A",
       }));
-      
+
       setProducts(transformedProducts);
       setTotalRecords(response.total);
     } catch (error: any) {
-      const message = error?.response?.data?.message || error?.message || 'Failed to load products. Please try again.';
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Failed to load products. Please try again.";
       setError(message);
     }
   };
@@ -126,9 +128,18 @@ const ProductList: React.FC = () => {
     try {
       const product = await ProductService.getById(id);
       const imageUrl = product.images?.[0]?.url || "";
-      const category = product.categoryId && typeof product.categoryId === "object" ? product.categoryId.name : product.categoryId || "N/A";
-      const brand = product.brandId && typeof product.brandId === "object" ? product.brandId.name : product.brandId || "N/A";
-      const unit = product.unitId && typeof product.unitId === "object" ? product.unitId.name : product.unitId || "N/A";
+      const category =
+        product.categoryId && typeof product.categoryId === "object"
+          ? product.categoryId.name
+          : product.categoryId || "N/A";
+      const brand =
+        product.brandId && typeof product.brandId === "object"
+          ? product.brandId.name
+          : product.brandId || "N/A";
+      const unit =
+        product.unitId && typeof product.unitId === "object"
+          ? product.unitId.name
+          : product.unitId || "N/A";
 
       const html = `
         <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
@@ -193,13 +204,16 @@ const ProductList: React.FC = () => {
       tempEl.innerHTML = html;
       document.body.appendChild(tempEl);
 
-      await html2pdf().set({
-        margin: 10,
-        filename: `Product_${product.sku || id}.pdf`,
-        image: { type: "jpeg", quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-      }).from(tempEl).save();
+      await html2pdf()
+        .set({
+          margin: 10,
+          filename: `Product_${product.sku || id}.pdf`,
+          image: { type: "jpeg", quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        })
+        .from(tempEl)
+        .save();
 
       document.body.removeChild(tempEl);
     } catch (error) {
@@ -211,21 +225,23 @@ const ProductList: React.FC = () => {
     try {
       if (isBulkDelete) {
         if (selectedProducts.length === 0) return;
-        const ids = selectedProducts.map(p => p.id);
+        const ids = selectedProducts.map((p) => p.id);
         await ProductService.bulkDelete(ids);
         setSelectedProducts([]);
       } else {
         if (!deleteId) return;
         await ProductService.delete(deleteId);
       }
-      
+
       // Refresh the list
       fetchProducts();
-      
+
       // Close modal
-      const closeBtn = document.querySelector('#delete-modal [data-bs-dismiss="modal"]') as HTMLButtonElement;
+      const closeBtn = document.querySelector(
+        '#delete-modal [data-bs-dismiss="modal"]',
+      ) as HTMLButtonElement;
       closeBtn?.click();
-      
+
       setDeleteId(null);
       setIsBulkDelete(false);
     } catch (error) {
@@ -252,7 +268,7 @@ const ProductList: React.FC = () => {
             src={data.productImage}
             alt={data.product}
             className="me-2 rounded"
-            style={{ width: 36, height: 36, objectFit: 'cover' }}
+            style={{ width: 36, height: 36, objectFit: "cover" }}
           />
           <Link to="#">{data.product}</Link>
         </div>
@@ -286,6 +302,12 @@ const ProductList: React.FC = () => {
       header: "Unit",
       field: "unit",
       key: "unit",
+      sortable: true,
+    },
+    {
+      header: "Qty",
+      field: "qty",
+      key: "qty",
       sortable: true,
     },
     {
@@ -347,7 +369,7 @@ const ProductList: React.FC = () => {
               </div>
             </div>
             <ul className="table-top-head">
-              <TooltipIcons 
+              <TooltipIcons
                 onPdfClick={() => handleExport("pdf")}
                 onExcelClick={() => handleExport("xlsx")}
               />
@@ -387,17 +409,27 @@ const ProductList: React.FC = () => {
                     className="dropdown-toggle btn btn-white btn-md d-inline-flex align-items-center"
                     data-bs-toggle="dropdown"
                   >
-                    {selectedCategory ? categories.find(c => c.id === selectedCategory)?.name : "Category"}
+                    {selectedCategory
+                      ? categories.find((c) => c.id === selectedCategory)?.name
+                      : "Category"}
                   </Link>
                   <ul className="dropdown-menu dropdown-menu-end p-3">
                     <li>
-                      <Link to="#" className="dropdown-item rounded-1" onClick={() => handleCategoryChange(null)}>
+                      <Link
+                        to="#"
+                        className="dropdown-item rounded-1"
+                        onClick={() => handleCategoryChange(null)}
+                      >
                         All Categories
                       </Link>
                     </li>
                     {categories.map((cat) => (
                       <li key={cat.id}>
-                        <Link to="#" className="dropdown-item rounded-1" onClick={() => handleCategoryChange(cat.id)}>
+                        <Link
+                          to="#"
+                          className="dropdown-item rounded-1"
+                          onClick={() => handleCategoryChange(cat.id)}
+                        >
                           {cat.name}
                         </Link>
                       </li>
@@ -410,17 +442,27 @@ const ProductList: React.FC = () => {
                     className="dropdown-toggle btn btn-white btn-md d-inline-flex align-items-center"
                     data-bs-toggle="dropdown"
                   >
-                    {selectedBrand ? brands.find(b => b.id === selectedBrand)?.name : "Brand"}
+                    {selectedBrand
+                      ? brands.find((b) => b.id === selectedBrand)?.name
+                      : "Brand"}
                   </Link>
                   <ul className="dropdown-menu dropdown-menu-end p-3">
                     <li>
-                      <Link to="#" className="dropdown-item rounded-1" onClick={() => handleBrandChange(null)}>
+                      <Link
+                        to="#"
+                        className="dropdown-item rounded-1"
+                        onClick={() => handleBrandChange(null)}
+                      >
                         All Brands
                       </Link>
                     </li>
                     {brands.map((brand) => (
                       <li key={brand.id}>
-                        <Link to="#" className="dropdown-item rounded-1" onClick={() => handleBrandChange(brand.id)}>
+                        <Link
+                          to="#"
+                          className="dropdown-item rounded-1"
+                          onClick={() => handleBrandChange(brand.id)}
+                        >
                           {brand.name}
                         </Link>
                       </li>
@@ -429,7 +471,7 @@ const ProductList: React.FC = () => {
                 </div>
                 {selectedProducts.length > 0 && (
                   <div className="dropdown me-2">
-                    <button 
+                    <button
                       className="btn btn-danger btn-md d-inline-flex align-items-center"
                       data-bs-toggle="modal"
                       data-bs-target="#delete-modal"
@@ -448,7 +490,10 @@ const ProductList: React.FC = () => {
             <div className="card-body">
               {/* Error Banner */}
               {error && (
-                <div className="alert alert-danger alert-dismissible fade show d-flex align-items-center mb-3" role="alert">
+                <div
+                  className="alert alert-danger alert-dismissible fade show d-flex align-items-center mb-3"
+                  role="alert"
+                >
                   <i className="feather icon-alert-circle me-2 fs-18" />
                   <span>{error}</span>
                   <button
@@ -493,8 +538,8 @@ const ProductList: React.FC = () => {
                   {isBulkDelete ? "Delete Selected Products" : "Delete Product"}
                 </h4>
                 <p className="mb-0 fs-16">
-                  {isBulkDelete 
-                    ? `Are you sure you want to delete ${selectedProducts.length} selected products?` 
+                  {isBulkDelete
+                    ? `Are you sure you want to delete ${selectedProducts.length} selected products?`
                     : "Are you sure you want to delete this product?"}
                 </p>
                 <div className="modal-footer-btn mt-3 d-flex justify-content-center">
@@ -518,7 +563,6 @@ const ProductList: React.FC = () => {
           </div>
         </div>
       </div>
-      
     </>
   );
 };

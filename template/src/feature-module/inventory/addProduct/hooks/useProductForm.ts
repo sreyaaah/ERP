@@ -29,11 +29,11 @@ export const useProductForm = () => {
     variantAttribute: null,
     warranty: null,
     manufacturer: "",
-    manufacturedDate: new Date(),
-    expiryDate: new Date(),
+    manufacturedDate: null,
+    expiryDate: null,
     hasWarranty: false,
-    hasManufacturer: false,
-    hasExpiry: false,
+    hasManufacturer: true,
+    hasExpiry: true,
   });
 
   const [variants, setVariants] = useState<VariantRow[]>([]);
@@ -114,6 +114,16 @@ export const useProductForm = () => {
     if (!formData.sku.trim()) return "SKU is required";
     if (!formData.itemCode?.trim()) return "HSN/SAC Number is required";
     if (!formData.priceBeforeTax || Number(formData.priceBeforeTax) < 0) return "Price must be valid";
+    
+    if (formData.hasManufacturer) {
+      if (!formData.manufacturer.trim()) return "Manufacturer name is required";
+      if (!formData.manufacturedDate) return "Manufactured date is required";
+    }
+    
+    if (formData.hasExpiry && !formData.expiryDate) {
+      return "Expiry date is required";
+    }
+
     return null;
   };
 
@@ -145,14 +155,14 @@ export const useProductForm = () => {
         taxAmount: Number(formData.taxAmount),
         priceAfterTax: formData.taxMode === "inclusive" ? Number(formData.priceBeforeTax) : Number(formData.priceAfterTax),
         quantity: Number(formData.quantity) || 0,
+        quantityAlert: Number(formData.quantityAlert) || 10,
         status: "Available",
+        manufacturedDate: formData.manufacturedDate,
+        expiryDate: formData.expiryDate,
         customFields: {
           discountType: formData.discountType,
           discountValue: formData.discountValue,
-          quantityAlert: formData.quantityAlert,
           manufacturer: formData.manufacturer,
-          manufacturedDate: formData.manufacturedDate,
-          expiryDate: formData.expiryDate,
         }
       };
 

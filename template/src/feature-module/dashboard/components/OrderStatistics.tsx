@@ -13,7 +13,7 @@ const OrderStatistics: React.FC<OrderStatisticsProps> = ({ orderStats }) => {
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        if (orderStats && internalStats.length === 0) {
+        if (orderStats) {
             setInternalStats(orderStats);
         }
     }, [orderStats]);

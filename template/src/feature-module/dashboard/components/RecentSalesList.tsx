@@ -14,7 +14,7 @@ const RecentSalesList: React.FC<RecentSalesListProps> = ({ sales }) => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (sales && saleList.length === 0) {
+    if (sales) {
       setSaleList(sales);
     }
   }, [sales]);
@@ -54,7 +54,7 @@ const RecentSalesList: React.FC<RecentSalesListProps> = ({ sales }) => {
           </ul>
         </div>
       </div>
-      <div className="card-body position-relative" style={{ minHeight: '200px' }}>
+      <div className="card-body position-relative custom-scrollbar" style={{ height: '350px', overflowY: 'auto' }}>
         {loading && (
           <div className="position-absolute top-50 start-50 translate-middle" style={{ zIndex: 10 }}>
             <div className="spinner-border text-primary" role="status">
@@ -93,7 +93,7 @@ const RecentSalesList: React.FC<RecentSalesListProps> = ({ sales }) => {
             </div>
           ))}
           {(!saleList || saleList.length === 0) && !loading && (
-            <div className="text-center p-3">No recent sales found for this period</div>
+            <div key="no-recent-sales" className="text-center p-3">No recent sales found for this period</div>
           )}
         </div>
       </div>

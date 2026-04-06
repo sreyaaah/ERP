@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { DatePicker, Dropdown, Menu, Input } from 'antd';
+import { DatePicker, Dropdown, Input } from 'antd';
 import dayjs from 'dayjs';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
@@ -63,25 +63,23 @@ const CommonDateRangePicker: React.FC<CommonDateRangePickerProps> = ({ onRangeCh
     }
   };
 
-  const menu = (
-    <Menu
-      onClick={handleMenuClick}
-      items={[
-        ...Object.keys(predefinedRanges).map(label => ({
-          key: label,
-          label,
-        })),
-        { type: 'divider' },
-        { key: 'Custom Range', label: 'Custom Range' },
-      ]}
-    />
-  );
+  const menuProps = {
+    items: [
+      ...Object.keys(predefinedRanges).map(label => ({
+        key: label,
+        label,
+      })),
+      { type: 'divider' as const },
+      { key: 'Custom Range', label: 'Custom Range' },
+    ],
+    onClick: handleMenuClick,
+  };
 
   const displayValue = `${dates[0].format(dateFormat)} - ${dates[1].format(dateFormat)}`;
 
   return (
     <div>
-      <Dropdown overlay={menu} trigger={['click']}>
+      <Dropdown menu={menuProps} trigger={['click']}>
         <Input
           readOnly
           value={displayValue}

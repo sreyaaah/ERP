@@ -57,7 +57,7 @@ export const useEditProduct = (productId: string) => {
             productName: product.product || "",
             slug: product.slug || "",
             sku: product.sku || "",
-            sellingType: product.sellingType || "Transactional",
+            sellingType: (product.sellingType as any)?._id || product.sellingType || null,
             category: product.categoryId?._id || product.categoryId || null,
             subCategory: product.subCategoryId?._id || product.subCategoryId || null,
             brand: product.brandId?._id || product.brandId || null,
@@ -73,15 +73,15 @@ export const useEditProduct = (productId: string) => {
             priceAfterTax: product.taxType?.toLowerCase() === "inclusive" ? String(product.priceBeforeTax || 0) : String(product.priceAfterTax || 0),
             discountType: product.customFields?.discountType || null,
             discountValue: product.customFields?.discountValue || "",
-            quantityAlert: product.customFields?.quantityAlert || "",
+            quantityAlert: String(product.quantityAlert || product.customFields?.quantityAlert || "10"),
             variantAttribute: null,
             warranty: null,
             manufacturer: product.customFields?.manufacturer || "",
-            manufacturedDate: product.customFields?.manufacturedDate ? new Date(product.customFields.manufacturedDate) : new Date(),
-            expiryDate: product.customFields?.expiryDate ? new Date(product.customFields.expiryDate) : new Date(),
+            manufacturedDate: product.manufacturedDate ? new Date(product.manufacturedDate) : (product.customFields?.manufacturedDate ? new Date(product.customFields.manufacturedDate) : new Date()),
+            expiryDate: product.expiryDate ? new Date(product.expiryDate) : (product.customFields?.expiryDate ? new Date(product.customFields.expiryDate) : new Date()),
             hasWarranty: !!product.customFields?.hasWarranty,
-            hasManufacturer: !!product.customFields?.manufacturer,
-            hasExpiry: !!product.customFields?.expiryDate,
+            hasManufacturer: !!(product.customFields?.manufacturer || product.manufacturedDate),
+            hasExpiry: !!(product.expiryDate || product.customFields?.expiryDate),
           });
 
           if (product.images && product.images.length > 0) {
@@ -175,6 +175,16 @@ export const useEditProduct = (productId: string) => {
     if (!formData.sku.trim()) return "SKU is required";
     if (!formData.itemCode?.trim()) return "HSN/SAC Number is required";
     if (!formData.priceBeforeTax || Number(formData.priceBeforeTax) < 0) return "Price must be valid";
+    
+    if (formData.hasManufacturer) {
+      if (!formData.manufacturer.trim()) return "Manufacturer name is required";
+      if (!formData.manufacturedDate) return "Manufactured date is required";
+    }
+    
+    if (formData.hasExpiry && !formData.expiryDate) {
+      return "Expiry date is required";
+    }
+
     return null;
   };
 
@@ -206,13 +216,14 @@ export const useEditProduct = (productId: string) => {
         taxAmount: Number(formData.taxAmount),
         priceAfterTax: formData.taxMode === "inclusive" ? Number(formData.priceBeforeTax) : Number(formData.priceAfterTax),
         quantity: Number(formData.quantity) || 0,
+        quantityAlert: Number(formData.quantityAlert) || 10,
+        status: "Available",
+        manufacturedDate: formData.manufacturedDate,
+        expiryDate: formData.expiryDate,
         customFields: {
           discountType: formData.discountType,
           discountValue: formData.discountValue,
-          quantityAlert: formData.quantityAlert,
           manufacturer: formData.manufacturer,
-          manufacturedDate: formData.manufacturedDate,
-          expiryDate: formData.expiryDate,
         }
       };
 

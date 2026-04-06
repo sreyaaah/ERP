@@ -13,7 +13,7 @@ const SalesDayChart: React.FC<SalesDayChartProps> = ({ chartData }) => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (chartData && !internalChartData) {
+    if (chartData) {
       setInternalChartData(chartData);
     }
   }, [chartData]);

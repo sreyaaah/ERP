@@ -10,16 +10,16 @@ interface Props {
   taxOptions: { label: string; value: string }[];
 }
 
-const PricingStocksSection = ({ formData, updateField, taxOptions }: Props) => {
+const PricingSection = ({ formData, updateField, taxOptions }: Props) => {
   return (
     <div className="accordion-item border mb-4">
-      <h2 className="accordion-header" id="headingSpacingTwo">
+      <h2 className="accordion-header" id="headingPricing">
         <div
           className="accordion-button collapsed bg-white"
           data-bs-toggle="collapse"
-          data-bs-target="#SpacingTwo"
+          data-bs-target="#PricingCollapse"
           aria-expanded="true"
-          aria-controls="SpacingTwo"
+          aria-controls="PricingCollapse"
         >
           <div className="d-flex align-items-center justify-content-between flex-fill">
             <h5 className="d-flex align-items-center">
@@ -31,9 +31,9 @@ const PricingStocksSection = ({ formData, updateField, taxOptions }: Props) => {
       </h2>
 
       <div
-        id="SpacingTwo"
+        id="PricingCollapse"
         className="accordion-collapse collapse show"
-        aria-labelledby="headingSpacingTwo"
+        aria-labelledby="headingPricing"
       >
         <div className="accordion-body border-top">
           <div className="mb-4">
@@ -49,10 +49,18 @@ const PricingStocksSection = ({ formData, updateField, taxOptions }: Props) => {
                   checked={formData.taxMode === "exclusive"}
                   onChange={() => updateField("taxMode", "exclusive")}
                 />
-                <span className="checkmark"style={formData.taxMode === "exclusive" ? {
-                  backgroundColor: '#ffc107',
-                  borderColor: '#ffc107'
-                } : {}} /> Exclusive Tax
+                <span
+                  className="checkmark"
+                  style={
+                    formData.taxMode === "exclusive"
+                      ? {
+                          backgroundColor: "#ffc107",
+                          borderColor: "#ffc107",
+                        }
+                      : {}
+                  }
+                />{" "}
+                Exclusive Tax
               </label>
 
               <label className="custom_radio me-4">
@@ -62,10 +70,18 @@ const PricingStocksSection = ({ formData, updateField, taxOptions }: Props) => {
                   checked={formData.taxMode === "inclusive"}
                   onChange={() => updateField("taxMode", "inclusive")}
                 />
-                <span className="checkmark" style={formData.taxMode === "inclusive" ? {
-                  backgroundColor: '#ffc107',
-                  borderColor: '#ffc107'
-                } : {}}/> Inclusive Tax
+                <span
+                  className="checkmark"
+                  style={
+                    formData.taxMode === "inclusive"
+                      ? {
+                          backgroundColor: "#ffc107",
+                          borderColor: "#ffc107",
+                        }
+                      : {}
+                  }
+                />{" "}
+                Inclusive Tax
               </label>
 
               <label className="custom_radio">
@@ -75,10 +91,18 @@ const PricingStocksSection = ({ formData, updateField, taxOptions }: Props) => {
                   checked={formData.taxMode === "no-tax"}
                   onChange={() => updateField("taxMode", "no-tax")}
                 />
-                <span className="checkmark" style={formData.taxMode === "no-tax" ? {
-                  backgroundColor: '#ffc107',
-                  borderColor: '#ffc107'
-                } : {}}/> Without Tax
+                <span
+                  className="checkmark"
+                  style={
+                    formData.taxMode === "no-tax"
+                      ? {
+                          backgroundColor: "#ffc107",
+                          borderColor: "#ffc107",
+                        }
+                      : {}
+                  }
+                />{" "}
+                Without Tax
               </label>
             </div>
           </div>
@@ -103,7 +127,7 @@ const PricingStocksSection = ({ formData, updateField, taxOptions }: Props) => {
                 <label className="form-label">
                   {formData.taxMode === "exclusive"
                     ? "Price Before Tax"
-                    : formData.taxMode === "inclusive" 
+                    : formData.taxMode === "inclusive"
                     ? "Final Price (Tax Included)"
                     : "Product Price"}
                   <span className="text-danger ms-1">*</span>
@@ -138,7 +162,10 @@ const PricingStocksSection = ({ formData, updateField, taxOptions }: Props) => {
               <div className="mb-3">
                 <label className="form-label">
                   Tax Amount
-                  <span className="badge bg-info ms-2" style={{ fontSize: '0.65rem' }}>
+                  <span
+                    className="badge bg-info ms-2"
+                    style={{ fontSize: "0.65rem" }}
+                  >
                     Calculated
                   </span>
                 </label>
@@ -159,8 +186,13 @@ const PricingStocksSection = ({ formData, updateField, taxOptions }: Props) => {
                     : formData.taxMode === "inclusive"
                     ? "Price Before Tax"
                     : "Final Price"}
-                  <span className="badge bg-info ms-2" style={{ fontSize: '0.65rem' }}>
-                    {formData.taxMode === "exclusive" ? "Calculated" : "Calculated"}
+                  <span
+                    className="badge bg-info ms-2"
+                    style={{ fontSize: "0.65rem" }}
+                  >
+                    {formData.taxMode === "exclusive"
+                      ? "Calculated"
+                      : "Calculated"}
                   </span>
                 </label>
                 <input
@@ -188,15 +220,19 @@ const PricingStocksSection = ({ formData, updateField, taxOptions }: Props) => {
                   <span className="ms-2">
                     {formData.taxMode === "exclusive" ? (
                       <>
-                        Base Price: <strong>₹{formData.priceBeforeTax}</strong> + 
-                        Tax ({formData.taxRate}%): <strong>₹{formData.taxAmount || "0.00"}</strong> = 
-                        Final Price: <strong>₹{formData.priceAfterTax || "0.00"}</strong>
+                        Base Price: <strong>₹{formData.priceBeforeTax}</strong> +
+                        Tax ({formData.taxRate}%):{" "}
+                        <strong>₹{formData.taxAmount || "0.00"}</strong> = Final
+                        Price:{" "}
+                        <strong>₹{formData.priceAfterTax || "0.00"}</strong>
                       </>
                     ) : formData.taxMode === "inclusive" ? (
                       <>
-                        Final Price: <strong>₹{formData.priceBeforeTax}</strong> = 
-                        Base Price: <strong>₹{formData.priceAfterTax || "0.00"}</strong> + 
-                        Tax ({formData.taxRate}%): <strong>₹{formData.taxAmount || "0.00"}</strong>
+                        Final Price: <strong>₹{formData.priceBeforeTax}</strong>{" "}
+                        = Base Price:{" "}
+                        <strong>₹{formData.priceAfterTax || "0.00"}</strong> +
+                        Tax ({formData.taxRate}%):{" "}
+                        <strong>₹{formData.taxAmount || "0.00"}</strong>
                       </>
                     ) : (
                       <>
@@ -205,7 +241,9 @@ const PricingStocksSection = ({ formData, updateField, taxOptions }: Props) => {
                     )}
                   </span>
                 ) : (
-                  <span className="ms-2 text-muted">Enter tax rate and price to see breakdown</span>
+                  <span className="ms-2 text-muted">
+                    Enter tax rate and price to see breakdown
+                  </span>
                 )}
               </div>
             </div>
@@ -216,4 +254,4 @@ const PricingStocksSection = ({ formData, updateField, taxOptions }: Props) => {
   );
 };
 
-export default PricingStocksSection;
+export default PricingSection;

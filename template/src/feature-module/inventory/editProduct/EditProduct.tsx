@@ -10,7 +10,8 @@ import AddSubCategory from "../../../core/modals/inventory/addsubcategory";
 
 import { useEditProduct } from "./hooks/useEditProduct";
 import ProductInformation from "./components/productInformation";
-import PriceCalculation from "./components/priceCalculation";
+import PricingSection from "./components/PricingSection";
+import StocksSection from "./components/StocksSection";
 import ProductImages from "./components/ProductImages";
 import CustomFields from "./components/CustomFields";
 import { CategoryService } from "../../services/category.service";
@@ -222,10 +223,15 @@ const EditProduct = () => {
                   barcodeOptions={barcodeOptions}
                 />
 
-                <PriceCalculation
+                <PricingSection
                   formData={formData}
                   updateField={updateField}
                   taxOptions={taxOptions}
+                />
+
+                <StocksSection 
+                  formData={formData} 
+                  updateField={updateField} 
                 />
 
                 <ProductImages

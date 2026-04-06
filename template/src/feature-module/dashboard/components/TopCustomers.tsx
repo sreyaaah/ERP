@@ -16,7 +16,7 @@ const TopCustomers: React.FC<TopCustomersProps> = ({ customers }) => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (customers && customerList.length === 0) {
+    if (customers) {
       setCustomerList(customers);
     }
   }, [customers]);
