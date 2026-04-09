@@ -1,5 +1,5 @@
 
-const BACKEND_URL = "http://localhost:5000";
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
 export const getImageUrl = (url: string | null | undefined): string | null => {
   if (typeof url !== 'string') return null;
