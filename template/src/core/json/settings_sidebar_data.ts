@@ -16,7 +16,6 @@ export const SettingsSidebarData: SettingsMenuItem[] = [
     icon: "settings-dollar",
     submenu: true,
     submenuItems: [
-      { label: "Payment Gateway", link: route.paymentgateway },
       { label: "Bank Accounts", link: route.banksettingsgrid },
       { label: "Tax Rates", link: route.taxrates },
       { label: "Currencies", link: route.currencysettings },
