@@ -45,7 +45,7 @@ const BrandList: React.FC = () => {
           id: b.id,
           brand: b.name,
           slug: b.slug,
-          image: b.image ? `http://localhost:5000/uploads/brands/${b.image}` : user41,
+          image: b.image ? `${import.meta.env.VITE_BACKEND_URL || "http://localhost:5000"}/uploads/brands/${b.image}` : user41,
           createdon: new Date(b.createdAt).toLocaleDateString(),
           status: b.status
         })));

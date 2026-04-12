@@ -218,7 +218,7 @@ const QuotationList = () => {
         <div className="d-flex align-items-center">
           {row.customerAvatar ? (
             <img
-              src={`http://localhost:5000${row.customerAvatar}`}
+              src={`${import.meta.env.VITE_BACKEND_URL || "http://localhost:5000"}${row.customerAvatar}`}
               alt="customer"
               className="avatar avatar-sm me-2 rounded-circle"
               style={{ width: 32, height: 32, objectFit: "cover" }}
